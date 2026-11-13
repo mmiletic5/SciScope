@@ -29,6 +29,6 @@ selection and a valid key; selecting one without a valid key must fail safely.
 Development tests must prohibit paid external AI calls. Provider behavior is a
 requirement for later implementation and is not implemented in Part 1.
 
-The dependency installation and lockfile strategy, and application checks, will be
-finalized in Part 3. `docs/DEVELOPMENT_WORKFLOW.md`, `EVIDENCE.md`, and
-`PROJECT_TODO.md` are planned for later bootstrap parts.
+The [README](README.md) describes the uv lockfile strategy, local environment,
+and bootstrap checks. `docs/DEVELOPMENT_WORKFLOW.md`, `EVIDENCE.md`, and
+`PROJECT_TODO.md` now exist. Application checks begin only with approved features.

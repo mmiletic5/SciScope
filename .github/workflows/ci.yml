@@ -1,0 +1,52 @@
+name: Bootstrap checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    env:
+      AI_PROVIDER: fake
+      UV_NO_MANAGED_PYTHON: "1"
+      UV_PYTHON_DOWNLOADS: never
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v9
+        with:
+          version: "0.13.8"
+      - name: Verify lockfile and sync tools
+        run: |
+          uv lock --check --no-managed-python --no-python-downloads
+          uv sync --locked --no-managed-python --no-python-downloads
+      - name: Ruff
+        run: |
+          uv run --locked ruff check .
+          uv run --locked ruff format --check .
+      - name: Validate draft JSON Schemas
+        run: |
+          uv run --locked python - <<'PY'
+          import json
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+
+          for path in (
+              Path("docs/DATA_CONTRACT.json"),
+              Path("evals/golden_questions.schema.json"),
+          ):
+              schema = json.loads(path.read_text(encoding="utf-8"))
+              Draft202012Validator.check_schema(schema)
+              print(f"PASS: {path}")
+          PY
+      - name: Python checks when feature code exists
+        run: |
+          if [ -d tests ]; then uv run --locked pytest; else echo 'NOT RUN: no tests directory'; fi
+          if [ -d src ]; then uv run --locked mypy src; else echo 'NOT RUN: no src directory'; fi

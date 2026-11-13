@@ -9,6 +9,13 @@ Each row records a stable task ID, owner, deliverable, phase, and dependency whe
 relevant. Dependencies refer to task IDs. All tasks begin incomplete; no
 completion evidence or human verification is asserted by this initial backlog.
 
+Part 3 has drafted the README, design documents, dependency configuration,
+pull request template, and CI workflow. A developer's `uv run --locked`
+created local `.venv`, but `uv.lock` is still missing, so locked checks and CI
+cannot pass. The original sandbox cache error and the developer's later
+interpreter and lockfile errors are recorded in `EVIDENCE.md`. Human review and
+verification remain pending; no checkbox is completed by this draft.
+
 ## Phase 0 — Foundation (TEAM)
 
 - [ ] **P0-01** | Owner: TEAM | Deliverable: repository setup and agreed repository conventions | Phase: 0

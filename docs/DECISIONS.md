@@ -1,0 +1,29 @@
+# Bootstrap Decisions and Open Questions
+
+This log separates agreed bootstrap constraints from design proposals. The
+constitution remains a draft awaiting team ratification. No feature spec or
+plan has yet been approved.
+
+| ID | Status | Decision or question | Owner/review |
+| --- | --- | --- | --- |
+| D-001 | Agreed context | Four research workflows share one RAG infrastructure. | TEAM |
+| D-002 | Agreed context | Initial entity hierarchy is Paper → Section → Chunk; preserve original JATS XML. | Person 1, Person 2 |
+| D-003 | Bootstrap tooling | Use project-local `.venv`, uv lockfile, and a dev dependency group. No application packages until feature approval. | TEAM |
+| D-004 | Proposed | `intfloat/multilingual-e5-small`, 384 dimensions, 512-token total input, `passage:`/`query:` prefixes. Validate with source papers. | Person 1, Person 2 |
+| D-005 | Required policy | Fake mode is default; live Gemini requires explicit configuration. Routine CI never calls paid AI. | Person 3 |
+| D-006 | Open | Corpus inclusion/exclusion, PLOS/JATS variation, and licensing policy. | Person 1, TEAM |
+| D-007 | Open | DOI normalization, required metadata, section taxonomy, source locator and version semantics. | Person 1, Person 2 |
+| D-008 | Open | Chunk boundaries, overlap, table/caption/reference handling, and actual token budgets. | Person 1, Person 2 |
+| D-009 | Open | Filter, retrieval ranking, API and provider interface contracts; error behavior. | Affected owners |
+| D-010 | Open | Golden relevance rubric, negative cases, and metric interpretation. | Person 1, Person 2 |
+| D-011 | Open | Team ratification of the constitution and approval of draft contracts. | TEAM |
+
+The local dependency check is limited to existing repository artifacts and the
+official [uv lock/sync guide](https://docs.astral.sh/uv/concepts/projects/sync/),
+[uv GitHub Actions guide](https://docs.astral.sh/uv/guides/integration/github/),
+[Spec Kit Codex integration](https://github.github.com/spec-kit/integrations/codex.html),
+and [embedding model card](https://huggingface.co/intfloat/multilingual-e5-small).
+The project has no application code, so adding FastAPI, model packages, or a
+database driver now would precede the required feature decisions. The uv
+lockfile and local sync remain unverified until the environment blocker is
+resolved; see [EVIDENCE.md](../EVIDENCE.md).

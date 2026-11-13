@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sciscope.example/schemas/data_contract.json",
+  "title": "SciScope Paper, Section, Chunk Draft Contract",
+  "description": "Proposed versioned interchange record; owner approval and validation on real JATS papers are pending.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "processing_version", "paper"],
+  "properties": {
+    "schema_version": {"type": "string", "minLength": 1},
+    "processing_version": {"type": "string", "minLength": 1},
+    "paper": {"$ref": "#/$defs/paper"}
+  },
+  "$defs": {
+    "nonempty": {"type": "string", "minLength": 1},
+    "paper": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["doi", "title", "authors", "journal", "publication_year", "article_type", "subject_categories", "license", "source", "source_xml_path", "source_xml_sha256", "sections"],
+      "properties": {
+        "doi": {"type": "string", "pattern": "^10\\.[0-9]{4,9}/\\S+$"},
+        "title": {"$ref": "#/$defs/nonempty"},
+        "authors": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/nonempty"}},
+        "journal": {"$ref": "#/$defs/nonempty"},
+        "publication_year": {"type": "integer", "minimum": 1600},
+        "article_type": {"$ref": "#/$defs/nonempty"},
+        "subject_categories": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/nonempty"}},
+        "license": {"$ref": "#/$defs/nonempty"},
+        "source": {"$ref": "#/$defs/nonempty"},
+        "source_url": {"type": ["string", "null"], "format": "uri"},
+        "source_xml_path": {"$ref": "#/$defs/nonempty"},
+        "source_xml_sha256": {"type": "string", "pattern": "^[a-fA-F0-9]{64}$"},
+        "sections": {"type": "array", "items": {"$ref": "#/$defs/section"}}
+      }
+    },
+    "section": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["section_id", "parent_section_id", "section_path", "original_heading", "normalized_type", "source_locator", "chunks"],
+      "properties": {
+        "section_id": {"$ref": "#/$defs/nonempty"},
+        "parent_section_id": {"type": ["string", "null"]},
+        "section_path": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/nonempty"}},
+        "original_heading": {"type": "string"},
+        "normalized_type": {"$ref": "#/$defs/nonempty"},
+        "source_locator": {"$ref": "#/$defs/nonempty"},
+        "chunks": {"type": "array", "items": {"$ref": "#/$defs/chunk"}}
+      }
+    },
+    "chunk": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["chunk_id", "section_id", "text", "source_locator", "embedding_text", "embedding", "embedding_model", "embedding_model_revision", "tokenizer_version", "chunking_version"],
+      "properties": {
+        "chunk_id": {"$ref": "#/$defs/nonempty"},
+        "section_id": {"$ref": "#/$defs/nonempty"},
+        "text": {"$ref": "#/$defs/nonempty"},
+        "source_locator": {"$ref": "#/$defs/nonempty"},
+        "embedding_text": {"$ref": "#/$defs/nonempty"},
+        "embedding": {
+          "oneOf": [
+            {"type": "null"},
+            {"type": "array", "minItems": 384, "maxItems": 384, "items": {"type": "number"}}
+          ]
+        },
+        "embedding_model": {"$ref": "#/$defs/nonempty"},
+        "embedding_model_revision": {"$ref": "#/$defs/nonempty"},
+        "tokenizer_version": {"$ref": "#/$defs/nonempty"},
+        "chunking_version": {"$ref": "#/$defs/nonempty"}
+      }
+    }
+  }
+}

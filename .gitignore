@@ -24,11 +24,15 @@ htmlcov/
 # Models, corpora, embeddings, and local databases
 .cache/
 model_cache/
+hf_cache/
+.huggingface/
 data/models/
 data/raw/
 data/downloads/
 data/corpora/
 data/embeddings/
+*.npy
+*.npz
 *.sqlite
 *.sqlite3
 *.db
