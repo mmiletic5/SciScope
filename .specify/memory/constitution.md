@@ -1,6 +1,3 @@
-<!-- Sync Impact Report (remove before committing): initial template -> 0.1.0 draft;
-principles I-V replace template placeholders; Engineering Constraints and Delivery Gates
-replace placeholder sections; no sections removed; ratification awaits team approval. -->
 # SciScope Constitution
 
 ## Core Principles
