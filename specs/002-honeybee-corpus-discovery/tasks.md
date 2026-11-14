@@ -6,9 +6,18 @@ description: "Task list for honeybee corpus discovery and pilot selection protoc
 
 **Input**: Design documents from `specs/002-honeybee-corpus-discovery/`
 **Prerequisites**: [spec.md](spec.md), [plan.md](plan.md), [research.md](research.md), [data-model.md](data-model.md), [quickstart.md](quickstart.md).
-**Status**: All tasks proposed and unchecked. Draft artifacts do not complete tasks. No tests or code are authorized.
+**Status**: Planning baseline and T001–T010 execution in dependency order approved as reported by Person 1 on 2026-11-14. T001 is DONE following explicit Person 1 acceptance and recorded source evidence. T002–T010 are authorized for this documentary development cycle; leave each unchecked until its own automated/source and human checks are complete. No production tests or code are authorized by this task list.
 
-**Pre-execution gate**: The feature owner must explicitly approve `spec.md`, `plan.md`, and this `tasks.md` and authorize T001 before any task execution. Outstanding TEAM and Person 2 decisions block only tasks that depend on those decisions; they do not waive governance or authorize shared-contract changes. No such approval or T001 authorization is recorded here.
+**Pre-execution gate**: Person 1 approved `spec.md`, `plan.md`, and this `tasks.md` and authorized T001–T010 in dependency order, reporting the relevant TEAM and Person 2 decisions obtained outside the repository. See [DECISIONS.md](../../docs/DECISIONS.md) for provenance. T001 was explicitly accepted on 2026-11-14. Remaining task dependencies, automated/source checks, and independent human verification remain mandatory. No shared-contract edit is approved.
+
+**Execution snapshot (2026-11-14)**: T001 DONE. T002 and T004 are IN_PROGRESS
+because four source-inspected scientific examples and query replay are not yet
+available. T003, T005, T006, T008, and T009 have documentary deliverables ready
+for task-specific human review but remain unchecked, including where an upstream
+dependency remains open. T007 is IN_PROGRESS pending upstream source checks and
+TEAM matrix review. T010 has a draft validation matrix and read-only analysis
+but cannot complete before T002–T009 verification. `EVIDENCE.md` holds the
+per-task statuses and exact checks; no T002–T010 human acceptance is recorded.
 
 ## Format: `[ID] [P?] [Story] Description`
 
@@ -18,7 +27,7 @@ Each line follows the official checkbox/ID/story form. Its `Owner`, `Depends`, `
 
 **Purpose**: Confirm publisher access and safe failure handling before operationally fixing the discovery procedure. The previous live PLOS check was BLOCKED; no task here is complete.
 
-- [ ] T001 [US2] After explicit feature-owner approval of `spec.md`, `plan.md`, and `tasks.md` and separate authorization for T001, run a bounded PLOS search/API connectivity check, verify one or two candidate metadata records and their individual JATS XML availability, and record exact requests, responses, status, observed DOIs, fields, pagination, article type, and failures in `research.md`. Owner: Person 1; Depends: pre-execution feature-owner approval and T001 authorization; FR: FR-003, FR-007, FR-010; AC: AC-02, AC-05, AC-08, AC-09; Validate: at most two candidate records, one connection, no corpus download; stop and record BLOCKED/FAIL on connection, parse, DOI, or XML uncertainty; Manual: reviewer repeats URLs, verifies source and license/provenance observations, and signs off before further selection; Impact: no shared schema change or final DOI/licensing policy decision; Backlog: P1-02.
+- [x] T001 [US2] After explicit feature-owner approval of `spec.md`, `plan.md`, and `tasks.md` and separate authorization for T001, run a bounded PLOS search/API connectivity check, verify one or two candidate metadata records and their individual JATS XML availability, and record exact requests, responses, status, observed DOIs, fields, pagination, article type, and failures in `research.md`. Owner: Person 1; Depends: pre-execution feature-owner approval and T001 authorization; FR: FR-003, FR-007, FR-010; AC: AC-02, AC-05, AC-08, AC-09; Validate: at most two candidate records, one connection, no corpus download; stop and record BLOCKED/FAIL on connection, parse, DOI, or XML uncertainty; Manual: reviewer repeats URLs, verifies source and license/provenance observations, and signs off before further selection; Impact: no shared schema change or final DOI/licensing policy decision; Backlog: P1-02.
 
 **Checkpoint**: If live access fails, keep discovery operationally blocked and document the failure or seek a separately approved fallback.
 
@@ -27,7 +36,7 @@ Each line follows the official checkbox/ID/story form. Its `Owner`, `Depends`, `
 **Purpose**: Finalize rules before any pilot curation.
 
 - [ ] T002 [US1] Finalize `spec.md` eligibility rubric for direct, conditional, generic, and other-species cases, with identifiable honeybee evidence threshold. Owner: Person 1; Depends: T001; FR: FR-001; AC: AC-01; Validate: apply rubric to four source-inspected examples and record reasons; Manual: TEAM reviews borderline comparative case and approves or rejects policy; Impact: no ingestion fields; Backlog: P1-01 (TEAM retains approval ownership).
-- [ ] T003 [US1] Finalize publication-type and license readiness policy in `spec.md` and `research.md`, including primary research, proposed at-most-three labeled reviews in 20, corrections, editorials, front matter, full-text failures, and paper-specific reuse terms. Owner: Person 1; Depends: T002; FR: FR-002, FR-007; AC: AC-01, AC-05; Validate: decision table includes every type, primary-versus-review evidence, and unknown/failed state; Manual: TEAM reviews the provisional review cap and source/license evidence; Impact: Person 2 receives only verified status; Backlog: P1-05 (TEAM retains approval ownership).
+- [ ] T003 [US1] Finalize publication-type and license readiness policy in `spec.md` and `research.md`, including primary research, the approved at-most-three labeled reviews in 20, corrections, editorials, front matter, full-text failures, and paper-specific reuse terms. Owner: Person 1; Depends: T002; FR: FR-002, FR-007; AC: AC-01, AC-05; Validate: decision table includes every type, primary-versus-review evidence, and unknown/failed state; Manual: TEAM verifies application of the approved review cap and source/license evidence; Impact: Person 2 receives only verified status; Backlog: P1-05 (TEAM retains approval ownership).
 - [ ] T004 [US2] Freeze exact field-limited Boolean queries, page cap, stable sort, UTC recording, and screening/exclusion procedure in `plan.md`/`research.md` after T001. Owner: Person 1; Depends: T001, T002; FR: FR-003, FR-005; AC: AC-02, AC-08; Validate: second reviewer can repeat query and page IDs; Manual: reviewer checks query transcription and index-drift note; Impact: later acquisition consumes DOI candidates only; Backlog: P1-02, P1-15.
 
 **Checkpoint**: A reviewer can reproduce discovery and distinguish scientifically relevant evidence from search hits.

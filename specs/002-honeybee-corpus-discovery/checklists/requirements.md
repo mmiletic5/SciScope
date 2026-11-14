@@ -31,4 +31,4 @@
 
 ## Notes
 
-Built-in specification quality review: 16/16 items checked on 2026-11-14. This is a writing-quality check, not approval, implementation, pilot selection, or human verification. The pending decisions are explicit in `spec.md` and must be resolved before dependent curation.
+Built-in specification quality review: 16/16 items checked on 2026-11-14. This is a writing-quality check, not implementation or pilot selection. Person 1 reported TEAM/Person 2 approval of the Feature 002 planning baseline and documented policy decisions, recorded in [DECISIONS.md](../../../docs/DECISIONS.md), and later explicitly accepted T001 after source/license observations. T002–T010 and the separate reviewer-owned corpus checklist retain their own verification gates.

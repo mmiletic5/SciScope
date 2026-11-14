@@ -33,4 +33,4 @@
 
 ## Notes
 
-All 14 items remain unchecked for human requirements-quality review. The built-in `requirements.md` records a separate agent writing-quality self-check. A passing mapping or markdown check only establishes internal document consistency; scientific eligibility, source verification, contract agreement, and implementation approval require actual human decisions. No implementation, corpus, or human acceptance is claimed.
+All 14 items remain unchecked for independent human requirements-quality review. Person 1 reported TEAM/Person 2 approval of the documented Feature 002 planning and policy decisions, then explicitly accepted T001 after bounded API/XML/source/license checks; see [DECISIONS.md](../../../docs/DECISIONS.md) and `EVIDENCE.md`. Neither approval supplies a separate reviewer outcome for these checklist questions, the four scientific example classifications, the complete pilot, or post-execution feature acceptance. The built-in `requirements.md` records a separate agent writing-quality self-check. No corpus or T002–T010 human task acceptance is claimed.

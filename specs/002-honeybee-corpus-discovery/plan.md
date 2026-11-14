@@ -1,7 +1,7 @@
 # Implementation Plan: Honeybee Corpus Discovery & Pilot Selection
 
 **Branch**: `002-honeybee-corpus-discovery` | **Date**: 2026-11-14 | **Spec**: [spec.md](spec.md)
-**Input**: Planning refinement request; specification and execution remain unapproved.
+**Input**: Planning refinement request and Person 1's 2026-11-14 report of TEAM/Person 2 approval of the current Feature 002 planning baseline and T001–T010 execution in dependency order. See [DECISIONS.md](../../docs/DECISIONS.md) for provenance; T001 was subsequently accepted, while later task checks remain open.
 
 ## Summary
 
@@ -21,9 +21,9 @@ Define a publisher-first, source-auditable method to screen PLOS honeybee resear
 
 ## Constitution Check
 
-**Before research and after design**: No code or tests were written. Scientific provenance is required for each future decision. Person 1 owns selection and Person 2 reviews shared identity and evidence handoff. Shared contract is read only. No credentials or live AI calls. Future Python behavior must follow Google style, type hints, offline tests, and RED → GREEN. **Status**: planning self-check only; specification, plan, tasks, and dependent TEAM/Person 2 decisions remain unapproved. The constitution is version 0.1.0, explicitly a draft awaiting TEAM ratification (`P0-08` unchecked; `D-011` open); this feature review does not ratify it. No execution or completion gate has passed.
+**Before research and after design**: No code or tests were written. Scientific provenance is required for each future decision. Person 1 owns selection and Person 2 reviews shared identity and evidence handoff. Shared contract is read only. No credentials or live AI calls. Future Python behavior must follow Google style, type hints, offline tests, and RED → GREEN. **Status**: planning self-check only. Person 1 subsequently reported TEAM/Person 2 approval of the current Feature 002 baseline and decisions. Person 1 also confirmed TEAM ratification of the exact constitution 0.1.0 text on 2026-11-14; `P0-08` remains unchecked because its task verification is not recorded, and `D-011` still tracks unapproved draft contracts. T001 was accepted after human source checks; the remaining tasks and final feature acceptance remain open.
 
-**Approval gates:** Explicit feature-owner approval of `spec.md`, `plan.md`, and `tasks.md`, plus authorization for T001, is required before its bounded source check. Outstanding TEAM and Person 2 decisions block their dependent tasks and any shared-contract change, without turning T001's read-only observations into approved policy. After T001–T010 and their verification, the feature owner separately accepts or rejects the completed deliverables. Record task evidence and human outcomes under `docs/DEVELOPMENT_WORKFLOW.md`; do not mark work complete from pre-execution approval alone.
+**Approval gates:** Person 1 approved `spec.md`, `plan.md`, and `tasks.md` and authorized T001–T010 in dependency order, reporting the relevant TEAM/Person 2 planning decisions. Person 1 then explicitly accepted T001, allowing dependent documentary tasks to proceed. Their source/automatic and human checks remain separate. Shared-contract changes require separate field-level approval. After T001–T010 and their verification, the feature owner separately accepts or rejects the completed deliverables. Record task evidence and human outcomes under `docs/DEVELOPMENT_WORKFLOW.md`; do not mark work complete from pre-execution approval alone.
 
 ## Existing architecture and feature boundary
 
@@ -39,7 +39,7 @@ This feature ends at a selection protocol and planning artifacts. Actual DOI scr
 
 Use the publisher API for candidate discovery, source-page inspection for relevance, and individual JATS verification only for selected pilot articles. Record exact Boolean expressions, field, URL, `fl`, `wt`, `start`, `rows`, sort, type filter, UTC time, result count, and observed response. The first approved execution task must run a small bounded connectivity check, inspect a small number of candidate metadata records, and check individual JATS availability. Record HTTP/parse failures and unknown results without treating them as absence or success; stop dependent selection if the source cannot be verified. Direct requests were **BLOCKED** in the previous planning session; no retry or success is claimed here. Keep one connection, small pages, and spacing compatible with [PLOS FAQ](https://api.plos.org/solr/faq). More detail and alternatives are in [research.md](research.md).
 
-Scientific screening uses the three eligibility classes in FR-001 and publication-type rules in FR-002. Each conditional inclusion needs a reviewer-recorded passage or section demonstrating identifiable honeybee findings. A small proposed minority of reviews (at most 3 of 20, subject to TEAM approval) is explicitly labeled as secondary synthesis and never substituted for primary experimental evidence. Duplicate detection uses a proposed normalized DOI comparison key, retains raw identifiers and all discovery paths, and does not infer missing metadata. The first 3–5 manually inspected papers test protocol feasibility; their accepted records count toward the complete 20-paper target. Sampling seeks supported themes and structural diversity, with reasons per chosen article; no arbitrary theme quota. Record protocol version and corpus version separately.
+Scientific screening uses the three eligibility classes in FR-001 and publication-type rules in FR-002. Each conditional inclusion needs a reviewer-recorded passage or section demonstrating identifiable honeybee findings. Person 1 reports TEAM approval of at most 3 clearly labeled reviews within the 20-paper target; reviews remain secondary synthesis and never substitute for primary experimental evidence. Duplicate detection uses the documented DOI comparison approach, retains raw identifiers and all discovery paths, and does not infer missing metadata. The first 3–5 manually inspected papers test protocol feasibility; their accepted records count toward the complete 20-paper target. Sampling seeks supported themes and structural diversity, with reasons per chosen article; no arbitrary theme quota. Record protocol version and corpus version separately.
 
 ## Phase 1 — Design artifacts and interfaces
 
@@ -52,11 +52,61 @@ Scientific screening uses the three eligibility classes in FR-001 and publicatio
 
 One future manifest row per considered candidate, keyed by normalized DOI when verified, otherwise a temporary screening ID. Minimum fields: protocol/corpus version; run/query reference; original and normalized DOI/unknown; PLOS article URL and observed metadata; relevance class/decision/reason and inspected passage locator; theme; article type; paper-level provenance; JATS and license verification states with evidence URLs; inspection method/time; reviewer and review state. Repeated hits become source paths on that row. A separate run record retains exact query parameters and retrieval context. See `data-model.md` for field groups and state rules. The manifest is proposed only; no file or values are populated now.
 
-## Provisional DOI and source-locator policy
+## Approved Feature 002 DOI and source-locator approach
 
-For DOI identity, retain each observed DOI and its source; trim surrounding whitespace; remove only a recognized `doi:` prefix or `doi.org`/`dx.doi.org` resolver wrapper; percent-decode the URI path once; validate the resulting DOI-shaped value; and form a comparison key by folding ASCII `A`–`Z` to `a`–`z` only. Do not apply Unicode normalization, discard suffix punctuation, or infer an absent DOI. Conflicts among search, article page, and JATS identifiers remain pending manual review. This follows the [DOI Handbook](https://www.doi.org/doi-handbook/html/) equivalence rule and is proposed for Person 2 review before a shared implementation decision.
+For DOI identity, retain each observed DOI and its source; trim surrounding whitespace; remove only a recognized `doi:` prefix or `doi.org`/`dx.doi.org` resolver wrapper; percent-decode the URI path once; validate the resulting DOI-shaped value; and form a comparison key by folding ASCII `A`–`Z` to `a`–`z` only. Do not apply Unicode normalization, discard suffix punctuation, or infer an absent DOI. Conflicts among search, article page, and JATS identifiers remain pending manual review. This follows the [DOI Handbook](https://www.doi.org/doi-handbook/html/) equivalence rule. Person 1 reports Person 2 approval of this Feature 002 approach, not a shared-schema edit.
 
-For a fixed source XML version, propose an evidence anchor consisting of normalized DOI, publisher URL, source XML checksum/version, original nested section title/path, and the closest available JATS element `@id` (`sec`, `p`, table, figure, or other evidence container). If the needed element has no `@id`, use a deterministic structural path with sibling positions within the pinned XML plus a short source-text fingerprint for manual confirmation. A structural path is stable only for that exact XML version; if its checksum changes or it no longer resolves, mark the evidence reference stale and reverify it against the new source. Generated chunk IDs may be mapped to the anchor but cannot replace it. JATS documents optional base `id` attributes for [sections](https://jats.nlm.nih.gov/publishing/tag-library/1.4/element/sec.html) and [paragraphs](https://jats.nlm.nih.gov/publishing/tag-library/1.4/element/p.html); this does not establish that a given PLOS XML file contains them. Person 2 must approve the locator encoding/version semantics before import or golden evaluation handoff.
+For a fixed source XML version, use the approved Feature 002 approach of an evidence anchor consisting of normalized DOI, publisher URL, source XML checksum/version, original nested section title/path, and the closest available JATS element `@id` (`sec`, `p`, table, figure, or other evidence container). If the needed element has no `@id`, use a deterministic structural path with sibling positions within the pinned XML plus a short source-text fingerprint for manual confirmation. A structural path is stable only for that exact XML version; if its checksum changes or it no longer resolves, mark the evidence reference stale and reverify it against the new source. Generated chunk IDs may be mapped to the anchor but cannot replace it. JATS documents optional base `id` attributes for [sections](https://jats.nlm.nih.gov/publishing/tag-library/1.4/element/sec.html) and [paragraphs](https://jats.nlm.nih.gov/publishing/tag-library/1.4/element/p.html); this does not establish that a given PLOS XML file contains them. Person 1 reports Person 2 approval of this approach; any exact shared-field encoding or schema change still needs separately reviewed field-level approval before import or golden evaluation handoff.
+
+## Field-level shared ingestion compatibility review (T008 draft)
+
+This is a read-only comparison with `docs/DATA_CONTRACT.json` Draft 2020-12.
+The proposed screening manifest is not a processed `Paper → Section → Chunk`
+record. A later schema edit requires a separate field-level owner decision.
+
+| Existing field(s) | Observed contract behavior | Minimal handoff proposal or gap |
+| --- | --- | --- |
+| Root `schema_version`, `processing_version`, `paper` | All required; no explicit `corpus_version`. | Keep protocol/corpus versions in screening records; propose an explicit corpus/source version only for a later approved processed-record revision. |
+| `paper.doi` | Required DOI-shaped string; no normalization or raw-variant provenance rule. | Hand off verified DOI plus all observed DOI/source paths separately until Person 2 approves exact representation. |
+| `paper.title`, `authors`, `journal`, `publication_year` | Required, with nonempty title/authors/journal and integer year. | An incomplete search hit cannot validate as processed paper; retain unknowns in the manifest. Do not fabricate missing values. |
+| `paper.article_type`, `subject_categories` | Type is required nonempty text without enum; subjects are required array, possibly empty. | Preserve publisher type verbatim and normalized screening class separately. An empty subject array must not silently mean observed absence when API omitted the field. |
+| Paper language | No field. | Propose a later optional language field only after Person 2 agrees on observed/unknown semantics. |
+| `paper.license`, `source`, optional nullable `source_url` | License/source are required nonempty strings; source URL is optional and URI-formatted if present. | Keep article-specific license URL/terms/attribution and publisher URL/status in the manifest; propose explicit provenance fields only after field-level review. |
+| `paper.source_xml_path`, `source_xml_sha256` | Both required; hash is 64 hexadecimal characters. | Unknown/inaccessible XML stays a candidate only. Preserve the actual XML path/hash in the later processed record after acquisition. |
+| `paper.sections` | Required array that may be empty. | No section claim is made in discovery; a zero-section processed record would need review before import. |
+| `section.section_id`, `parent_section_id`, `section_path` | IDs required; parent may be null; path is nonempty array. | Preserve original nested path and source ID when available; exact encoding needs Person 2 approval. |
+| `section.original_heading`, `normalized_type`, `source_locator` | Heading may be empty; normalized type and locator are required text; locator format is unspecified. | Propose DOI + pinned XML hash/version + original section path + JATS `@id`, or sibling-index structural path and fingerprint when absent. Do not edit the string contract yet. |
+| `section.chunks` and chunk IDs/locators/text | Array required; chunk objects have required IDs, text, and locator fields. | Chunk IDs are derived; never use them as the sole scientific evidence anchor. No chunks are produced in Feature 002. |
+| Chunk embedding and version fields | `embedding` can be null or 384 numbers; model/revision/tokenizer/chunking strings remain required. | Screening cannot satisfy these processed fields; future pre-embedding staging semantics need separate review. |
+
+The approved Feature 002 DOI/locator *approach* does not approve new shared
+fields, nullability, or a locator encoding. Person 2 must accept or reject each
+proposed change before an ingestion handoff or JSON Schema edit. T008's field
+comparison is documented here; its manual owner review remains pending.
+
+## Golden evaluation readiness and schema gaps (T009 draft)
+
+The read-only source is `evals/golden_questions.schema.json`; no golden record
+or schema edit is made in this feature. A later source-inspected set targets
+5–10 human-verified questions before Person 2 retrieval evaluation.
+
+| Existing field or rule | Observed gap | Follow-up prerequisite |
+| --- | --- | --- |
+| `dataset_version`, `corpus_version`, per-question `source_corpus_version` | Version strings exist, but no schema-level guarantee a question refers to the pinned source XML. | Record corpus membership and XML checksum/version; check them against preserved source files. |
+| `question_id` | Pattern exists, but uniqueness of this property across array items is not enforced. | Dataset-level duplicate-ID check. |
+| `relevant_papers` | Required with `minItems: 1`, including when `expected_insufficient_evidence=true`. | Person 1/Person 2 decide negative-case semantics; propose a conditional schema change only after field-level approval. |
+| `relevantPaper.doi` and `sections` | DOI pattern and nonempty sections exist, but DOI normalization, corpus membership, and section existence are not checked. | Validate normalized DOI against approved corpus and resolve original section path in pinned XML. |
+| `evidence.relevance_label` | Required nonempty text, without an approved value rubric. | Person 2 reviews label definitions and handling of partial, conflicting, or irrelevant evidence. |
+| Evidence `quotation` or `source_locator` | `anyOf` permits quotation alone; durable locator is not required. | Propose requiring a DOI/section/JATS ID or version-bound structural locator plus XML checksum for positive evidence; verify manually against source. |
+| Optional `chunk_id` | Present but may change with chunking. | Treat as derived mapping, never the only ground-truth anchor. |
+| `verification_status=verified` / `verified_date` | Conditional date requirement exists, but a date does not prove scientific support. | Independent human source review of every finding, label, quotation, and locator. |
+
+JSON Schema can check required fields, patterns, and conditional shapes after
+approval. Dataset-level validation must check ID uniqueness, DOI/corpus
+membership, source-locator resolution and checksum match; only a human can
+judge scientific support. The exact negative-case rule, label rubric, and
+schema diff require Person 2/shared-owner review in the next feature. T009's
+manual review remains pending.
 
 ## Validation and test strategy
 
@@ -66,11 +116,11 @@ Planning checks: built-in and custom requirements-quality checklists, official r
 
 | Risk or dependency | Action before dependent work |
 | --- | --- |
-| Direct PLOS endpoint not live-verified; documented examples may be stale | Small read-only live probe in approved curation phase; record status and exact response. If unavailable, pause operational selection and review Europe PMC fallback. |
+| Codex environment cannot reach PLOS; Person 1 completed and accepted bounded API/XML/source/license checks for one DOI | Preserve both failure and human evidence. Require article-level source/license checks for every later selected paper; if a future execution environment cannot access PLOS, pause operational selection and review the documented Europe PMC proposal. |
 | Search index and order drift | Record UTC run time, exact query/parameters, result count, page IDs, and stable sort once verified; retain screening log. |
 | Species ambiguity or weak comparative evidence | Human full-text inspection, conditional rubric, explicit exclusion/pending reason. |
 | Article type and license variation | Check article page/JATS individually; preserve unknowns, corrections/retractions relationships, and provenance. |
-| Shared DOI, nullability, locator, and language semantics unresolved | Person 2 review and explicit shared approval before changing contract or handing off import. |
+| Feature 002 DOI/locator approach approved as reported, but shared DOI, nullability, locator encoding, and language fields not amended | Obtain separate field-level Person 2/shared-owner approval before changing a contract or handing off import. |
 | Golden schema may make durable locators optional and negative cases awkward | Decide minimal compatible correction in next feature before populating questions; Person 2 reviews relevance rubric. |
 | Twenty eligible papers may be infeasible in the time available | Use a 3–5-paper first sample to expose feasibility and JATS variation, then aim for 20; report the actual shortfall for a human decision rather than changing the target silently. |
 

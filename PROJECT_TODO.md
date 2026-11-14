@@ -25,7 +25,7 @@ verification remain pending; no checkbox is completed by this draft.
 - [ ] **P0-05** | Owner: TEAM | Deliverable: Node.js prerequisites and setup | Phase: 0 | Depends on: P0-03
 - [ ] **P0-06** | Owner: TEAM | Deliverable: Docker prerequisites and setup | Phase: 0 | Depends on: P0-03
 - [ ] **P0-07** | Owner: TEAM | Deliverable: official Spec Kit installation and repository integration | Phase: 0 | Depends on: P0-01
-- [ ] **P0-08** | Owner: TEAM | Deliverable: constitution reviewed and ratified by the team | Phase: 0 | Depends on: P0-07
+- [ ] **P0-08** | Owner: TEAM | Deliverable: constitution reviewed and ratified by the team | Phase: 0 | Status: APPROVAL REPORTED (Person 1 confirmed exact 0.1.0 text and 2026-11-14 ratification date; independent task verification not recorded) | Depends on: P0-07
 - [ ] **P0-09** | Owner: TEAM | Deliverable: `AGENTS.md` instructions reviewed and accepted | Phase: 0 | Depends on: P0-01
 - [ ] **P0-10** | Owner: TEAM | Deliverable: Google Python engineering skill installed and verified | Phase: 0 | Depends on: P0-07
 - [ ] **P0-11** | Owner: TEAM | Deliverable: solution-research skill installed and verified | Phase: 0 | Depends on: P0-07
@@ -44,7 +44,7 @@ verification remain pending; no checkbox is completed by this draft.
 ## Phase 1 — Shared Design (TEAM)
 
 - [ ] **P1-01** | Owner: TEAM | Deliverable: honeybee corpus scope and inclusion criteria | Phase: 1
-- [ ] **P1-02** | Owner: Person 1 | Deliverable: PLOS API and JATS format analysis | Phase: 1 | Depends on: P1-01
+- [ ] **P1-02** | Owner: Person 1 | Deliverable: PLOS API and JATS format analysis | Phase: 1 | Status: IN_PROGRESS (Feature 002 T001 accepted; T004 query protocol replay/review pending) | Depends on: P1-01
 - [ ] **P1-03** | Owner: TEAM | Deliverable: Paper → Section → Chunk entity model | Phase: 1 | Depends on: P1-02
 - [ ] **P1-04** | Owner: Person 1 | Deliverable: required scientific metadata contract | Phase: 1 | Depends on: P1-02, P1-03
 - [ ] **P1-05** | Owner: TEAM | Deliverable: licensing and provenance requirements | Phase: 1 | Depends on: P1-01, P1-02
@@ -57,7 +57,7 @@ verification remain pending; no checkbox is completed by this draft.
 - [ ] **P1-12** | Owner: Person 1 | Deliverable: golden dataset record and curation design | Phase: 1 | Depends on: P1-02, P1-10
 - [ ] **P1-13** | Owner: Person 2 | Deliverable: retrieval evaluation metrics and protocol | Phase: 1 | Depends on: P1-12
 - [ ] **P1-14** | Owner: TEAM | Deliverable: human approval of shared architecture and contracts | Phase: 1 | Depends on: P1-01 through P1-13
-- [ ] **P1-15** | Owner: Person 1 | Deliverable: honeybee discovery and selection protocol with lightweight screening manifest, first 3–5-paper inspection stage, and complete 20-paper target (`specs/002-honeybee-corpus-discovery/`); approval pending | Phase: 1 | Status: PLANNED | Depends on: P1-01, P1-02, P1-05 | Reviewer: Person 2
+- [ ] **P1-15** | Owner: Person 1 | Deliverable: honeybee discovery and selection protocol with lightweight screening manifest, first 3–5-paper inspection stage, and complete 20-paper target (`specs/002-honeybee-corpus-discovery/`); Person 1 reports planning and decision approvals for T001–T010 in dependency order | Phase: 1 | Status: IN_PROGRESS (T001 accepted; T002–T010 documentary drafts prepared, source and human reviews pending) | Depends on: P1-01, P1-02, P1-05 | Reviewer: Person 2
 
 ## Phase 2 — Data Processing (Person 1)
 

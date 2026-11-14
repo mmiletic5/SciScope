@@ -1,3 +1,14 @@
+<!--
+Sync Impact Report (ratification record; remove before commit)
+- Version change: 0.1.0 → 0.1.0 (no governance amendment)
+- Modified principles: none
+- Added sections: none
+- Removed sections: none
+- Follow-up TODOs: none in the constitution
+- Approval provenance: Person 1 reported and then confirmed that TEAM approved this exact
+  version 0.1.0 text, with original ratification date 2026-11-14. External signatories
+  and meeting records were not supplied.
+-->
 # SciScope Constitution
 
 ## Core Principles
@@ -71,6 +82,6 @@ review of affected specifications and contracts, and team approval before taking
 Use semantic versioning: major for incompatible governance changes, minor for added or
 materially expanded rules, patch for editorial clarifications. Review every proposed
 change and PR for constitutional compliance, test evidence, security, and contract impact.
-This 0.1.0 document is a draft awaiting team ratification.
+This 0.1.0 document was ratified by TEAM on 2026-11-14, as confirmed by Person 1.
 
-**Version**: 0.1.0 | **Ratified**: TODO(RATIFICATION_DATE): team approval pending | **Last Amended**: 2026-11-13
+**Version**: 0.1.0 | **Ratified**: 2026-11-14 | **Last Amended**: 2026-11-14
