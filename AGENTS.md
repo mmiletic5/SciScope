@@ -16,9 +16,9 @@
   retrieval; Person 3 backend and AI; Person 4 frontend and integration.
 - Never expose credentials. Use the fake AI provider by default; live providers require
   explicit configuration. Keep tests free of paid AI calls.
-- Update `PROJECT_TODO.md` and `EVIDENCE.md` when they exist (planned for later
-  bootstrap parts). Never mark a task complete without automated and human verification.
+- Update `PROJECT_TODO.md` and `EVIDENCE.md`. Never mark a task complete without
+  automated and human verification.
 - Stop at the approved scope; do not automatically start another feature.
 
 For local setup, including the preferred Codex model, see `DEVELOPMENT_SETUP.md`.
-Detailed guidance in `docs/DEVELOPMENT_WORKFLOW.md` is planned for Part 2.
+Detailed guidance is in `docs/DEVELOPMENT_WORKFLOW.md`.

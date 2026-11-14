@@ -1,7 +1,7 @@
 # Bootstrap Decisions and Open Questions
 
 This log separates agreed bootstrap constraints from design proposals. The
-constitution remains a draft awaiting team ratification. No feature spec or
+constitution remains a draft awaiting PR review. No feature spec or
 plan has yet been approved.
 
 | ID | Status | Decision or question | Owner/review |
@@ -16,7 +16,7 @@ plan has yet been approved.
 | D-008 | Open | Chunk boundaries, overlap, table/caption/reference handling, and actual token budgets. | Person 1, Person 2 |
 | D-009 | Open | Filter, retrieval ranking, API and provider interface contracts; error behavior. | Affected owners |
 | D-010 | Open | Golden relevance rubric, negative cases, and metric interpretation. | Person 1, Person 2 |
-| D-011 | Open | Team ratification of the constitution and approval of draft contracts. | TEAM |
+| D-011 | Closed 2026-11-14 | Contract and constitution changes go through PR review; no formal ratification. | TEAM |
 
 The local dependency check is limited to existing repository artifacts and the
 official [uv lock/sync guide](https://docs.astral.sh/uv/concepts/projects/sync/),
@@ -25,5 +25,5 @@ official [uv lock/sync guide](https://docs.astral.sh/uv/concepts/projects/sync/)
 and [embedding model card](https://huggingface.co/intfloat/multilingual-e5-small).
 The project has no application code, so adding FastAPI, model packages, or a
 database driver now would precede the required feature decisions. The uv
-lockfile and local sync remain unverified until the environment blocker is
-resolved; see [EVIDENCE.md](../EVIDENCE.md).
+lockfile now exists on `main`, and routine commands use `--locked`. Local sync
+and CI remain unverified; see [EVIDENCE.md](../EVIDENCE.md).

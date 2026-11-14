@@ -13,11 +13,11 @@ sources, results, or approvals; ask targeted questions when essential decisions 
 ### II. Test-First, Verifiable Delivery
 
 For feature work, write behavior tests before implementation and demonstrate a failing
-test before making it pass. Each task MUST have a defined acceptance check, automated
-verification where practical, and manual human verification before completion is marked.
-Record evidence for every implementation task in the planned `EVIDENCE.md`; report failed,
-skipped, and unexecuted checks honestly. A passing automated test alone is insufficient
-to claim human verification.
+test before making it pass. Each task MUST have a defined acceptance check and automated
+verification where practical. Each feature MUST receive manual human verification
+before completion is marked. Record evidence for every implementation task in
+`EVIDENCE.md`; report failed, skipped, and unexecuted checks honestly. A passing
+automated test alone is insufficient to claim human verification.
 
 ### III. Scientific Provenance and Reproducibility
 
@@ -59,18 +59,19 @@ and do not replace, official Spec Kit skills.
 
 Each feature follows research -> specification -> clarification when needed -> approved
 plan -> small tasks -> failing behavior tests -> implementation -> automated checks ->
-human verification -> evidence and task-state update -> code review and CI. Record task
-ownership and cross-module contract decisions before parallel integration. The master
-`PROJECT_TODO.md`, `EVIDENCE.md`, and `docs/DEVELOPMENT_WORKFLOW.md` are planned for later
-bootstrap parts; until they exist, do not claim their gates have been satisfied.
+one human verification per feature -> evidence and task-state update -> code review and CI.
+Record task ownership and cross-module contract decisions before parallel integration.
+Use `PROJECT_TODO.md`, `EVIDENCE.md`, and `docs/DEVELOPMENT_WORKFLOW.md` for the
+corresponding tracking and gates.
 
 ## Governance
 
 This constitution governs repository work. Amendments require a written rationale, a
-review of affected specifications and contracts, and team approval before taking effect.
+review of affected specifications and contracts, and PR review by another team member
+before taking effect.
 Use semantic versioning: major for incompatible governance changes, minor for added or
 materially expanded rules, patch for editorial clarifications. Review every proposed
 change and PR for constitutional compliance, test evidence, security, and contract impact.
-This 0.1.0 document is a draft awaiting team ratification.
+This 0.2.0 document remains a draft pending review.
 
-**Version**: 0.1.0 | **Ratified**: TODO(RATIFICATION_DATE): team approval pending | **Last Amended**: 2026-11-13
+**Version**: 0.2.0 | **Ratified**: TODO(RATIFICATION_DATE): team approval pending | **Last Amended**: 2026-11-14

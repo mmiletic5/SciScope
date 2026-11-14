@@ -59,7 +59,6 @@ reviewed. From the repository root, after Python 3.12 is available to uv:
 
 ```powershell
 uv python list --only-installed
-uv lock
 uv sync --locked
 uv run --locked python --version
 ```
@@ -67,18 +66,16 @@ uv run --locked python --version
 `uv sync` creates `.venv` if needed. An existing `.venv` created by `uv run`
 can be used; no manual deletion is needed. If you deliberately require a
 separately installed Python, first verify that uv can discover it, then use
-`--no-managed-python` with the uv commands. Do not run `uv run --locked`
-before creating `uv.lock`: it will stop at the missing lockfile.
+`--no-managed-python` with the uv commands. `uv.lock` exists on `main`;
+routine commands use `--locked`.
 
-Commit `uv.lock` after a successful resolution and review. It records exact
-versions; all routine installs and CI use `--locked` so dependency changes need
-an intentional lockfile update. `pyproject.toml` currently has only bootstrap
+The lockfile records exact versions; all routine installs and CI use `--locked`,
+so dependency changes need an intentional lockfile update. `pyproject.toml` has
+only bootstrap
 development tools (Ruff, pytest, mypy, and JSON Schema validation). Application
-dependencies are added only through approved features. The bootstrap executor
-could not create `.venv` or `uv.lock` because uv's cache lock was inaccessible.
-A later developer run created `.venv` but could not create `uv.lock` while
-managed Python was excluded. Run the commands above before CI can pass. See
-[EVIDENCE.md](EVIDENCE.md) for the exact blocker.
+dependencies are added only through approved features. Earlier local setup
+blockers are recorded in [EVIDENCE.md](EVIDENCE.md); the existence of the
+lockfile does not establish that local sync or CI has passed.
 
 Create a secret-free local configuration:
 
@@ -121,8 +118,7 @@ for name in ("docs/DATA_CONTRACT.json", "evals/golden_questions.schema.json"):
 ```
 
 CI runs the available bootstrap checks and, when
-tests exist, runs them with `AI_PROVIDER=fake`. A missing `uv.lock` blocks its
-locked installation; do not remove `--locked` to bypass that gate.
+tests exist, runs them with `AI_PROVIDER=fake` using the committed lockfile.
 
 Manual verification is separate from automation. The task owner should follow
 the exact commands and acceptance checks in the feature's `tasks.md`, inspect
@@ -161,7 +157,7 @@ repository-local skills supplement the official Spec Kit skills.
 Keep `main` stable. Create a feature branch, submit a pull request using the
 [PR template](.github/pull_request_template.md), and request at least one
 reviewer. CI must pass before merge. Any shared contract change requires
-approval from affected module owners. Never commit credentials, local corpora,
+review by affected module owners. Never commit credentials, local corpora,
 model caches, embeddings, or local databases. Follow the
 [team ownership map](docs/TEAM_OWNERSHIP.md),
 [draft decisions](docs/DECISIONS.md), and
