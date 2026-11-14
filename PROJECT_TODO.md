@@ -57,6 +57,7 @@ verification remain pending; no checkbox is completed by this draft.
 - [ ] **P1-12** | Owner: Person 1 | Deliverable: golden dataset record and curation design | Phase: 1 | Depends on: P1-02, P1-10
 - [ ] **P1-13** | Owner: Person 2 | Deliverable: retrieval evaluation metrics and protocol | Phase: 1 | Depends on: P1-12
 - [ ] **P1-14** | Owner: TEAM | Deliverable: human approval of shared architecture and contracts | Phase: 1 | Depends on: P1-01 through P1-13
+- [ ] **P1-15** | Owner: Person 1 | Deliverable: honeybee discovery and selection protocol with lightweight screening manifest, first 3–5-paper inspection stage, and complete 20-paper target (`specs/002-honeybee-corpus-discovery/`); approval pending | Phase: 1 | Status: PLANNED | Depends on: P1-01, P1-02, P1-05 | Reviewer: Person 2
 
 ## Phase 2 — Data Processing (Person 1)
 
@@ -81,9 +82,9 @@ verification remain pending; no checkbox is completed by this draft.
 - [ ] **P2-19** | Owner: Person 1 | Deliverable: embedding shape, value, and version validation | Phase: 2 | Depends on: P2-18
 - [ ] **P2-20** | Owner: Person 1 | Deliverable: data contract validation | Phase: 2 | Depends on: P2-06 through P2-19, P1-10
 - [ ] **P2-21** | Owner: Person 1 | Deliverable: XML processing quality tests | Phase: 2 | Depends on: P2-06 through P2-14
-- [ ] **P2-22** | Owner: Person 1 | Deliverable: curated honeybee golden questions and reference answers | Phase: 2 | Priority: High — first development cycle | Depends on: P1-12, P2-04, P2-06, P2-10
+- [ ] **P2-22** | Owner: Person 1 | Deliverable: curated honeybee golden questions and reference answers | Phase: 2 | Priority: High — first development cycle | Depends on: P1-12, P1-15, P2-04, P2-06, P2-10
 - [ ] **P2-23** | Owner: Person 1 | Deliverable: manually verified evidence references for golden questions | Phase: 2 | Priority: High — first development cycle | Depends on: P2-22
-- [ ] **P2-24** | Owner: Person 1 | Deliverable: initial 20-paper PLOS pilot | Phase: 2 | Depends on: P2-01 through P2-20
+- [ ] **P2-24** | Owner: Person 1 | Deliverable: initial 20-paper PLOS pilot | Phase: 2 | Depends on: P1-15, P2-01 through P2-20
 - [ ] **P2-25** | Owner: Person 1 | Deliverable: corpus expansion toward approximately 500 relevant papers | Phase: 2 | Depends on: P2-24
 
 ## Phase 3 — Database & Retrieval (Person 2)
