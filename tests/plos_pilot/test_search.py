@@ -48,6 +48,7 @@ def test_paged_search_merges_arms_and_reports_hits(tmp_path: Path) -> None:
         clock.starts.append(clock.time)
         params = parse_qs(urlsplit(url).query)
         seen.append(params)
+        assert params["sort"] == ["id asc"]
         assert params["fq"] == list(config.FILTER_QUERIES)
         assert params["fl"] == [",".join(config.SOLR_FIELDS)]
         assert int(params["rows"][0]) <= 100
@@ -143,3 +144,25 @@ def test_request_cap_stops_before_next_fetch(tmp_path: Path) -> None:
             tmp_path / "candidates.jsonl", fetch, clock.sleep, clock, rows=1
         )
     assert calls == 300
+
+
+def test_public_request_runner_forwards_xml_timeout() -> None:
+    """The shared runner accepts the XML request's 30-second timeout."""
+    from sciscope.plos_pilot.search import RequestRunner
+
+    clock = FakeClock()
+    seen: list[float] = []
+
+    def fetch(url: str, timeout: float) -> bytes:
+        del url
+        seen.append(timeout)
+        return b"SYNTHETIC"
+
+    runner = RequestRunner(fetch, clock.sleep, clock)
+    assert (
+        runner.get(
+            "https://journals.plos.org/plosone/article/file", timeout=30.0
+        )
+        == b"SYNTHETIC"
+    )
+    assert seen == [30.0]

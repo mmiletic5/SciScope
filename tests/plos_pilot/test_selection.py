@@ -123,3 +123,48 @@ def test_rejects_wrong_header_and_unreviewed_selection(tmp_path: Path) -> None:
     errors = validate_selection(screening_path, selection_path, candidate_path)
     assert any("header" in error.lower() for error in errors)
     assert any("review" in error.lower() for error in errors)
+
+
+def test_bom_blank_lines_physical_rows_and_casefolded_topics(
+    tmp_path: Path,
+) -> None:
+    """A BOM and blank lines do not corrupt rows or inflate topic diversity."""
+    screening_path = tmp_path / "screening.tsv"
+    selection_path = tmp_path / "selection.tsv"
+    candidate_path = tmp_path / "candidates.jsonl"
+    _candidate_file(candidate_path)
+    rows = [_review(index) for index in range(15)]
+    for index, row in enumerate(rows):
+        row["topic"] = (
+            "  SYNTHETIC Topic A  " if index % 2 else "synthetic topic a"
+        )
+    write_screening(
+        screening_path,
+        [
+            {
+                key: value
+                for key, value in row.items()
+                if key != "methods_checked"
+            }
+            for row in rows
+        ],
+    )
+    write_selection(selection_path, rows)
+    for path in (screening_path, selection_path):
+        lines = path.read_text(encoding="utf-8").splitlines()
+        lines.insert(2, "")
+        path.write_text("\ufeff" + "\n".join(lines) + "\n\n", encoding="utf-8")
+    assert len(read_screening(screening_path)) == 15
+    assert len(read_selection(selection_path)) == 15
+    errors = validate_selection(screening_path, selection_path, candidate_path)
+    assert any("at least 3" in error for error in errors)
+    assert not any("expected" in error or "header" in error for error in errors)
+    rows[1]["reason"] = ""
+    write_selection(selection_path, rows)
+    lines = selection_path.read_text(encoding="utf-8").splitlines()
+    lines.insert(2, "")
+    selection_path.write_text(
+        "\ufeff" + "\n".join(lines) + "\n", encoding="utf-8"
+    )
+    errors = validate_selection(screening_path, selection_path, candidate_path)
+    assert any("row 4" in error and "reason" in error for error in errors)

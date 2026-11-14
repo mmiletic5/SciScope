@@ -43,19 +43,24 @@ def _http_fetch(url: str, timeout: float) -> bytes:
         return body
 
 
-class _RequestRunner:
+class RequestCapReached(RuntimeError):
+    """The shared per-run HTTP request cap was reached."""
+
+
+class RequestRunner:
     """Enforce one paced request stream and its shared run cap."""
 
     def __init__(self, fetch: Fetch, sleep: Sleep, clock: Clock) -> None:
+        """Store injected request and timing callables."""
         self.fetch = fetch
         self.sleep = sleep
         self.clock = clock
         self.last_start: float | None = None
         self.count = 0
 
-    def _start(self, url: str) -> bytes:
+    def _start(self, url: str, timeout: float) -> bytes:
         if self.count >= config.MAX_REQUESTS_PER_RUN:
-            raise RuntimeError("PLOS 300-request per-run cap reached")
+            raise RequestCapReached("PLOS 300-request per-run cap reached")
         now = self.clock()
         if self.last_start is not None:
             wait = config.MIN_REQUEST_SPACING_SECONDS - (now - self.last_start)
@@ -63,13 +68,21 @@ class _RequestRunner:
                 self.sleep(wait)
         self.last_start = self.clock()
         self.count += 1
-        return self.fetch(url, 10.0)
+        return self.fetch(url, timeout)
 
-    def get(self, url: str) -> bytes:
-        """Retry transient failures with bounded backoff and pacing."""
+    def get(self, url: str, timeout: float = 10.0) -> bytes:
+        """Retry transient failures with bounded backoff and pacing.
+
+        Args:
+            url: Fixed-host PLOS request URL.
+            timeout: Seconds allowed for each fetch attempt.
+
+        Returns:
+            Response bytes.
+        """
         for attempt in range(3):
             try:
-                return self._start(url)
+                return self._start(url, timeout)
             except HTTPError as error:
                 if error.code != 429 and not 500 <= error.code <= 599:
                     raise RuntimeError(
@@ -157,7 +170,7 @@ def search_candidates(
     if not 1 <= rows <= config.MAX_ROWS:
         raise ValueError("Solr rows must be between 1 and 100")
     candidates = _existing_candidates(output_path)
-    runner = _RequestRunner(fetch, sleep, clock)
+    runner = RequestRunner(fetch, sleep, clock)
     arm_hits: dict[str, int] = {}
     for query in config.QUERY_ARMS:
         start = 0
@@ -171,6 +184,7 @@ def search_candidates(
                 ("fl", ",".join(config.SOLR_FIELDS)),
                 ("rows", rows),
                 ("start", start),
+                ("sort", "id asc"),
                 ("wt", "json"),
             ]
             url = config.SEARCH_URL + "?" + urlencode(params)

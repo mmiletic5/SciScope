@@ -60,7 +60,7 @@ def normalize_doi(original: str) -> NormalizedDoi:
     value = value.strip()
     while value and value[-1] in ".,;":
         value = value[:-1]
-    while value and value[-1] in ") ]".replace(" ", ""):
+    while value and value[-1] in ")]":
         closer = value[-1]
         opener = "(" if closer == ")" else "["
         if value.count(closer) <= value.count(opener):

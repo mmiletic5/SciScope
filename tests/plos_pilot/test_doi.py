@@ -1,8 +1,17 @@
 """Synthetic DOI normalization behavior checks."""
 
+import inspect
+
 import pytest
 
 from sciscope.plos_pilot.doi import normalize_doi
+
+
+def test_trailing_closer_set_is_a_literal() -> None:
+    """The approved closer set is directly visible in normalization code."""
+    source = inspect.getsource(normalize_doi)
+    assert 'in ")]"' in source
+    assert '.replace(" ", "")' not in source
 
 
 @pytest.mark.parametrize(

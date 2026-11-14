@@ -15,3 +15,4 @@ MIN_REQUEST_SPACING_SECONDS = 6.0
 MAX_REQUESTS_PER_RUN = 300
 SEARCH_URL = "https://api.plos.org/search"
 JOURNAL_HOST = "journals.plos.org"
+JOURNAL_ROUTES = {"PLOS ONE": "plosone"}

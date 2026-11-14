@@ -57,18 +57,24 @@ def write_selection(path: Path, rows: Iterable[Mapping[str, str]]) -> None:
 
 def _read_tsv(
     path: Path, header: tuple[str, ...]
-) -> tuple[list[dict[str, str]], list[str]]:
+) -> tuple[list[dict[str, str]], list[str], list[int]]:
     rows: list[dict[str, str]] = []
     errors: list[str] = []
+    line_numbers: list[int] = []
     try:
-        with path.open("r", encoding="utf-8", newline="") as source:
+        with path.open("r", encoding="utf-8-sig", newline="") as source:
             reader = csv.reader(source, delimiter="\t")
             actual_header = next(reader, None)
             if actual_header != list(header):
                 errors.append(
                     f"{path}: header must be exactly {', '.join(header)}"
                 )
-            for row_number, values in enumerate(reader, start=2):
+            previous_line = reader.line_num
+            for values in reader:
+                row_number = previous_line + 1
+                previous_line = reader.line_num
+                if not values:
+                    continue
                 if len(values) != len(header):
                     expected_columns = len(header)
                     errors.append(
@@ -80,9 +86,10 @@ def _read_tsv(
                     0, len(header) - len(values)
                 )
                 rows.append(dict(zip(header, padded, strict=True)))
+                line_numbers.append(row_number)
     except (OSError, UnicodeError, csv.Error) as error:
         errors.append(f"{path}: cannot read TSV: {error}")
-    return rows, errors
+    return rows, errors, line_numbers
 
 
 def read_screening(path: Path) -> list[dict[str, str]]:
@@ -97,7 +104,7 @@ def read_screening(path: Path) -> list[dict[str, str]]:
     Raises:
         ValueError: If the file structure is invalid.
     """
-    rows, errors = _read_tsv(path, SCREENING_HEADER)
+    rows, errors, _ = _read_tsv(path, SCREENING_HEADER)
     if errors:
         raise ValueError("\n".join(errors))
     return rows
@@ -115,7 +122,7 @@ def read_selection(path: Path) -> list[dict[str, str]]:
     Raises:
         ValueError: If the file structure is invalid.
     """
-    rows, errors = _read_tsv(path, SELECTION_HEADER)
+    rows, errors, _ = _read_tsv(path, SELECTION_HEADER)
     if errors:
         raise ValueError("\n".join(errors))
     return rows
@@ -148,6 +155,7 @@ def _candidate_dois(path: Path) -> tuple[set[str], list[str]]:
 
 def _validate_review_rows(
     rows: list[dict[str, str]],
+    line_numbers: list[int],
     source: Path,
     candidates: set[str],
     errors: list[str],
@@ -155,7 +163,7 @@ def _validate_review_rows(
     selected: bool,
 ) -> set[str]:
     dois: set[str] = set()
-    for row_number, row in enumerate(rows, start=2):
+    for row_number, row in zip(line_numbers, rows, strict=True):
         label = f"{source}: row {row_number}"
         try:
             doi = normalize_doi(row["doi"]).doi
@@ -204,12 +212,21 @@ def validate_selection(
         Every detected validation error; an empty list means valid input.
     """
     candidates, errors = _candidate_dois(candidate_path)
-    screening, screening_errors = _read_tsv(screening_path, SCREENING_HEADER)
-    selection, selection_errors = _read_tsv(selection_path, SELECTION_HEADER)
+    screening, screening_errors, screening_lines = _read_tsv(
+        screening_path, SCREENING_HEADER
+    )
+    selection, selection_errors, selection_lines = _read_tsv(
+        selection_path, SELECTION_HEADER
+    )
     errors.extend(screening_errors)
     errors.extend(selection_errors)
     reviewed_dois = _validate_review_rows(
-        screening, screening_path, candidates, errors, selected=False
+        screening,
+        screening_lines,
+        screening_path,
+        candidates,
+        errors,
+        selected=False,
     )
     reviewed_classes: dict[str, str] = {}
     for row in screening:
@@ -220,9 +237,14 @@ def validate_selection(
         except ValueError:
             continue
     selected_dois = _validate_review_rows(
-        selection, selection_path, candidates, errors, selected=True
+        selection,
+        selection_lines,
+        selection_path,
+        candidates,
+        errors,
+        selected=True,
     )
-    for row_number, row in enumerate(selection, start=2):
+    for row_number, row in zip(selection_lines, selection, strict=True):
         try:
             doi = normalize_doi(row["doi"]).doi
         except ValueError:
@@ -243,7 +265,11 @@ def validate_selection(
             f"{selection_path}: selection needs 15-20 unique normalized DOIs; "
             f"found {len(selected_dois)}"
         )
-    topics = {row["topic"].strip() for row in selection if row["topic"].strip()}
+    topics = {
+        row["topic"].strip().casefold()
+        for row in selection
+        if row["topic"].strip()
+    }
     if len(topics) < 3:
         errors.append(
             f"{selection_path}: selection needs at least 3 distinct topics; "
