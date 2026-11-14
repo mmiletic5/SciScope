@@ -1,0 +1,25 @@
+doi	class	reason	topic
+10.1371/journal.pone.0037017	measured_mellifera	Title and abstract name A. mellifera as host; Nosema ceranae effects on midgut transcriptome and gut pathology	pathogens & parasites
+10.1371/journal.pone.0118885	measured_mellifera	A. mellifera colonies with high vs low Varroa population growth compared for six honey bee viruses	pathogens & parasites
+10.1371/journal.pone.0077354	measured_mellifera	IAPV infection effects on A. mellifera forager sucrose responsiveness and homing	pathogens & parasites
+10.1371/journal.pone.0034137	measured_mellifera	Selenium effects on A. mellifera taste response behavior and survival in lab bioassays	pesticides & toxicology
+10.1371/journal.pone.0187079	measured_mellifera	A. m. carnica pupae: thiamethoxam and Varroa effects on immune gene expression	pesticides & toxicology
+10.1371/journal.pone.0208630	measured_mellifera	A. mellifera drone sperm viability after pesticide exposure during development	pesticides & toxicology
+10.1371/journal.pone.0101262	measured_mellifera	A. m. ligustica free-flying bees trained on fixed interval timing schedules	cognition & behavior
+10.1371/journal.pone.0228161	measured_mellifera	A. mellifera aversive learning in shuttle box with conspecific and wasp stimuli	cognition & behavior
+10.1371/journal.pone.0000395	measured_mellifera	A. mellifera iron granules from trophocytes and magnetoreception system	physiology & sensory biology
+10.1371/journal.pone.0018808	measured_mellifera	A. mellifera queen-worker differentiation: diet, cell size and DNA methylation	genomics & molecular biology
+10.1371/journal.pone.0244648	measured_mellifera	A. mellifera queen spermatheca transcriptomes of mated vs virgin queens (RNA-seq)	genomics & molecular biology
+10.1371/journal.pone.0124365	measured_mellifera	A. m. mellifera SNP panels for genetic identification and introgression	genomics & molecular biology
+10.1371/journal.pone.0258398	measured_mellifera	A. mellifera subspecies colonies: winter weight loss and weather variables in Sweden	colony management & nutrition
+10.1371/journal.pone.0328626	measured_mellifera	Vitamin supplementation effects on summer and winter A. mellifera workers	colony management & nutrition
+10.1371/journal.pone.0148740	measured_mellifera	A. mellifera drone vs worker brood temperature and humidity regulation in colonies	colony management & nutrition
+10.1371/journal.pone.0123911	measured_mellifera	A. mellifera caste-specific hindgut microbial communities (queens, males, workers)	microbiome
+10.1371/journal.pone.0272921	measured_mellifera	A. mellifera supplementary pollination of Paeonia ostii: fruit growth and yield	pollination & ecology
+10.1371/journal.pone.0034436	other_species_only	Title and abstract concern the giant honey bee Apis dorsata (csd gene); check abstract	genomics & molecular biology
+10.1371/journal.pone.0003141	other_species_only	Giant honeybees (Apis dorsata) shimmering against hornets; check abstract	cognition & behavior
+10.1371/journal.pone.0051467	comparative_mellifera	Compares A. mellifera with stingless bees (Melipona rufiventris) in relational learning	cognition & behavior
+10.1371/journal.pone.0135103	comparative_mellifera	Varroa host specificity compared across A. mellifera and Apis cerana	pathogens & parasites
+10.1371/journal.pone.0013181	species_ambiguous	Methods checked; species not unambiguously identified	pathogens & parasites
+10.1371/journal.pone.0029268	species_ambiguous	Methods checked; species not unambiguously identified	pesticides & toxicology
+10.1371/journal.pone.0009110	species_ambiguous	Methods checked; species not unambiguously identified	cognition & behavior
