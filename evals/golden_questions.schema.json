@@ -94,7 +94,6 @@
         },
         "relevant_papers": {
           "type": "array",
-          "minItems": 1,
           "items": {
             "$ref": "#/$defs/relevantPaper"
           }
@@ -129,6 +128,25 @@
         }
       },
       "allOf": [
+        {
+          "if": {
+            "properties": {
+              "expected_insufficient_evidence": {
+                "const": true
+              }
+            },
+            "required": [
+              "expected_insufficient_evidence"
+            ]
+          },
+          "else": {
+            "properties": {
+              "relevant_papers": {
+                "minItems": 1
+              }
+            }
+          }
+        },
         {
           "if": {
             "properties": {

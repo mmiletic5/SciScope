@@ -14,7 +14,7 @@ versions for each chunk. Use overlap only when a documented boundary case
 justifies it; record the amount and avoid duplicate evidence inflation.
 
 Tables, figure captions, references, nested sections, unusually long sentences,
-and multilingual passages need explicit rules in Feature 001. Validate token
+and multilingual passages need explicit rules in the chunking feature (F003). Validate token
 counts and retrieval quality on inspected papers before fixing chunk sizes or
 normalization rules. The candidate model and its input guidance are documented
 in the [model card](https://huggingface.co/intfloat/multilingual-e5-small).

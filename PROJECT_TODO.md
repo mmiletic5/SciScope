@@ -10,11 +10,10 @@ relevant. Dependencies refer to task IDs. All tasks begin incomplete; no
 completion evidence or human verification is asserted by this initial backlog.
 
 Part 3 has drafted the README, design documents, dependency configuration,
-pull request template, and CI workflow. A developer's `uv run --locked`
-created local `.venv`, but `uv.lock` is still missing, so locked checks and CI
-cannot pass. The original sandbox cache error and the developer's later
-interpreter and lockfile errors are recorded in `EVIDENCE.md`. Human review and
-verification remain pending; no checkbox is completed by this draft.
+pull request template, and CI workflow. `uv.lock` now exists on `main`, and
+routine dependency commands use `--locked`. Earlier local setup errors are
+recorded in `EVIDENCE.md`; the lockfile alone does not verify local sync or CI.
+Human review and verification remain pending; no checkbox is completed by this draft.
 
 ## Phase 0 — Foundation (TEAM)
 

@@ -5,12 +5,23 @@ constitution and the official Spec Kit workflow configured in this repository.
 It does not authorize implementation; each feature still needs explicit human
 approval of its specification and plan.
 
+## Small change track
+
+Documentation, configuration, and single-file changes can proceed without Spec Kit
+artifacts. Run a meaningful check for the change and request PR review.
+
+## Feature size
+
+Keep a feature to at most eight tasks. Use `spec.md`, `plan.md`, `tasks.md`, and a
+short `research.md`. Add `data-model.md`, `quickstart.md`, or `contracts/` only
+when the plan justifies them.
+
 ## Required feature artifacts
 
 Keep feature artifacts in the feature directory created by Spec Kit. Before
 implementation, that directory must contain:
 
-- `research.md` when research is applicable, including facts, unknowns, sources,
+- A short `research.md` including facts, unknowns, sources,
   alternatives, and the recommendation.
 - `spec.md` with problem and scope, functional and non-functional requirements,
   acceptance criteria, edge cases, failure scenarios, and out-of-scope behavior.
@@ -58,9 +69,9 @@ agreement on shared contracts before dependent integration work.
 1. Use `$speckit-tasks` to create dependency-ordered tasks in `tasks.md`.
 2. Give every task a stable ID, one of the approved owners, a concrete
    deliverable, dependencies, tests, and verification steps.
-3. Keep tasks small enough to review and implement independently. Preserve the
-   official Spec Kit task syntax and update `PROJECT_TODO.md` with corresponding
-   master-backlog entries.
+3. Keep at most eight tasks, each small enough to review and implement
+   independently. Preserve the official Spec Kit task syntax and update
+   `PROJECT_TODO.md` with corresponding master-backlog entries.
 4. Run `$speckit-analyze` and resolve or document the reported inconsistencies
    before presenting the plan for approval.
 
@@ -104,25 +115,25 @@ and failures when adding later results.
 
 ## Stage H — Human verification
 
-Give the task owner the exact Windows PowerShell commands, expected results,
-manual actions, and relevant acceptance criteria. Ask the owner to report the
-observed outcome and explicit acceptance or rejection. Stop with the task
-awaiting human verification; automated success and an assistant report do not
-count as human confirmation.
+Once per feature, give the feature owner the exact Windows PowerShell commands,
+expected results, manual actions, and relevant acceptance criteria. Ask the owner
+to report the observed outcome and explicit acceptance or rejection. Stop with
+the feature awaiting human verification; automated success and an assistant
+report do not count as human confirmation.
 
 ## Stage I — Evidence and completion
 
-After explicit human confirmation, update `EVIDENCE.md`, the feature
+Once per feature, after explicit human confirmation, update `EVIDENCE.md`, the feature
 `tasks.md`, and `PROJECT_TODO.md`. Preserve the automatic and human evidence,
 including failures and corrections. Mark a task `[x]` in the master backlog
-and `DONE` in evidence only when both required validations succeeded and human
-acceptance is recorded. Otherwise leave it incomplete or blocked and state why.
+and `DONE` in evidence only when its automated checks succeeded and the feature's
+human acceptance is recorded. Otherwise leave it incomplete or blocked and state why.
 Summarize remaining work and wait for the next instruction.
 
 ## Definition of Done
 
 A task is done only when its approved scope is implemented; its acceptance
-checks and relevant automated checks pass; the owner has explicitly accepted
-the manual verification; evidence is recorded; and feature and master task
-states are synchronized. A feature is not done merely because its code merges,
-its tests pass, or an assistant reports success.
+checks and relevant automated checks pass; the feature owner has explicitly
+accepted the feature's manual verification; evidence is recorded; and feature
+and master task states are synchronized. A feature is not done merely because
+its code merges, its tests pass, or an assistant reports success.

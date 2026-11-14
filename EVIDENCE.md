@@ -68,8 +68,8 @@ The successful schema-check command was:
 ```powershell
 @'
 const fs = require('node:fs');
-const Ajv2020 = require('C:/Users/Nikola/AppData/Roaming/npm/node_modules/@angular/cli/node_modules/ajv/dist/2020').default;
-const addFormats = require('C:/Users/Nikola/AppData/Roaming/npm/node_modules/@angular/cli/node_modules/ajv-formats').default;
+const Ajv2020 = require('<GLOBAL_NPM_ROOT>/@angular/cli/node_modules/ajv/dist/2020').default;
+const addFormats = require('<GLOBAL_NPM_ROOT>/@angular/cli/node_modules/ajv-formats').default;
 const schema = JSON.parse(fs.readFileSync('evals/golden_questions.schema.json', 'utf8'));
 const ajv = new Ajv2020({ allErrors: true });
 addFormats(ajv);
@@ -103,7 +103,7 @@ were reviewed and preserved.
 | Presence review: constitution, `AGENTS.md`, local skills, workflow, README, `.env.example`, TODO, evidence, and `pyproject.toml` | PASS | All listed files exist. Presence is not team approval or runtime verification. |
 | `python --version` | BLOCKED | Windows reported Python was not found and suggested the Microsoft Store alias. |
 | `py -3.12 --version` | BLOCKED | PowerShell reported `py` is not recognized. |
-| `uv venv .venv --python 3.12 --no-managed-python --no-python-downloads` | BLOCKED | `error: Could not acquire lock` / `failed to open file C:\Users\Nikola\AppData\Local\uv\cache\.lock: Access is denied. (os error 5)`. No workaround attempted. |
+| `uv venv .venv --python 3.12 --no-managed-python --no-python-downloads` | BLOCKED | `error: Could not acquire lock` / `failed to open file <UV_CACHE_DIR>\.lock: Access is denied. (os error 5)`. No workaround attempted. |
 | `uv lock --no-managed-python --no-python-downloads` and `uv sync --locked --no-managed-python --no-python-downloads` | NOT RUN | Stopped after uv cache access blocker; `uv.lock` and `.venv` are absent. |
 | `git check-ignore -v .env` | PASS | `.gitignore:2:.env` matched after copying `.env.example` to local `.env`. The file remains untracked and ignored. |
 | Draft 2020-12 schemas via local Node/Ajv | PASS after one failed script attempt | Both `docs/DATA_CONTRACT.json` and `evals/golden_questions.schema.json` validated and compiled; an empty golden dataset shape validated. First attempt failed because the same schema ID was compiled twice in one Ajv instance; rerun reused the compiled validator. No scientific record was created. |
@@ -120,8 +120,8 @@ The successful Part 3 schema check was a PowerShell here-string piped to Node:
 ```powershell
 @'
 const fs = require('node:fs');
-const Ajv2020 = require('C:/Users/Nikola/AppData/Roaming/npm/node_modules/@angular/cli/node_modules/ajv/dist/2020').default;
-const addFormats = require('C:/Users/Nikola/AppData/Roaming/npm/node_modules/@angular/cli/node_modules/ajv-formats').default;
+const Ajv2020 = require('<GLOBAL_NPM_ROOT>/@angular/cli/node_modules/ajv/dist/2020').default;
+const addFormats = require('<GLOBAL_NPM_ROOT>/@angular/cli/node_modules/ajv-formats').default;
 const ajv = new Ajv2020({allErrors: true});
 addFormats(ajv);
 let goldenValidate;
@@ -172,3 +172,7 @@ the supplied output; `uv python list --only-installed` can identify available
 installations. The README now permits uv-managed Python on each developer
 computer and lists `uv lock` followed by `uv sync --locked`. Locked checks,
 dependency resolution, and CI remain unverified. Human acceptance: NOT PROVIDED.
+
+## 2026-11-14 lockfile note
+
+`uv.lock` now exists on `main`.

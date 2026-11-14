@@ -8,7 +8,7 @@
 
 - Approved specification and plan revision:
 - Criteria addressed:
-- Shared contract changes and owner approvals (or none):
+- Shared contract changes and affected owner reviewers (or none):
 
 ## Tests and evidence
 
