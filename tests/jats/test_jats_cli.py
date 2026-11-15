@@ -3,12 +3,16 @@
 import hashlib
 import json
 import os
+import subprocess
+import sys
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
 import pytest
 
 from sciscope.jats import cli, source
+from sciscope.jats.locator import SourceDocument
 
 DOI_A = "10.9999/synthetic-a"
 DOI_B = "10.9999/synthetic-b"
@@ -333,3 +337,380 @@ def test_replace_error_preserves_existing_outputs_and_cleans_temporaries(
         _run(tmp_path)
     monkeypatch.setattr(os, "replace", original_replace)
     assert before == {path.name: path.read_bytes() for path in out.iterdir()}
+
+
+def _helper_args(root: Path, command: str, *values: str) -> list[str]:
+    """Build a SYNTHETIC helper invocation using only temporary inputs."""
+    return [
+        command,
+        *values,
+        "--repo-root",
+        str(root),
+        "--manifest",
+        str(root / "manifest.jsonl"),
+        "--metadata",
+        str(root / "metadata.jsonl"),
+    ]
+
+
+def _snapshot(root: Path) -> dict[str, bytes]:
+    """Capture all SYNTHETIC temporary files for read-only assertions."""
+    return {
+        str(path.relative_to(root)): path.read_bytes()
+        for path in root.rglob("*")
+        if path.is_file()
+    }
+
+
+def _helper_call(root: Path, command: str, *values: str) -> int:
+    """Run a helper and check that its input tree remains byte-identical."""
+    before = _snapshot(root)
+    try:
+        return cli.main(_helper_args(root, command, *values))
+    finally:
+        assert _snapshot(root) == before
+
+
+def _rich_xml() -> bytes:
+    """Build a SYNTHETIC paper with nested body and abstract sections."""
+    return (
+        b"<article><front><article-meta><abstract>"
+        b"<sec><title>Purpose</title><p>alpha abstract one.</p></sec>"
+        b"<sec><title>Summary</title><p>alpha abstract two.</p></sec>"
+        b"</abstract></article-meta></front><body>"
+        b"<sec><title>Results</title><p>alpha body one.</p>"
+        b"<sec><title>  Local <italic>detail</italic>  </title>"
+        b"<p>alpha <fig>hidden</fig><unknown>hidden</unknown>body two.</p>"
+        b"</sec></sec><sec><p>last body.</p></sec></body></article>"
+    )
+
+
+def _locator(xml_bytes: bytes, path: str) -> str:
+    """Find a locator in a SYNTHETIC document by its XML path."""
+    document = SourceDocument.from_bytes(xml_bytes)
+    element = document.root.find(path)
+    assert element is not None
+    return document.locator_for(element)
+
+
+def test_show_outline_has_exact_header_order_indent_and_untitled(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """SYNTHETIC show prints a preorder outline with display headings."""
+    xml_bytes = _rich_xml()
+    _write_inputs(tmp_path, [(DOI_A, xml_bytes)])
+    assert _helper_call(tmp_path, "show", DOI_A) == 0
+    digest = hashlib.sha256(xml_bytes).hexdigest()
+    assert capsys.readouterr().out == (
+        f"doi: {DOI_A}\n"
+        "title: SYNTHETIC title 0\n"
+        f"xml_sha256: {digest}\n\n"
+        f"{DOI_A}#abstract | abstract | 0 | (untitled)\n"
+        f"{DOI_A}#abstract.1 | abstract | 1 |   Purpose\n"
+        f"{DOI_A}#abstract.2 | abstract | 1 |   Summary\n"
+        f"{DOI_A}#sec-1 | results | 1 | Results\n"
+        f"{DOI_A}#sec-1.1 | results | 1 |   Local detail\n"
+        f"{DOI_A}#sec-2 | other | 1 | (untitled)\n"
+    )
+
+
+def test_show_section_includes_nested_paragraphs_and_omissions(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """SYNTHETIC section selection prints owners, locators, and omissions."""
+    xml_bytes = _rich_xml()
+    _write_inputs(tmp_path, [(DOI_A, xml_bytes)])
+    assert (
+        _helper_call(tmp_path, "show", DOI_A, "--section", f"{DOI_A}#sec-1")
+        == 0
+    )
+    output = capsys.readouterr().out
+    first = _locator(xml_bytes, "./body/sec[1]/p")
+    nested = _locator(xml_bytes, "./body/sec[1]/sec/p")
+    assert output.endswith(
+        f"section: {DOI_A}#sec-1 | results | Results\n\n"
+        f"[{DOI_A}#sec-1 #1] {first}\nalpha body one.\n\n"
+        f"[{DOI_A}#sec-1.1 #1] {nested}\nalpha body two.\n"
+        "[omitted: fig, unknown]\n\n"
+    )
+
+
+def test_show_abstract_includes_structured_children(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """SYNTHETIC abstract selection follows nested section document order."""
+    xml_bytes = _rich_xml()
+    _write_inputs(tmp_path, [(DOI_A, xml_bytes)])
+    assert _helper_call(tmp_path, "show", DOI_A, "--abstract") == 0
+    output = capsys.readouterr().out
+    first = _locator(xml_bytes, "./front/article-meta/abstract/sec[1]/p")
+    second = _locator(xml_bytes, "./front/article-meta/abstract/sec[2]/p")
+    assert output.endswith(
+        f"section: {DOI_A}#abstract | abstract | (untitled)\n\n"
+        f"[{DOI_A}#abstract.1 #1] {first}\nalpha abstract one.\n\n"
+        f"[{DOI_A}#abstract.2 #1] {second}\nalpha abstract two.\n\n"
+    )
+
+
+@pytest.mark.parametrize("selection", ["--section", "--abstract"])
+def test_show_unknown_doi_exits_two(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], selection: str
+) -> None:
+    """SYNTHETIC missing DOI produces a stable input error."""
+    _write_inputs(tmp_path, [(DOI_A, _rich_xml())])
+    values = (
+        ("--section", f"{DOI_A}#sec-1")
+        if selection == "--section"
+        else ("--abstract",)
+    )
+    assert _helper_call(tmp_path, "show", DOI_B, *values) == 2
+    assert capsys.readouterr().err == "error: unknown-doi\n"
+
+
+def test_show_unknown_section_exits_two(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """SYNTHETIC missing section has a distinct error."""
+    _write_inputs(tmp_path, [(DOI_A, _rich_xml())])
+    assert (
+        _helper_call(tmp_path, "show", DOI_A, "--section", f"{DOI_A}#sec-99")
+        == 2
+    )
+    assert capsys.readouterr().err == "error: unknown-section\n"
+
+
+def test_show_rejects_both_selection_flags(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """SYNTHETIC mutually exclusive selection is rejected by argparse."""
+    _write_inputs(tmp_path, [(DOI_A, _rich_xml())])
+    before = _snapshot(tmp_path)
+    with pytest.raises(SystemExit) as error:
+        cli.main(
+            _helper_args(
+                tmp_path,
+                "show",
+                DOI_A,
+                "--section",
+                f"{DOI_A}#sec-1",
+                "--abstract",
+            )
+        )
+    assert error.value.code == 2
+    assert "not allowed with argument" in capsys.readouterr().err
+    assert _snapshot(tmp_path) == before
+
+
+@pytest.mark.parametrize(
+    ("path", "quote", "expected_first", "matches", "owner"),
+    [
+        (
+            "./body/sec[1]/p",
+            "alpha   body\tone.",
+            "./body/sec[1]/p",
+            1,
+            "#sec-1",
+        ),
+        ("./body/sec[1]", "alpha", "./body/sec[1]/p", 2, "#sec-1"),
+        (
+            "./front/article-meta/abstract",
+            "alpha",
+            "./front/article-meta/abstract/sec[1]/p",
+            2,
+            "#abstract.1",
+        ),
+    ],
+)
+def test_check_quote_reports_first_matching_paragraph_and_count(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    path: str,
+    quote: str,
+    expected_first: str,
+    matches: int,
+    owner: str,
+) -> None:
+    """SYNTHETIC matching uses paragraph boundaries and document order."""
+    xml_bytes = _rich_xml()
+    _write_inputs(tmp_path, [(DOI_A, xml_bytes)])
+    locator = _locator(xml_bytes, path)
+    assert (
+        _helper_call(
+            tmp_path, "check-quote", "--locator", locator, "--quote", quote
+        )
+        == 0
+    )
+    expected_locator = _locator(xml_bytes, expected_first)
+    assert capsys.readouterr().out == (
+        f"OK: quote found in {expected_locator}\n"
+        f"matches: {matches}\n"
+        f"section: {DOI_A}{owner} paragraph: 1\n"
+    )
+
+
+@pytest.mark.parametrize(
+    ("quote", "expected_code", "exit_code"),
+    [
+        ("ALPHA", "quote-absent", 1),
+        ("body one. alpha body two.", "quote-absent", 1),
+        ("SYNTHETIC absent", "quote-absent", 1),
+        (" \t\n ", "quote-empty", 2),
+    ],
+)
+def test_check_quote_absence_case_and_empty_input(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    quote: str,
+    expected_code: str,
+    exit_code: int,
+) -> None:
+    """SYNTHETIC quote failures have distinct codes and exit statuses."""
+    xml_bytes = _rich_xml()
+    _write_inputs(tmp_path, [(DOI_A, xml_bytes)])
+    locator = _locator(xml_bytes, "./body/sec[1]")
+    assert (
+        _helper_call(
+            tmp_path, "check-quote", "--locator", locator, "--quote", quote
+        )
+        == exit_code
+    )
+    assert capsys.readouterr().err == f"error: {expected_code}\n"
+
+
+@pytest.mark.parametrize(
+    ("path", "change", "expected"),
+    [
+        ("./body/sec[1]/p", "prefix", "locator-malformed"),
+        ("./body/sec[1]/p", "digest", "digest-mismatch"),
+        ("./body/sec[1]/p", "missing-path", "path-not-found"),
+        ("./body/sec[1]/p", "wrong-target", "invalid-target"),
+    ],
+)
+def test_check_quote_locator_errors(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    path: str,
+    change: str,
+    expected: str,
+) -> None:
+    """SYNTHETIC malformed, foreign, absent, and unsupported targets differ."""
+    xml_bytes = _rich_xml()
+    _write_inputs(tmp_path, [(DOI_A, xml_bytes)])
+    locator = _locator(xml_bytes, path)
+    if change == "prefix":
+        locator = locator.replace("jats:v1:", "jats:v2:", 1)
+    elif change == "digest":
+        locator = locator.replace(
+            hashlib.sha256(xml_bytes).hexdigest(), "0" * 64
+        )
+    elif change == "missing-path":
+        locator = locator.replace("/p[1]", "/p[99]")
+    else:
+        locator = locator.replace("/p[1]", "/title[1]")
+    assert (
+        _helper_call(
+            tmp_path, "check-quote", "--locator", locator, "--quote", "alpha"
+        )
+        == 2
+    )
+    assert capsys.readouterr().err == f"error: {expected}\n"
+
+
+def test_check_quote_digest_must_be_in_manifest(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """SYNTHETIC unknown source digest fails before source loading."""
+    xml_bytes = _rich_xml()
+    _write_inputs(tmp_path, [(DOI_A, xml_bytes)])
+    locator = _locator(xml_bytes, "./body/sec[1]/p")
+    locator = locator.replace(hashlib.sha256(xml_bytes).hexdigest(), "f" * 64)
+    assert (
+        _helper_call(
+            tmp_path, "check-quote", "--locator", locator, "--quote", "alpha"
+        )
+        == 2
+    )
+    assert capsys.readouterr().err == "error: digest-mismatch\n"
+
+
+def test_verify_roundtrip_reports_all_counts_and_implicit_group(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """SYNTHETIC verification checks both regular and implicit sections."""
+    implicit = b"<article><body><p>SYNTHETIC loose.</p></body></article>"
+    _write_inputs(tmp_path, [(DOI_B, implicit), (DOI_A, _rich_xml())])
+    assert _helper_call(tmp_path, "verify-roundtrip") == 0
+    assert capsys.readouterr().out == (
+        f"{DOI_A}: sections 6 paragraphs 5 OK\n"
+        f"{DOI_B}: sections 1 paragraphs 1 OK\n"
+        "Checked: 7 sections, 6 paragraphs across 2 papers; mismatches: 0\n"
+    )
+
+
+def test_verify_roundtrip_lists_failed_paper(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """SYNTHETIC bad digest makes the full verification exit nonzero."""
+    _write_inputs(
+        tmp_path,
+        [(DOI_A, _rich_xml()), (DOI_B, _xml())],
+        bad_digests={DOI_B},
+    )
+    assert _helper_call(tmp_path, "verify-roundtrip") == 1
+    output = capsys.readouterr().out
+    assert f"{DOI_B}: digest-mismatch\n" in output
+    assert "mismatches: " in output
+
+
+def test_verify_roundtrip_reports_stored_text_mismatch(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """SYNTHETIC changed parse record is visible as a locator mismatch."""
+    _write_inputs(tmp_path, [(DOI_A, _rich_xml())])
+    original_parse = cli.parse_paper
+
+    def changed_parse(*args: Any, **kwargs: Any) -> Any:
+        result = original_parse(*args, **kwargs)
+        paragraphs = (replace(result.paragraphs[0], text="changed"),) + (
+            result.paragraphs[1:]
+        )
+        return replace(result, paragraphs=paragraphs)
+
+    monkeypatch.setattr(cli, "parse_paper", changed_parse)
+    assert _helper_call(tmp_path, "verify-roundtrip") == 1
+    output = capsys.readouterr().out
+    assert "mismatches: 1" in output
+    first = _locator(_rich_xml(), "./front/article-meta/abstract/sec[1]/p")
+    assert f"{DOI_A}#abstract.1: " in output or f"{first}: " in output
+
+
+def test_show_subprocess_forces_utf8_on_cp1252_console(tmp_path: Path) -> None:
+    """SYNTHETIC non-cp1252 heading is emitted as UTF-8 bytes."""
+    xml_bytes = _rich_xml().replace(b"Results", "α Results".encode())
+    _write_inputs(tmp_path, [(DOI_A, xml_bytes)])
+    args = _helper_args(tmp_path, "show", DOI_A)
+    environment = os.environ.copy()
+    environment["PYTHONPATH"] = "src"
+    environment["PYTHONIOENCODING"] = "cp1252"
+    before = _snapshot(tmp_path)
+    completed = subprocess.run(
+        [sys.executable, "-m", "sciscope.jats.cli", *args],
+        capture_output=True,
+        check=False,
+        env=environment,
+    )
+    assert _snapshot(tmp_path) == before
+    assert completed.returncode == 0
+    assert completed.stdout.decode("utf-8") == (
+        f"doi: {DOI_A}\n"
+        "title: SYNTHETIC title 0\n"
+        f"xml_sha256: {hashlib.sha256(xml_bytes).hexdigest()}\n\n"
+        f"{DOI_A}#abstract | abstract | 0 | (untitled)\n"
+        f"{DOI_A}#abstract.1 | abstract | 1 |   Purpose\n"
+        f"{DOI_A}#abstract.2 | abstract | 1 |   Summary\n"
+        f"{DOI_A}#sec-1 | other | 1 | α Results\n"
+        f"{DOI_A}#sec-1.1 | other | 1 |   Local detail\n"
+        f"{DOI_A}#sec-2 | other | 1 | (untitled)\n"
+    )

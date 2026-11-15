@@ -54,11 +54,18 @@ def test_sec_type_is_trimmed_and_lowercased() -> None:
     )
 
 
-def test_sec_type_wins_when_tables_disagree() -> None:
-    """A conflicting heading is reported while sec-type takes precedence."""
+def test_heading_wins_when_tables_disagree() -> None:
+    """A conflicting sec-type is reported while heading takes precedence."""
     assert classify_section("results", "Methods", None) == (
-        ClassificationResult("results", True, True)
+        ClassificationResult("methods", True, True)
     )
+
+
+def test_sec_type_is_used_when_heading_is_unmatched() -> None:
+    """An unmatched heading leaves an explicit sec-type match in effect."""
+    assert classify_section(
+        "conclusions", "Conclusions and next steps", None
+    ) == (ClassificationResult("conclusions", True, False))
 
 
 def test_matching_tables_with_same_type_do_not_conflict() -> None:

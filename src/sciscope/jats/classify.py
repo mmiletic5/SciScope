@@ -64,16 +64,16 @@ def classify_section(
     """Classify a body section by the approved taxonomy precedence."""
     sec_type_match = SEC_TYPE_TYPES.get(sec_type.strip().lower())
     heading_match = HEADING_TYPES.get(normalize_heading(heading))
-    if sec_type_match is not None:
+    if heading_match is not None:
         return ClassificationResult(
-            normalized_type=sec_type_match,
+            normalized_type=heading_match,
             explicit=True,
             conflict=(
-                heading_match is not None and heading_match != sec_type_match
+                sec_type_match is not None and sec_type_match != heading_match
             ),
         )
-    if heading_match is not None:
-        return ClassificationResult(heading_match, True)
+    if sec_type_match is not None:
+        return ClassificationResult(sec_type_match, True)
     return ClassificationResult(
         nearest_explicit_ancestor_type or "other", False
     )

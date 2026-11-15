@@ -14,6 +14,7 @@ from sciscope.jats.locator import (
     PathNotFoundError,
     SourceDocument,
     local_name,
+    locator_digest,
 )
 
 
@@ -24,6 +25,32 @@ def test_local_name_strips_namespace() -> None:
         == "sec"
     )
     assert local_name(ET.fromstring(synthetic_xml("<p/>"))) == "p"
+
+
+def test_locator_digest_extracts_lowercase_digest_without_path_validation() -> (
+    None
+):
+    """SYNTHETIC digest extraction checks only prefix and digest syntax."""
+    digest = "a" * 64
+    assert locator_digest(f"jats:v1:{digest}:/any/path") == digest
+
+
+@pytest.mark.parametrize(
+    "locator",
+    [
+        "jats:v1:{upper}:/article[1]",
+        "jats:v2:{digest}:/article[1]",
+        "other:v1:{digest}:/article[1]",
+        "jats:v1:short:/article[1]",
+        "jats:v1:{digest}",
+        "jats:v1::/article[1]",
+    ],
+)
+def test_locator_digest_rejects_invalid_prefix_or_digest(locator: str) -> None:
+    """SYNTHETIC malformed locator heads raise the public error kind."""
+    digest = "a" * 64
+    with pytest.raises(MalformedLocatorError):
+        locator_digest(locator.format(digest=digest, upper=digest.upper()))
 
 
 def test_from_bytes_hashes_exact_input_and_exposes_root() -> None:

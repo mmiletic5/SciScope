@@ -136,15 +136,17 @@ strings only. `sec-type` is trimmed/lowercased but otherwise matched exactly.
 | heading | `conclusions` | `conclusions` |
 | heading | `supporting information` | `other` |
 
-Abstract always classifies `abstract`. `classify_section` returns the type and
+Abstract always classifies `abstract`. Body classification checks the normalized
+heading table first, the `sec-type` table second, then the nearest explicit
+ancestor, and finally defaults to `other`. `classify_section` returns the type and
 `explicit=True` only when a `sec-type` or heading table entry matched; inherited
 or default `other` returns `explicit=False`. For an unmapped section, inherit
 only the nearest explicitly classified ancestor's type; otherwise use `other`.
 An explicit `other` (`supplementary-material`, supporting information) does not
-inherit. If both tables match with different types, `sec-type` wins and the
+inherit. If both tables match with different types, the heading wins and the
 section is recorded in `type_conflicts` with `section_id`, `sec_type`, and
-`heading`. Record each unmatched original heading with DOI and count even if
-it inherits; do not label explicit `other` as unmatched.
+`heading`. Record each original heading with no table match with DOI and count
+even if it inherits; do not label explicit `other` as unmatched.
 The actual `other` list is reviewed after T006 by Person 1.
 
 ## Output records and integration
@@ -261,7 +263,8 @@ Only after that, append `EVIDENCE.md` and synchronize task/backlog checkboxes.
 - Python records use tuples for `omitted` and `section_path`; T006 serializes them as JSON arrays.
 
 - T005 (2026-11-15):
-  - `ClassificationResult` has three fields: `normalized_type: str`, `explicit: bool`, `conflict: bool` (True only when both the `sec-type` table and the heading table match and their types differ; `sec-type` wins).
+  - `ClassificationResult` has three fields: `normalized_type: str`, `explicit: bool`, `conflict: bool` (True only when both the `sec-type` table and the heading table match and their types differ; the heading wins).
+  - Precedence amendment approved by Person 1 on 2026-11-15: in 17 papers, PLOS tagged 11 of 12 `Discussion` sections as `sec-type="conclusions"`; sec-type-first precedence typed those sections and descendants as 29 `conclusions` instead of 10 `discussion` sections.
   - An explicit `other` (`supplementary-material`, `supporting information`) never inherits its parent's type; its unmapped descendants inherit `other` from it as the nearest explicitly classified ancestor.
   - Heading normalization: `str.lower()`, then strip a leading section number of one or two digits with optional dotted parts followed by `.`, `)`, `:` or whitespace (e.g. `1.`, `2.1`, `3)`, `4 `), then strip surrounding ASCII punctuation and whitespace, then collapse whitespace. `2019 Results` is not numbering. Matching is exact against the table. `sec-type` is stripped and lowercased, otherwise exact.
   - Only real `<sec>` elements inside `<body>` are classified by the tables. Abstract sections are always `abstract`. Implicit direct-body paragraph groups are `other` with `explicit=False` and are not counted as unmatched headings.
@@ -280,6 +283,15 @@ Only after that, append `EVIDENCE.md` and synchronize task/backlog checkboxes.
   - CLI: `python -m sciscope.jats.cli parse` accepts `--manifest` (default `data/pilot/manifest.jsonl`), `--metadata` (`data/pilot/metadata.jsonl`), `--repo-root` (`.`), `--sections` (`data/processed/pilot/sections.jsonl`), `--paragraphs` (`data/processed/pilot/paragraphs.jsonl`), and `--report` (`data/pilot/parse_report.json`). Exit 0 when all papers parse, 1 when any paper fails (successful records are written), and 2 when manifest or metadata is unreadable or invalid (nothing is written). Console output lists counts and each failed DOI and code, without source text.
   - Process and emit papers sorted by DOI. `sections.jsonl` key order: `doi`, `title`, `xml_sha256`, `section_id`, `parent_section_id`, `section_path` (JSON array), `original_heading`, `normalized_type`, `source_locator`, `depth`, `paragraph_count`. `paragraphs.jsonl` key order: `doi`, `section_id`, `paragraph_index`, `text`, `omitted` (JSON array), `source_locator`. `parse_report.json` is `{"papers": [...], "summary": {"succeeded": n, "failed": m}}` with `indent=2`; each paper has `doi`, `xml_sha256` (manifest value), `section_count`, `paragraph_count`, `abstract_paragraph_count`, `normalized_type_histogram`, `unclassified_headings`, `type_conflicts` (objects with `section_id`, `sec_type`, `heading`), `skipped_element_kinds`, `back_matter_containers` (array), `warnings` (array), `errors` (array). A failed paper has zero counts, empty maps and arrays for the other diagnostics, nonempty `errors`, and no JSONL records. All JSON uses `ensure_ascii=False`, UTF-8, LF newlines, and a final newline.
   - Atomic writing: create parent directories and temporary files next to the three targets; call `os.replace` only after the full run and all three temporary files are written. On any write error, remove temporaries and leave previous outputs untouched.
+
+- T007 (2026-11-15):
+  - Read-only commands are `show <doi> [--section <section_id> | --abstract]`, `check-quote --locator <L> --quote <text>`, and `verify-roundtrip`. Each accepts `--manifest`, `--metadata`, and `--repo-root` with the `parse` defaults. `--section` and `--abstract` are mutually exclusive. Match DOI exactly after stripping its surrounding whitespace against the manifest.
+  - All four commands load a paper through one shared `cli.py` helper, `_load_paper`; `SourceError` and `JatsParseError` remain distinct. Look up `source.MAX_XML_BYTES` at call time.
+  - `show` prints `doi: <doi>`, `title: <title>`, `xml_sha256: <digest>`, a blank line, then preorder outline rows `<section_id> | <normalized_type> | <paragraph_count> | <indent><heading>`. Indent is two spaces per depth beyond 1. Collapse heading whitespace for display and use `(untitled)` if blank. With `--section ID` or `--abstract` (ID `<doi>#abstract`), print the header, `section: <section_id> | <normalized_type> | <heading>`, a blank line, then paragraphs in that section and descendant sections in document order through `parent_section_id`. Each paragraph prints `[<section_id> #<paragraph_index>] <full locator>`, its text, `[omitted: <kinds joined by ", ">]` only for a nonempty omitted list, then a blank line.
+  - New public `locator_digest(locator: str) -> str` in `locator.py` validates only the `jats:v1:` prefix and a 64-character lowercase hexadecimal digest, raising `MalformedLocatorError` otherwise. `check-quote` finds the manifest entry with that digest (none gives `digest-mismatch`), loads its source, and resolves the locator. Collapse quote whitespace with `" ".join(quote.split())`; empty gives `quote-empty`. Match case-sensitively within one paragraph, never across paragraphs. A paragraph locator checks only that paragraph. A section or abstract locator checks its direct `<p>` children and those of nested `<sec>` elements in document order. On success print `OK: quote found in <paragraph locator>`, `matches: <N>` for the number of matching paragraphs, and `section: <section_id> paragraph: <index>` when the first matching paragraph is an emitted record.
+  - Failures print `error: <code>` to stderr. `show` exits 0 or 2 and uses `unknown-doi` or `unknown-section` as applicable. `check-quote` exits 0 for a match, 1 for `quote-absent`, and 2 for `locator-malformed`, `digest-mismatch`, `path-not-found`, `invalid-target`, `quote-empty`, a `SourceError` code, `parse-error: <message>`, or `input: <message>`. `verify-roundtrip` exits 0 if all consistent, 1 for any mismatch or failed paper, and 2 for unreadable manifest or metadata.
+  - `verify-roundtrip` loads and parses every manifest paper sorted by DOI. Resolve every emitted section and paragraph locator. A paragraph must resolve to `<p>` and `paragraph_text(element)[0]` must equal stored text. A section must resolve to `<sec>` or `<abstract>` and its heading from new public `parser.heading_text(element: ET.Element) -> str` must equal `original_heading`; `parse_paper` reuses that helper. An implicit direct-body group (`#body-p-` ID) instead resolves to its first `<p>`, has stored heading `""`, and shares its locator with its first paragraph record. Print `<doi>: sections <S> paragraphs <P> OK` or its mismatch count per paper, then `Checked: <S> sections, <P> paragraphs across <K> papers; mismatches: <M>`. Print at most 10 mismatch lines as `<section_id or locator>: <reason>` without source text. A failed paper prints `<doi>: <error code>`.
+  - `main` reconfigures stdout and stderr with `encoding="utf-8", errors="backslashreplace"` where `reconfigure` exists, guarding `AttributeError`, `ValueError`, and `io.UnsupportedOperation` for capture streams.
 
 ## Objections
 

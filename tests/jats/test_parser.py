@@ -12,6 +12,7 @@ from sciscope.jats.parser import (
     MissingBodyError,
     ParseResult,
     TypeConflict,
+    heading_text,
     paragraph_text,
     parse_paper,
 )
@@ -524,14 +525,61 @@ def test_type_conflict_keeps_raw_values_and_document_order() -> None:
     )
 
     assert [section.normalized_type for section in result.sections] == [
-        "results",
         "methods",
-        "discussion",
+        "methods",
+        "conclusions",
     ]
     assert result.type_conflicts == (
         TypeConflict(f"{DOI}#sec-1", " RESULTS ", "  Methods  "),
         TypeConflict(f"{DOI}#sec-3", "discussion", "Conclusions"),
     )
+
+
+def test_discussion_heading_overrides_plos_conclusions_sec_type() -> None:
+    """SYNTHETIC PLOS pattern keeps discussion inheritance and conflict data."""
+    _, result = _parse(
+        "<article><body><sec sec-type='conclusions'><title>Discussion</title>"
+        "<sec><title>Subsection</title><p>SYNTHETIC detail.</p></sec>"
+        "</sec></body></article>"
+    )
+
+    assert [section.normalized_type for section in result.sections] == [
+        "discussion",
+        "discussion",
+    ]
+    assert result.type_conflicts == (
+        TypeConflict(f"{DOI}#sec-1", "conclusions", "Discussion"),
+    )
+    assert result.unclassified_headings == {"Subsection": 1}
+
+
+def test_unmatched_heading_with_sec_type_match_is_explicit() -> None:
+    """SYNTHETIC sec-type fallback does not count an unmatched heading."""
+    _, result = _parse(
+        "<article><body><sec sec-type='conclusions'>"
+        "<title>Conclusions and next steps</title>"
+        "<p>SYNTHETIC body.</p></sec></body></article>"
+    )
+    assert result.sections[0].normalized_type == "conclusions"
+    assert result.unclassified_headings == {}
+    assert result.type_conflicts == ()
+
+
+def test_heading_text_preserves_inline_text_and_whitespace() -> None:
+    """SYNTHETIC title text is concatenated verbatim across inline markup."""
+    section = ET.fromstring(
+        synthetic_xml(
+            "<sec><title>  SYNTHETIC <italic>mixed</italic>  title\n</title>"
+            "<p>Body.</p></sec>"
+        )
+    )
+    assert heading_text(section) == "  SYNTHETIC mixed  title\n"
+
+
+def test_heading_text_without_direct_title_is_empty() -> None:
+    """SYNTHETIC missing titles have an empty verbatim heading."""
+    section = ET.fromstring(synthetic_xml("<sec><p>Body.</p></sec>"))
+    assert heading_text(section) == ""
 
 
 def test_unmatched_heading_counts_include_inherited_and_blank_titles() -> None:

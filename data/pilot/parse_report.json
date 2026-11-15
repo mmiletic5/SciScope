@@ -266,7 +266,7 @@
       "abstract_paragraph_count": 1,
       "normalized_type_histogram": {
         "abstract": 1,
-        "conclusions": 3,
+        "discussion": 3,
         "introduction": 1,
         "methods": 10,
         "results": 3
@@ -309,7 +309,7 @@
       "abstract_paragraph_count": 1,
       "normalized_type_histogram": {
         "abstract": 1,
-        "conclusions": 1,
+        "discussion": 1,
         "introduction": 1,
         "methods": 6,
         "other": 1,
@@ -354,7 +354,7 @@
       "abstract_paragraph_count": 1,
       "normalized_type_histogram": {
         "abstract": 1,
-        "conclusions": 1,
+        "discussion": 1,
         "introduction": 1,
         "methods": 5,
         "other": 1,
@@ -398,7 +398,7 @@
       "abstract_paragraph_count": 3,
       "normalized_type_histogram": {
         "abstract": 4,
-        "conclusions": 6,
+        "discussion": 6,
         "introduction": 1,
         "methods": 5,
         "other": 1,
@@ -449,7 +449,7 @@
       "abstract_paragraph_count": 1,
       "normalized_type_histogram": {
         "abstract": 1,
-        "conclusions": 1,
+        "discussion": 1,
         "introduction": 1,
         "methods": 6,
         "other": 1,
@@ -493,7 +493,7 @@
       "abstract_paragraph_count": 1,
       "normalized_type_histogram": {
         "abstract": 1,
-        "conclusions": 1,
+        "discussion": 1,
         "introduction": 1,
         "methods": 6,
         "other": 1,
@@ -535,7 +535,7 @@
       "abstract_paragraph_count": 1,
       "normalized_type_histogram": {
         "abstract": 1,
-        "conclusions": 5,
+        "discussion": 5,
         "introduction": 1,
         "methods": 9,
         "other": 1,
@@ -587,7 +587,7 @@
       "abstract_paragraph_count": 1,
       "normalized_type_histogram": {
         "abstract": 1,
-        "conclusions": 1,
+        "discussion": 1,
         "introduction": 1,
         "methods": 8,
         "other": 1,
@@ -635,7 +635,8 @@
       "abstract_paragraph_count": 1,
       "normalized_type_histogram": {
         "abstract": 1,
-        "conclusions": 6,
+        "conclusions": 1,
+        "discussion": 5,
         "introduction": 1,
         "methods": 10,
         "other": 1,
@@ -692,7 +693,7 @@
       "abstract_paragraph_count": 1,
       "normalized_type_histogram": {
         "abstract": 1,
-        "conclusions": 1,
+        "discussion": 1,
         "introduction": 1,
         "methods": 7,
         "other": 1,
@@ -740,7 +741,7 @@
       "abstract_paragraph_count": 1,
       "normalized_type_histogram": {
         "abstract": 1,
-        "conclusions": 1,
+        "discussion": 1,
         "introduction": 1,
         "methods": 13,
         "other": 1,

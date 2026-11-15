@@ -119,6 +119,14 @@ class MissingBodyError(JatsParseError):
     """The article has no body element."""
 
 
+def heading_text(element: ET.Element) -> str:
+    """Return verbatim text from an element's direct title child."""
+    title = next(
+        (child for child in element if local_name(child) == "title"), None
+    )
+    return "" if title is None else "".join(title.itertext())
+
+
 def parse_paper(document: SourceDocument, doi: str, title: str) -> ParseResult:
     """Parse abstract, body sections, paragraphs, and diagnostics."""
     if local_name(document.root) != "article":
@@ -188,14 +196,7 @@ def parse_paper(document: SourceDocument, doi: str, title: str) -> ParseResult:
         nearest_explicit_ancestor_type: str | None = None,
         is_container: bool = False,
     ) -> None:
-        heading_element = (
-            None if is_container else direct_child(element, "title")
-        )
-        heading = (
-            ""
-            if heading_element is None
-            else "".join(heading_element.itertext())
-        )
+        heading = "" if is_container else heading_text(element)
         path = parent_path + (heading if heading.strip() else UNTITLED_LABEL,)
         own_count = sum(local_name(child) == "p" for child in element)
         locator = document.locator_for(element)

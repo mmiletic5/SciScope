@@ -35,6 +35,18 @@ class ForeignElementError(LocatorError):
     """An element does not belong to this source document."""
 
 
+def locator_digest(locator: str) -> str:
+    """Return the validated digest from a v1 locator."""
+    parts = locator.split(":", 3)
+    if (
+        len(parts) != 4
+        or parts[:2] != ["jats", "v1"]
+        or _DIGEST.fullmatch(parts[2]) is None
+    ):
+        raise MalformedLocatorError("Invalid locator prefix or digest")
+    return parts[2]
+
+
 def local_name(element: ET.Element) -> str:
     """Return the element name without its namespace."""
     return element.tag.rsplit("}", 1)[-1]

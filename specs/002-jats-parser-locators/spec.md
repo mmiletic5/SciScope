@@ -83,11 +83,11 @@ remain per paper where possible. The report records omissions and warnings.
   MUST NOT be counted separately. Each paragraph record MUST include `omitted`,
   every kind skipped inside that paragraph as a sorted distinct list, or `[]`
   when none. Empty resulting paragraphs remain locatable and generate a warning.
-- **FR-005**: Classify by exact `sec-type` mapping first, then normalized
-  heading mapping, then nearest explicitly classified ancestor, else `other`.
+- **FR-005**: Classify by normalized heading mapping first, then exact
+  `sec-type` mapping, then nearest explicitly classified ancestor, else `other`.
   Classification returns a type and an `explicit` flag, true only for a table
   match; explicit `other` does not inherit. When both tables match different
-  types, `sec-type` wins and the report records `type_conflicts` with section
+  types, the heading wins and the report records `type_conflicts` with section
   ID, `sec-type`, and heading. The eight
   v0 types are `abstract`, `introduction`, `methods`, `results`,
   `results_discussion`, `discussion`, `conclusions`, `other`. Report unmatched
