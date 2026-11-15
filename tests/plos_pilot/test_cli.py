@@ -4,9 +4,9 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
-from sciscope.plos_pilot.download import DownloadSummary
 
 from sciscope.plos_pilot import cli
+from sciscope.plos_pilot.download import DownloadSummary
 from sciscope.plos_pilot.search import SearchResult
 
 NOW = datetime(2026, 1, 2, tzinfo=UTC)
