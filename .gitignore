@@ -28,6 +28,7 @@ hf_cache/
 .huggingface/
 data/models/
 data/raw/
+data/processed/
 data/downloads/
 data/corpora/
 data/embeddings/

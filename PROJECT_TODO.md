@@ -64,11 +64,11 @@ Human review and verification remain pending; no checkbox is completed by this d
 - [x] **P2-03** | Owner: Person 1 | Deliverable: DOI-based paper deduplication | Phase: 2 | Depends on: P2-01, P1-04
 - [x] **P2-04** | Owner: Person 1 | Deliverable: preserved source XML and provenance association | Phase: 2 | Depends on: P2-01, P1-05
 - [x] **P2-05** | Owner: Person 1 | Deliverable: license and provenance extraction | Phase: 2 | Depends on: P2-04, P1-05
-- [ ] **P2-06** | Owner: Person 1 | Deliverable: JATS parser | Phase: 2 | Depends on: P1-02, P1-10
-- [ ] **P2-07** | Owner: Person 1 | Deliverable: nested section extraction | Phase: 2 | Depends on: P2-06, P1-06
-- [ ] **P2-08** | Owner: Person 1 | Deliverable: abstract extraction | Phase: 2 | Depends on: P2-06
-- [ ] **P2-09** | Owner: Person 1 | Deliverable: section classification | Phase: 2 | Depends on: P2-07, P1-06
-- [ ] **P2-10** | Owner: Person 1 | Deliverable: stable source text locators | Phase: 2 | Depends on: P2-07, P1-10
+- [x] **P2-06** | Owner: Person 1 | Deliverable: F002 JATS parser, digest gate, and parse report | Phase: 2 | Depends on: P1-02, P1-10
+- [x] **P2-07** | Owner: Person 1 | Deliverable: F002 nested section and paragraph extraction | Phase: 2 | Depends on: P2-06, P1-06
+- [x] **P2-08** | Owner: Person 1 | Deliverable: F002 abstract extraction | Phase: 2 | Depends on: P2-06
+- [x] **P2-09** | Owner: Person 1 | Deliverable: F002 section classification and taxonomy review | Phase: 2 | Depends on: P2-07, P1-06
+- [x] **P2-10** | Owner: Person 1 | Deliverable: F002 stable source text locators and read-only passage helper | Phase: 2 | Depends on: P2-07, P1-10
 - [ ] **P2-11** | Owner: Person 1 | Deliverable: paragraph-aware and section-aware chunker | Phase: 2 | Depends on: P2-07, P2-10, P1-07
 - [ ] **P2-12** | Owner: Person 1 | Deliverable: table and table-caption handling | Phase: 2 | Depends on: P2-06, P2-11
 - [ ] **P2-13** | Owner: Person 1 | Deliverable: figure-caption handling | Phase: 2 | Depends on: P2-06, P2-11
