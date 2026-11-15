@@ -60,10 +60,10 @@ Human review and verification remain pending; no checkbox is completed by this d
 ## Phase 2 — Data Processing (Person 1)
 
 - [ ] **P2-01** | Owner: Person 1 | Deliverable: PLOS batch downloader | Phase: 2 | Depends on: P1-01, P1-02, P1-05
-- [ ] **P2-02** | Owner: Person 1 | Deliverable: downloader pagination, retry, and resume behavior | Phase: 2 | Depends on: P2-01
-- [ ] **P2-03** | Owner: Person 1 | Deliverable: DOI-based paper deduplication | Phase: 2 | Depends on: P2-01, P1-04
-- [ ] **P2-04** | Owner: Person 1 | Deliverable: preserved source XML and provenance association | Phase: 2 | Depends on: P2-01, P1-05
-- [ ] **P2-05** | Owner: Person 1 | Deliverable: license and provenance extraction | Phase: 2 | Depends on: P2-04, P1-05
+- [x] **P2-02** | Owner: Person 1 | Deliverable: downloader pagination, retry, and resume behavior | Phase: 2 | Depends on: P2-01
+- [x] **P2-03** | Owner: Person 1 | Deliverable: DOI-based paper deduplication | Phase: 2 | Depends on: P2-01, P1-04
+- [x] **P2-04** | Owner: Person 1 | Deliverable: preserved source XML and provenance association | Phase: 2 | Depends on: P2-01, P1-05
+- [x] **P2-05** | Owner: Person 1 | Deliverable: license and provenance extraction | Phase: 2 | Depends on: P2-04, P1-05
 - [ ] **P2-06** | Owner: Person 1 | Deliverable: JATS parser | Phase: 2 | Depends on: P1-02, P1-10
 - [ ] **P2-07** | Owner: Person 1 | Deliverable: nested section extraction | Phase: 2 | Depends on: P2-06, P1-06
 - [ ] **P2-08** | Owner: Person 1 | Deliverable: abstract extraction | Phase: 2 | Depends on: P2-06
