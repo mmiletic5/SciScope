@@ -260,6 +260,16 @@ Only after that, append `EVIDENCE.md` and synchronize task/backlog checkboxes.
 - The primary abstract is the first untyped `<abstract>` under `<front>/<article-meta>`; absence warns `missing-abstract`. Warnings use `<code>: <subject>` when a subject exists, with codes `empty-section`, `empty-paragraph`, `unlisted-element`, `missing-abstract`, `empty-abstract`, and `empty-body`.
 - Python records use tuples for `omitted` and `section_path`; T006 serializes them as JSON arrays.
 
+- T005 (2026-11-15):
+  - `ClassificationResult` has three fields: `normalized_type: str`, `explicit: bool`, `conflict: bool` (True only when both the `sec-type` table and the heading table match and their types differ; `sec-type` wins).
+  - An explicit `other` (`supplementary-material`, `supporting information`) never inherits its parent's type; its unmapped descendants inherit `other` from it as the nearest explicitly classified ancestor.
+  - Heading normalization: `str.lower()`, then strip a leading section number of one or two digits with optional dotted parts followed by `.`, `)`, `:` or whitespace (e.g. `1.`, `2.1`, `3)`, `4 `), then strip surrounding ASCII punctuation and whitespace, then collapse whitespace. `2019 Results` is not numbering. Matching is exact against the table. `sec-type` is stripped and lowercased, otherwise exact.
+  - Only real `<sec>` elements inside `<body>` are classified by the tables. Abstract sections are always `abstract`. Implicit direct-body paragraph groups are `other` with `explicit=False` and are not counted as unmatched headings.
+  - `unclassified_headings` (per paper, `dict[str, int]`): every body `<sec>` with `explicit=False`, even if it inherited a type; key = original heading with whitespace collapsed, or `(untitled)` when blank. Explicit `other` is not unmatched.
+  - `type_conflicts`: tuple of `TypeConflict(section_id, sec_type, heading)` in document order; `sec_type` is the raw attribute value, `heading` the verbatim original heading.
+  - `normalized_type_histogram`: count of emitted sections per type (abstract, body, implicit groups), keys sorted.
+  - `back_matter_containers`: sorted distinct local names of direct children of `/article/back` that are one of `ack, ref-list, app, notes, fn-group, glossary`; empty tuple if there is no `<back>`. These are never emitted as sections or paragraphs.
+
 ## Objections
 
 D3 says non-section/paragraph targets fail, while D5 requires an abstract

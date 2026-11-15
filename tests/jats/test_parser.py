@@ -11,6 +11,7 @@ from sciscope.jats.parser import (
     JatsParseError,
     MissingBodyError,
     ParseResult,
+    TypeConflict,
     paragraph_text,
     parse_paper,
 )
@@ -153,7 +154,9 @@ def test_empty_paragraph_record_remains_locatable_and_warns() -> None:
     assert len(result.paragraphs) == 1
     assert result.paragraphs[0].text == ""
     assert document.resolve(result.paragraphs[0].source_locator) is not None
-    assert any("empty" in warning for warning in result.warnings)
+    assert any(
+        warning.startswith("empty-paragraph: ") for warning in result.warnings
+    )
 
 
 def test_non_article_root_is_rejected() -> None:
@@ -451,3 +454,151 @@ def test_all_emitted_locators_round_trip_including_implicit_group() -> None:
     assert document.resolve(
         result.sections[2].source_locator
     ) is document.root.find("./body/p")
+
+
+def test_body_sections_use_sec_type_and_numbered_heading_tables() -> None:
+    """Real body sections use exact sec-type or normalized heading matches."""
+    _, result = _parse(
+        "<article><body><sec sec-type=' Intro '><title>Local opening</title>"
+        "<p>One.</p></sec><sec><title>2.1 Materials and Methods</title>"
+        "<p>Two.</p></sec><sec><title>3) Results</title><p>Three.</p>"
+        "</sec></body></article>"
+    )
+
+    assert [section.normalized_type for section in result.sections] == [
+        "introduction",
+        "methods",
+        "results",
+    ]
+    assert result.unclassified_headings == {}
+
+
+def test_nearest_explicit_ancestor_governs_three_nested_levels() -> None:
+    """An inherited middle section does not replace the explicit ancestor."""
+    _, result = _parse(
+        "<article><body><sec><title>Methods</title><sec><title>Local A</title>"
+        "<sec><title>Local B</title><sec><title>Local C</title>"
+        "<p>Detail.</p></sec></sec></sec></sec></body></article>"
+    )
+
+    assert [section.normalized_type for section in result.sections] == [
+        "methods",
+        "methods",
+        "methods",
+        "methods",
+    ]
+    assert result.unclassified_headings == {
+        "Local A": 1,
+        "Local B": 1,
+        "Local C": 1,
+    }
+
+
+def test_explicit_other_resets_inheritance_for_descendants() -> None:
+    """Supporting material and its unmatched child stay outside Methods."""
+    _, result = _parse(
+        "<article><body><sec><title>Methods</title>"
+        "<sec sec-type='supplementary-material'><title>Supplement</title>"
+        "<sec><title>Local detail</title><p>Detail.</p></sec></sec>"
+        "<sec><title>Supporting Information</title><p>Extra.</p></sec>"
+        "</sec></body></article>"
+    )
+
+    assert [section.normalized_type for section in result.sections] == [
+        "methods",
+        "other",
+        "other",
+        "other",
+    ]
+    assert result.unclassified_headings == {"Local detail": 1}
+
+
+def test_type_conflict_keeps_raw_values_and_document_order() -> None:
+    """Only differing dual matches emit conflicts with original values."""
+    _, result = _parse(
+        "<article><body><sec sec-type=' RESULTS '><title>  Methods  </title>"
+        "<p>One.</p></sec><sec sec-type='methods'>"
+        "<title>Materials and Methods</title><p>Two.</p></sec>"
+        "<sec sec-type='discussion'><title>Conclusions</title>"
+        "<p>Three.</p></sec></body></article>"
+    )
+
+    assert [section.normalized_type for section in result.sections] == [
+        "results",
+        "methods",
+        "discussion",
+    ]
+    assert result.type_conflicts == (
+        TypeConflict(f"{DOI}#sec-1", " RESULTS ", "  Methods  "),
+        TypeConflict(f"{DOI}#sec-3", "discussion", "Conclusions"),
+    )
+
+
+def test_unmatched_heading_counts_include_inherited_and_blank_titles() -> None:
+    """Only real unmatched body sections appear in the paper report."""
+    _, result = _parse(
+        "<article><front><article-meta><abstract><sec><title>Unknown</title>"
+        "<p>Abstract.</p></sec></abstract></article-meta></front>"
+        "<body><p>Loose.</p><sec><title>Methods</title>"
+        "<sec><title>  Local   detail  </title><p>One.</p></sec>"
+        "<sec><title>Local detail</title><p>Two.</p></sec>"
+        "<sec><title>  </title><p>Three.</p></sec>"
+        "<sec sec-type='supplementary-material'><title>Extra</title>"
+        "<p>Four.</p></sec></sec></body></article>"
+    )
+
+    assert result.unclassified_headings == {
+        "Local detail": 2,
+        "(untitled)": 1,
+    }
+    assert result.sections[0].normalized_type == "abstract"
+    assert result.sections[1].normalized_type == "abstract"
+    assert result.sections[2].normalized_type == "other"
+
+
+def test_histogram_counts_abstract_body_and_implicit_sections_sorted() -> None:
+    """Each emitted section contributes once to the sorted histogram."""
+    _, result = _parse(
+        "<article><front><article-meta><abstract><p>Abstract.</p>"
+        "<sec><title>Results</title><p>Still abstract.</p></sec>"
+        "</abstract></article-meta></front><body><p>Loose.</p>"
+        "<sec><title>Results</title><p>Result.</p></sec>"
+        "<sec><title>Methods</title><p>Method.</p></sec>"
+        "</body></article>"
+    )
+
+    assert result.normalized_type_histogram == {
+        "abstract": 2,
+        "methods": 1,
+        "other": 1,
+        "results": 1,
+    }
+    assert list(result.normalized_type_histogram) == sorted(
+        result.normalized_type_histogram
+    )
+    assert result.unclassified_headings == {}
+
+
+def test_back_matter_lists_only_direct_approved_containers() -> None:
+    """Repeated known back children are listed once and never emitted."""
+    _, result = _parse(
+        "<article><body><sec><p>Body.</p></sec></body>"
+        "<back><ref-list><p>Hidden reference.</p></ref-list>"
+        "<ack><p>Hidden acknowledgement.</p></ack>"
+        "<fn-group><p>Hidden note.</p></fn-group>"
+        "<ack><p>Hidden again.</p></ack><unknown><p>Hidden.</p></unknown>"
+        "</back></article>"
+    )
+
+    assert result.back_matter_containers == ("ack", "fn-group", "ref-list")
+    assert len(result.sections) == 1
+    assert [paragraph.text for paragraph in result.paragraphs] == ["Body."]
+
+
+def test_absent_back_matter_has_empty_container_tuple() -> None:
+    """A paper without back matter reports no back containers."""
+    _, result = _parse(
+        "<article><body><sec><p>Body.</p></sec></body></article>"
+    )
+
+    assert result.back_matter_containers == ()

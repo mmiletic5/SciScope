@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from collections import Counter
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from xml.etree import ElementTree as ET
 
+from sciscope.jats.classify import classify_section
 from sciscope.jats.locator import SourceDocument, local_name
 
 UNTITLED_LABEL = "(untitled)"
@@ -32,7 +33,9 @@ KNOWN_OMITTED_KINDS = frozenset(
         "boxed-text",
     }
 )
-PENDING_TYPE = "other"
+BACK_MATTER_KINDS = frozenset(
+    {"ack", "ref-list", "app", "notes", "fn-group", "glossary"}
+)
 
 
 def paragraph_text(element: ET.Element) -> tuple[str, Counter[str]]:
@@ -82,6 +85,15 @@ class SectionRecord:
 
 
 @dataclass(frozen=True, slots=True)
+class TypeConflict:
+    """A body section whose explicit taxonomy sources disagree."""
+
+    section_id: str
+    sec_type: str
+    heading: str
+
+
+@dataclass(frozen=True, slots=True)
 class ParseResult:
     """Parsed units and per-paper extraction diagnostics."""
 
@@ -93,6 +105,10 @@ class ParseResult:
     abstract_paragraph_count: int
     skipped_element_kinds: dict[str, int]
     warnings: tuple[str, ...]
+    normalized_type_histogram: dict[str, int] = field(default_factory=dict)
+    unclassified_headings: dict[str, int] = field(default_factory=dict)
+    type_conflicts: tuple[TypeConflict, ...] = ()
+    back_matter_containers: tuple[str, ...] = ()
 
 
 class JatsParseError(ValueError):
@@ -123,6 +139,8 @@ def parse_paper(document: SourceDocument, doi: str, title: str) -> ParseResult:
     paragraphs: list[ParagraphRecord] = []
     skipped: Counter[str] = Counter()
     warnings: list[str] = []
+    unclassified_headings: Counter[str] = Counter()
+    type_conflicts: list[TypeConflict] = []
     warned_skips: set[tuple[str, str]] = set()
     abstract_paragraph_count = 0
 
@@ -167,6 +185,7 @@ def parse_paper(document: SourceDocument, doi: str, title: str) -> ParseResult:
         parent_path: tuple[str, ...],
         depth: int,
         is_abstract: bool,
+        nearest_explicit_ancestor_type: str | None = None,
         is_container: bool = False,
     ) -> None:
         heading_element = (
@@ -180,14 +199,29 @@ def parse_paper(document: SourceDocument, doi: str, title: str) -> ParseResult:
         path = parent_path + (heading if heading.strip() else UNTITLED_LABEL,)
         own_count = sum(local_name(child) == "p" for child in element)
         locator = document.locator_for(element)
+        normalized_type = "abstract"
+        if not is_abstract:
+            raw_sec_type = element.get("sec-type", "")
+            classification = classify_section(
+                raw_sec_type, heading, nearest_explicit_ancestor_type
+            )
+            normalized_type = classification.normalized_type
+            if classification.explicit:
+                nearest_explicit_ancestor_type = normalized_type
+            else:
+                heading_key = " ".join(heading.split()) or UNTITLED_LABEL
+                unclassified_headings[heading_key] += 1
+            if classification.conflict:
+                type_conflicts.append(
+                    TypeConflict(section_id, raw_sec_type, heading)
+                )
         sections.append(
             SectionRecord(
                 section_id=section_id,
                 parent_section_id=parent_id,
                 section_path=path,
                 original_heading=heading,
-                # TODO(T005): Replace the body placeholder with classification.
-                normalized_type="abstract" if is_abstract else PENDING_TYPE,
+                normalized_type=normalized_type,
                 source_locator=locator,
                 depth=depth,
                 paragraph_count=own_count,
@@ -214,6 +248,7 @@ def parse_paper(document: SourceDocument, doi: str, title: str) -> ParseResult:
                     path,
                     depth + 1,
                     is_abstract,
+                    nearest_explicit_ancestor_type,
                 )
             elif kind != "title":
                 report_skipped(kind, locator)
@@ -275,7 +310,7 @@ def parse_paper(document: SourceDocument, doi: str, title: str) -> ParseResult:
                         parent_section_id=None,
                         section_path=(UNTITLED_LABEL,),
                         original_heading="",
-                        normalized_type=PENDING_TYPE,
+                        normalized_type="other",
                         source_locator=document.locator_for(child),
                         depth=1,
                         paragraph_count=0,
@@ -297,6 +332,14 @@ def parse_paper(document: SourceDocument, doi: str, title: str) -> ParseResult:
     if body_section_index == 0 and body_paragraph_index == 0:
         warnings.insert(body_warning_index, "empty-body")
 
+    back = direct_child(document.root, "back")
+    back_matter_containers = (
+        tuple(sorted({local_name(child) for child in back} & BACK_MATTER_KINDS))
+        if back is not None
+        else ()
+    )
+    type_histogram = Counter(section.normalized_type for section in sections)
+
     return ParseResult(
         doi=doi,
         title=title,
@@ -306,4 +349,8 @@ def parse_paper(document: SourceDocument, doi: str, title: str) -> ParseResult:
         abstract_paragraph_count=abstract_paragraph_count,
         skipped_element_kinds=dict(sorted(skipped.items())),
         warnings=tuple(warnings),
+        normalized_type_histogram=dict(sorted(type_histogram.items())),
+        unclassified_headings=dict(sorted(unclassified_headings.items())),
+        type_conflicts=tuple(type_conflicts),
+        back_matter_containers=back_matter_containers,
     )
