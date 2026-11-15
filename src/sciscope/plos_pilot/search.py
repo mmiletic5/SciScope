@@ -13,9 +13,10 @@ import urllib.request
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from http.client import HTTPException
 from pathlib import Path
 from typing import Any
-from urllib.error import HTTPError, URLError
+from urllib.error import HTTPError
 from urllib.parse import urlencode
 
 from sciscope.plos_pilot import config
@@ -80,17 +81,23 @@ class RequestRunner:
         Returns:
             Response bytes.
         """
+        label = (
+            "Solr"
+            if url == config.SEARCH_URL
+            or url.startswith(config.SEARCH_URL + "?")
+            else "PLOS"
+        )
         for attempt in range(3):
             try:
                 return self._start(url, timeout)
             except HTTPError as error:
                 if error.code != 429 and not 500 <= error.code <= 599:
                     raise RuntimeError(
-                        f"Permanent Solr HTTP {error.code}: {url}"
+                        f"Permanent {label} HTTP {error.code}: {url}"
                     ) from error
                 if attempt == 2:
                     raise RuntimeError(
-                        f"Solr HTTP {error.code} after retries: {url}"
+                        f"{label} HTTP {error.code} after retries: {url}"
                     ) from error
                 retry_after = (
                     error.headers.get("Retry-After") if error.headers else None
@@ -100,10 +107,10 @@ class RequestRunner:
                 except ValueError:
                     delay = 0.0
                 self.sleep(min(max(2.0**attempt, delay), 60.0))
-            except (TimeoutError, URLError) as error:
+            except (OSError, HTTPException) as error:
                 if attempt == 2:
                     raise RuntimeError(
-                        f"Solr request failed after retries: {url}"
+                        f"{label} request failed after retries: {url}"
                     ) from error
                 self.sleep(2.0**attempt)
         raise AssertionError("Unreachable retry state")

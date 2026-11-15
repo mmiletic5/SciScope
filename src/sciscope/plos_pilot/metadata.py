@@ -188,7 +188,13 @@ def write_metadata(
                     raise ValueError(
                         f"Raw XML path escapes repository: {raw_path}"
                     )
-                xml = raw_path.read_bytes()
+                try:
+                    xml = raw_path.read_bytes()
+                except FileNotFoundError as error:
+                    raise ValueError(
+                        f"Raw XML missing for DOI {entry['doi']}; "
+                        "re-run the download command to restore raw XML"
+                    ) from error
                 digest = hashlib.sha256(xml).hexdigest()
                 if digest != entry["xml_sha256"]:
                     raise ValueError(

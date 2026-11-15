@@ -7,9 +7,9 @@ from pathlib import Path
 from urllib.parse import parse_qs, quote, urlsplit
 
 import pytest
-from sciscope.plos_pilot.download import download_selected
 
 from sciscope.plos_pilot import config
+from sciscope.plos_pilot.download import download_selected
 from sciscope.plos_pilot.selection import write_screening, write_selection
 
 DOIS = [f"10.9999/synthetic-{index:02d}" for index in range(15)]
@@ -60,7 +60,7 @@ def setup_inputs(
 ) -> tuple[Path, Path, Path, Path, Path]:
     """Write only SYNTHETIC input records beneath a pytest temporary root."""
     pilot = root / "data" / "pilot"
-    pilot.mkdir(parents=True)
+    pilot.mkdir(parents=True, exist_ok=True)
     screening = pilot / "screening.tsv"
     selection = pilot / "selection.tsv"
     candidates = pilot / "candidates.jsonl"
@@ -345,6 +345,99 @@ def test_duplicate_conflict_and_interrupted_run(tmp_path: Path) -> None:
         )
         == 1
     )
+
+
+def test_duplicate_restores_missing_raw_xml_without_changing_manifest(
+    tmp_path: Path,
+) -> None:
+    """A matching refetch restores gitignored raw XML on a fresh clone."""
+
+    def fetch(url: str, timeout: float) -> bytes:
+        assert timeout == 30.0
+        doi = parse_qs(urlsplit(url).query)["id"][0]
+        return synthetic_xml(doi)
+
+    first = run_download(tmp_path, fetch)
+    assert first.accepted == DOIS
+    manifest = tmp_path / "data/pilot/manifest.jsonl"
+    manifest_before = manifest.read_bytes()
+    raw_path = tmp_path / "data/raw/plos" / f"{quote(DOIS[0], safe='')}.xml"
+    expected_bytes = raw_path.read_bytes()
+    raw_path.unlink()
+
+    second = run_download(tmp_path, fetch)
+
+    assert second.duplicate == DOIS
+    assert second.failed == {}
+    assert raw_path.read_bytes() == expected_bytes
+    record = json.loads(manifest_before.splitlines()[0])
+    assert (
+        hashlib.sha256(raw_path.read_bytes()).hexdigest()
+        == record["xml_sha256"]
+    )
+    assert manifest.read_bytes() == manifest_before
+
+
+def test_duplicate_preserves_raw_xml_with_wrong_local_digest(
+    tmp_path: Path,
+) -> None:
+    """A corrupt local raw file is reported, never silently overwritten."""
+
+    def fetch(url: str, timeout: float) -> bytes:
+        assert timeout == 30.0
+        doi = parse_qs(urlsplit(url).query)["id"][0]
+        return synthetic_xml(doi)
+
+    first = run_download(tmp_path, fetch)
+    assert first.accepted == DOIS
+    manifest = tmp_path / "data/pilot/manifest.jsonl"
+    manifest_before = manifest.read_bytes()
+    raw_path = tmp_path / "data/raw/plos" / f"{quote(DOIS[0], safe='')}.xml"
+    corrupt_bytes = b"SYNTHETIC local corruption"
+    raw_path.write_bytes(corrupt_bytes)
+
+    second = run_download(tmp_path, fetch)
+
+    assert DOIS[0] not in second.duplicate
+    assert DOIS[0] in second.failed
+    assert (
+        "local raw XML does not match manifest SHA256" in second.failed[DOIS[0]]
+    )
+    assert raw_path.read_bytes() == corrupt_bytes
+    assert manifest.read_bytes() == manifest_before
+
+
+def test_conflict_still_preserves_raw_and_saves_fetched_bytes(
+    tmp_path: Path,
+) -> None:
+    """A different fetched digest remains a conflict with separate evidence."""
+    title = ["SYNTHETIC original"]
+
+    def fetch(url: str, timeout: float) -> bytes:
+        assert timeout == 30.0
+        doi = parse_qs(urlsplit(url).query)["id"][0]
+        return synthetic_xml(
+            doi, title=title[0] if doi == DOIS[0] else "SYNTHETIC title"
+        )
+
+    first = run_download(tmp_path, fetch)
+    assert first.accepted == DOIS
+    manifest = tmp_path / "data/pilot/manifest.jsonl"
+    manifest_before = manifest.read_bytes()
+    raw_path = tmp_path / "data/raw/plos" / f"{quote(DOIS[0], safe='')}.xml"
+    raw_before = raw_path.read_bytes()
+    title[0] = "SYNTHETIC changed"
+    fetched = synthetic_xml(DOIS[0], title=title[0])
+
+    second = run_download(tmp_path, fetch)
+
+    assert DOIS[0] in second.conflict
+    assert raw_path.read_bytes() == raw_before
+    assert manifest.read_bytes() == manifest_before
+    digest_prefix = hashlib.sha256(fetched).hexdigest()[:12]
+    conflict_name = f"{quote(DOIS[0], safe='')}.{digest_prefix}.xml"
+    conflict_path = raw_path.parent / "conflicts" / conflict_name
+    assert conflict_path.read_bytes() == fetched
 
 
 def test_cap_marks_remaining_selected_dois_pending(

@@ -201,6 +201,17 @@ def download_selected(
             if old is not None:
                 old_digest = str(old["xml_sha256"])
                 if old_digest == digest:
+                    if raw_path.exists():
+                        local_digest = hashlib.sha256(
+                            raw_path.read_bytes()
+                        ).hexdigest()
+                        if local_digest != old_digest:
+                            summary.failed[doi] = (
+                                "local raw XML does not match manifest SHA256"
+                            )
+                            continue
+                    else:
+                        _atomic_bytes(raw_path, xml)
                     summary.duplicate.append(doi)
                 else:
                     conflict_path = (

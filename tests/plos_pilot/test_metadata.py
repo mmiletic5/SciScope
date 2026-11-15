@@ -179,3 +179,26 @@ def test_write_metadata_checks_digest_sorts_and_replaces_atomically(
     with pytest.raises(ValueError, match="SHA256|digest|hash"):
         write_metadata(manifest, output, tmp_path)
     assert output.read_bytes() == before
+
+
+def test_write_metadata_missing_raw_xml_has_actionable_error(
+    tmp_path: Path,
+) -> None:
+    """A missing gitignored raw file asks the operator to rerun download."""
+    doi = "10.9999/synthetic-missing"
+    manifest = tmp_path / "data/pilot/manifest.jsonl"
+    manifest.parent.mkdir(parents=True)
+    entry = {
+        "doi": doi,
+        "raw_xml_path": "data/raw/plos/10.9999%2Fsynthetic-missing.xml",
+        "xml_sha256": hashlib.sha256(synthetic_article(doi)).hexdigest(),
+    }
+    manifest.write_text(json.dumps(entry) + "\n", encoding="utf-8")
+    output = tmp_path / "data/pilot/metadata.jsonl"
+
+    with pytest.raises(ValueError) as error:
+        write_metadata(manifest, output, tmp_path)
+
+    assert doi in str(error.value)
+    assert "re-run" in str(error.value).lower()
+    assert not output.exists()
