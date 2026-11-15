@@ -250,6 +250,16 @@ quote fails; `verify-roundtrip` checks every emitted section/paragraph on all
 17 files; Person 1 reports observed results and explicit acceptance/rejection.
 Only after that, append `EVIDENCE.md` and synchronize task/backlog checkboxes.
 
+## Implementation clarifications (Group A, 2026-11-15)
+
+- A `<p>` directly inside a `<p>` is an unlisted kind: omit it, count `p`, and warn.
+- A contiguous run of direct body `<p>` elements is broken only by a `<sec>` sibling.
+- Body `normalized_type` is a temporary `other` placeholder until T005; abstract sections are `abstract`.
+- The XML safety gate is outside `SourceDocument.from_bytes` and is applied by callers in T006.
+- A non-`article` root raises `JatsParseError`; absent `<body>` raises `MissingBodyError`; a body with no sections or paragraphs warns `empty-body`.
+- The primary abstract is the first untyped `<abstract>` under `<front>/<article-meta>`; absence warns `missing-abstract`. Warnings use `<code>: <subject>` when a subject exists, with codes `empty-section`, `empty-paragraph`, `unlisted-element`, `missing-abstract`, `empty-abstract`, and `empty-body`.
+- Python records use tuples for `omitted` and `section_path`; T006 serializes them as JSON arrays.
+
 ## Objections
 
 D3 says non-section/paragraph targets fail, while D5 requires an abstract
