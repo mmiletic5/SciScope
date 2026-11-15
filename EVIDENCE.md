@@ -176,3 +176,25 @@ dependency resolution, and CI remain unverified. Human acceptance: NOT PROVIDED.
 ## 2026-11-14 lockfile note
 
 `uv.lock` now exists on `main`.
+
+### F001 — PLOS pilot acquisition (T001–T008)
+
+- **Owner:** Person 1
+- **Feature specification and plan:** `specs/001-plos-pilot-acquisition/{spec.md,plan.md}`, approved 2026-11-14 by Person 1.
+- **Current state:** DONE
+- **Files changed:** `src/sciscope/plos_pilot/{__init__,config,doi,search,selection,metadata,download,cli}.py`, `src/sciscope/__init__.py`, `tests/plos_pilot/*` (conftest and test_config/doi/search/selection/download/metadata/cli), `data/pilot/{candidates.jsonl,screening.tsv,selection.tsv,manifest.jsonl,metadata.jsonl}`. Raw XML (17 files under `data/raw/plos/`) is local and gitignored.
+- **Tests created or updated:** `tests/plos_pilot/*` (conftest and test_config/doi/search/selection/download/metadata/cli).
+- **RED result:** Implementation groups A and B: exact per-group RED outputs NOT RECORDED. Fix round R1/R2 (2026-11-15): RED was observed locally for the new tests; three first stopped at `FileExistsError` caused by a bug in a test helper, which Codex then corrected.
+- **GREEN result:** Person 1 ran implementation groups A and B tests locally and reported all passing. Fix round R1/R2: `uv run --locked pytest tests/plos_pilot/test_download.py tests/plos_pilot/test_metadata.py tests/plos_pilot/test_search.py -q` → 32 passed in 1.80s.
+- **Other automated checks:** Fix round R1/R2: `uv run --locked ruff check .` → All checks passed; `uv run --locked ruff format --check .` → 54 files already formatted; `uv run --locked mypy src` → Success: no issues found in 9 source files. `git diff --check` and `git status --short`: Person 1 reported OK; output NOT RECORDED. Full `uv run --locked pytest -q` after the fix round: NOT REPORTED. CI on the feature PR: NOT RUN yet; record after PR.
+- **Known issues and prior attempts:** Live conflict path (same DOI, changed bytes): NOT RUN live; covered only by offline tests. Journal routes other than PLOS ONE: NOT VERIFIED (only PLOS ONE is configured). Eleven of the 870 candidates have a blank journal field in Solr (all PLOS ONE DOIs), so the downloader cannot route them; deferred. Observations for the later data-contract feature: language is stored as `EN`; license is sometimes free text instead of a URL; the first subjects value is `Research Article`.
+- **Awaiting human confirmation:** No
+
+#### Human evidence
+
+- **Verifier:** Person 1
+- **Verification date:** 2026-11-15
+- **Exact manual commands or actions:** Live search and download in Person 1's terminal on 2026-11-14; human screening and selection; fix-round live check on 2026-11-15.
+- **Observed outcome:** Live search used six query arms (title/abstract × `Apis mellifera`, `honey bee`, `honeybee`) with `doc_type:full` and `article_type:"research article"` filters. Per-arm counts matched the earlier observations; 870 unique candidates, 23 requests, and request spacing ≥ 6 s. Person 1 reviewed 24 candidates: 17 `measured_mellifera`, 2 `comparative_mellifera`, 2 `other_species_only`, and 3 `species_ambiguous`. The assistant proposed the initial shortlist, and Person 1 confirmed each decision. Abstracts were read for all 17 selected papers. Methods were read for the 3 candidates described as "honey bee" without a species; Person 1 recorded them as `species_ambiguous` and did not select them. The selection contains 17 DOIs, all `measured_mellifera`, all PLOS ONE (prefix `10.1371/journal.pone.`), with 8 human-assigned topics. First live download: Accepted 17, Duplicate 0, Conflict 0, Failed 0, Pending 0. Repeat live download: Accepted 0, Duplicate 17. Manifest `xml_sha256` equals the SHA256 of the local raw file for 17 of 17. Front matter has language `EN` and article type `research-article` for all 17. Licenses: 11 entries use `http://creativecommons.org/licenses/by/4.0/` and 6 are free-text CC BY statements. R1 live check (2026-11-15): one raw XML (`10.1371/journal.pone.0037017`) was deleted and download re-run; Person 1 reported OK (file restored, duplicate path). Details beyond "OK": NOT RECORDED.
+- **Explicit decision:** ACCEPTED — Person 1 explicitly accepted SC-001..SC-004 on 2026-11-15 (statement supplied by Person 1 in chat).
+- **Final status:** DONE
