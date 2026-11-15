@@ -1,0 +1,789 @@
+{
+  "papers": [
+    {
+      "doi": "10.1371/journal.pone.0000395",
+      "xml_sha256": "ee0fc718e4c1c16b2d75347939f618091229ba8b26be6257c13bf29f8816668f",
+      "section_count": 23,
+      "paragraph_count": 46,
+      "abstract_paragraph_count": 1,
+      "normalized_type_histogram": {
+        "abstract": 1,
+        "discussion": 6,
+        "introduction": 1,
+        "methods": 10,
+        "results": 5
+      },
+      "unclassified_headings": {
+        "A model for the magnetoreception system in honey bees": 1,
+        "AFM/MFM": 1,
+        "Additional magnetic fields (1 Gauss) induces the fluctuation of MGs in size": 1,
+        "Additional magnetic fields (1 Gauss) induces the release of calcium ions from trophocytes and fat cells": 1,
+        "Additional magnetic fields (1 Gauss) induces the release of calcium ions from trophocytes, which can be inhibited by colchicines and latrunculin B": 1,
+        "EPR": 1,
+        "ESCA": 1,
+        "Honeybees": 1,
+        "IGs possess SM and are MGs": 1,
+        "IGs purification and characterization": 1,
+        "IGs size measurements": 1,
+        "Intracellular calcium measurements": 1,
+        "Magnetoreception system of honeybees": 1,
+        "Physico-Chemical properties of IGs": 1,
+        "Purification of IGs": 1,
+        "SM in IGs": 1,
+        "SQUID magnetometer": 1,
+        "TEM": 1
+      },
+      "type_conflicts": [],
+      "skipped_element_kinds": {
+        "disp-formula": 2,
+        "fig": 7
+      },
+      "back_matter_containers": [
+        "ack",
+        "ref-list"
+      ],
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "doi": "10.1371/journal.pone.0018808",
+      "xml_sha256": "3ddf70db9d382b9c9d728169b866f8144b1995274a3d533fd6eaf6943ff25cb2",
+      "section_count": 19,
+      "paragraph_count": 27,
+      "abstract_paragraph_count": 3,
+      "normalized_type_histogram": {
+        "abstract": 4,
+        "discussion": 1,
+        "introduction": 1,
+        "methods": 10,
+        "results": 3
+      },
+      "unclassified_headings": {
+        "Data analysis": 1,
+        "Effect of cell-size on caste differentiation": 2,
+        "Effect of diet on caste differentiation": 2,
+        "Experimental Details": 1,
+        "Harvest of RJ and WJ": 1,
+        "Measurement of DNA methyltransferase 3 activity": 1,
+        "Measurement of DNA methyltransferase 3 gene expression": 1,
+        "Measurement of methylation status of dynactin p62": 1,
+        "Measurement of morphometrics": 1
+      },
+      "type_conflicts": [],
+      "skipped_element_kinds": {
+        "fig": 3,
+        "list": 1,
+        "table-wrap": 1
+      },
+      "back_matter_containers": [
+        "ack",
+        "ref-list"
+      ],
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "doi": "10.1371/journal.pone.0034137",
+      "xml_sha256": "e6aac202738af24dc526a73cf465dd9dc41daf8395feda03491c0c59f2da6096",
+      "section_count": 19,
+      "paragraph_count": 29,
+      "abstract_paragraph_count": 1,
+      "normalized_type_histogram": {
+        "abstract": 1,
+        "discussion": 1,
+        "introduction": 1,
+        "methods": 9,
+        "other": 1,
+        "results": 6
+      },
+      "unclassified_headings": {
+        "Animals": 1,
+        "Antennal response assays": 2,
+        "Chronic dose mortality": 1,
+        "Chronic dose mortality assays": 1,
+        "Compounds tested": 1,
+        "Proboscis response assays": 2,
+        "Statistical analysis": 1,
+        "Sucrose response threshold assays": 2,
+        "Total consumption and single dose mortality": 1,
+        "Total consumption and single dose mortality assays": 1
+      },
+      "type_conflicts": [],
+      "skipped_element_kinds": {
+        "fig": 8,
+        "supplementary-material": 1
+      },
+      "back_matter_containers": [
+        "ack",
+        "ref-list"
+      ],
+      "warnings": [
+        "empty-section: 10.1371/journal.pone.0034137#sec-5"
+      ],
+      "errors": []
+    },
+    {
+      "doi": "10.1371/journal.pone.0037017",
+      "xml_sha256": "ecc9124847061edbc47a33527e6377adbc66d632d442fec1fa261bcc26d6eda4",
+      "section_count": 23,
+      "paragraph_count": 33,
+      "abstract_paragraph_count": 1,
+      "normalized_type_histogram": {
+        "abstract": 1,
+        "conclusions": 1,
+        "introduction": 1,
+        "methods": 14,
+        "other": 1,
+        "results_discussion": 5
+      },
+      "unclassified_headings": {
+        "Alkaline phosphatase": 1,
+        "Enzyme Activity Analysis": 1,
+        "Enzyme extraction": 1,
+        "Expression of Nosema Ceranae and Other Microorganisms’ Genes": 1,
+        "Functional Analysis": 1,
+        "Glutathione peroxidase": 1,
+        "Glutathione reductase": 1,
+        "Glutathione-S-transferase": 1,
+        "Histology": 1,
+        "Network Analysis": 1,
+        "Nosema Ceranae Impairs Cell Signalling and Tissue Integrity in the Midgut": 1,
+        "Nosema Ceranae Increases Sugar Metabolism in the Midgut": 1,
+        "Nosema Ceranae Induces Oxidative Stress in the Midgut": 1,
+        "Nosema Ceranae Infection and Bee Rearing": 1,
+        "RNA Labeling, Array Hybridization and Statistical Analysis": 1,
+        "Superoxide dismutase": 1,
+        "Verification by Reverse-transcriptase PCR": 1
+      },
+      "type_conflicts": [],
+      "skipped_element_kinds": {
+        "fig": 5,
+        "supplementary-material": 6,
+        "table-wrap": 1
+      },
+      "back_matter_containers": [
+        "ack",
+        "ref-list"
+      ],
+      "warnings": [
+        "empty-section: 10.1371/journal.pone.0037017#sec-4"
+      ],
+      "errors": []
+    },
+    {
+      "doi": "10.1371/journal.pone.0077354",
+      "xml_sha256": "9e988203d350fdc5555b2d2b42409081743b75f179f269213784be971a11db54",
+      "section_count": 18,
+      "paragraph_count": 29,
+      "abstract_paragraph_count": 1,
+      "normalized_type_histogram": {
+        "abstract": 1,
+        "discussion": 1,
+        "introduction": 1,
+        "methods": 9,
+        "other": 1,
+        "results": 5
+      },
+      "unclassified_headings": {
+        "Assessment of survival rates": 1,
+        "Data analysis": 1,
+        "Detection of IAPV in heads of honey bees": 1,
+        "Ethics Statement": 1,
+        "Homing experiments": 1,
+        "Impairment of the homing ability of IAPV-infected honey bees": 1,
+        "Isolation and purification of IAPV": 1,
+        "Quantification of IAPV by Real-Time qPCR": 1,
+        "Responsiveness of IAPV-infected honey bees to sucrose": 1,
+        "Responsiveness to sucrose": 1,
+        "Screening for healthy colonies": 1,
+        "Survival rates of inoculated honey bees": 1
+      },
+      "type_conflicts": [],
+      "skipped_element_kinds": {
+        "fig": 5,
+        "supplementary-material": 1,
+        "table-wrap": 1
+      },
+      "back_matter_containers": [
+        "ack",
+        "ref-list"
+      ],
+      "warnings": [
+        "empty-section: 10.1371/journal.pone.0077354#sec-5"
+      ],
+      "errors": []
+    },
+    {
+      "doi": "10.1371/journal.pone.0101262",
+      "xml_sha256": "3cf480b5a2c6f6106ae88519af73d75c43000bae79bed05f8c32ef026c8ee358",
+      "section_count": 21,
+      "paragraph_count": 49,
+      "abstract_paragraph_count": 1,
+      "normalized_type_histogram": {
+        "abstract": 1,
+        "conclusions": 1,
+        "discussion": 1,
+        "introduction": 1,
+        "methods": 11,
+        "other": 1,
+        "results": 5
+      },
+      "unclassified_headings": {
+        "Analysis of “Scallop” Response Pattern": 1,
+        "Apparatus": 1,
+        "Baseline": 1,
+        "Data Analysis": 1,
+        "Extinction": 2,
+        "Fixed Interval Schedules": 1,
+        "Groups": 1,
+        "Post Reinforcement Pause (PRP)": 1,
+        "Procedural Differences": 1,
+        "Response Rate": 1,
+        "Sessions": 1,
+        "Shaping": 1,
+        "Subjects": 1
+      },
+      "type_conflicts": [],
+      "skipped_element_kinds": {
+        "fig": 8,
+        "supplementary-material": 7,
+        "table-wrap": 6
+      },
+      "back_matter_containers": [
+        "ack",
+        "ref-list"
+      ],
+      "warnings": [
+        "empty-section: 10.1371/journal.pone.0101262#sec-6"
+      ],
+      "errors": []
+    },
+    {
+      "doi": "10.1371/journal.pone.0118885",
+      "xml_sha256": "f31ec1eb2e500b66dead584af51eeb0b94a2e7526225aa4aaf8cdb4582191252",
+      "section_count": 18,
+      "paragraph_count": 28,
+      "abstract_paragraph_count": 1,
+      "normalized_type_histogram": {
+        "abstract": 1,
+        "conclusions": 3,
+        "introduction": 1,
+        "methods": 10,
+        "results": 3
+      },
+      "unclassified_headings": {
+        "Artificial infestation of adult bees with V. destructor": 1,
+        "Artificial infestation of brood with V. destructor": 1,
+        "Assessment of V. destructor population growth": 1,
+        "Collection of V. destructor mites": 1,
+        "Mite levels in HMP and LMP colonies": 2,
+        "PCR reactions": 1,
+        "RNA extraction and cDNA synthesis": 1,
+        "Separation and quantification of PCR products": 1,
+        "Source colonies for brood and adult worker bees": 1,
+        "Statistical analysis": 1,
+        "Viruses in mites and bees from HMP and LMP colonies": 2
+      },
+      "type_conflicts": [
+        {
+          "section_id": "10.1371/journal.pone.0118885#sec-4",
+          "sec_type": "conclusions",
+          "heading": "Discussion"
+        }
+      ],
+      "skipped_element_kinds": {
+        "fig": 2
+      },
+      "back_matter_containers": [
+        "ack",
+        "ref-list"
+      ],
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "doi": "10.1371/journal.pone.0123911",
+      "xml_sha256": "7dae0f946c665e49964d608afa001051d76f86137e33cd667ca0cbc98ad517b0",
+      "section_count": 14,
+      "paragraph_count": 29,
+      "abstract_paragraph_count": 1,
+      "normalized_type_histogram": {
+        "abstract": 1,
+        "conclusions": 1,
+        "introduction": 1,
+        "methods": 6,
+        "other": 1,
+        "results": 4
+      },
+      "unclassified_headings": {
+        "Bioinformatics pipeline": 1,
+        "Classification of OTUs": 1,
+        "DNA extraction and sequencing of hindgut contents": 1,
+        "Microbiomes differ between castes": 1,
+        "Relative abundance of previously characterized phylotypes varies among castes": 1,
+        "Sample collection": 1,
+        "Statistical analyses": 1,
+        "Summary of sequences and classification": 1
+      },
+      "type_conflicts": [
+        {
+          "section_id": "10.1371/journal.pone.0123911#sec-4",
+          "sec_type": "conclusions",
+          "heading": "Discussion"
+        }
+      ],
+      "skipped_element_kinds": {
+        "fig": 3,
+        "supplementary-material": 5,
+        "table-wrap": 3
+      },
+      "back_matter_containers": [
+        "ack",
+        "ref-list"
+      ],
+      "warnings": [
+        "empty-section: 10.1371/journal.pone.0123911#sec-5"
+      ],
+      "errors": []
+    },
+    {
+      "doi": "10.1371/journal.pone.0124365",
+      "xml_sha256": "1dd69c2f239aaf8b798a865c178033386a572a89dacc968bce9947c23142d488",
+      "section_count": 13,
+      "paragraph_count": 32,
+      "abstract_paragraph_count": 1,
+      "normalized_type_histogram": {
+        "abstract": 1,
+        "conclusions": 1,
+        "introduction": 1,
+        "methods": 5,
+        "other": 1,
+        "results": 4
+      },
+      "unclassified_headings": {
+        "Assignment’s precision and accuracy": 1,
+        "Identification and Ranking of AIMs": 1,
+        "Panel Testing": 1,
+        "Ranking of SNPs": 1,
+        "Samples, DNA Extraction and SNP Genotyping": 1,
+        "Selection of AIMs": 1,
+        "Validation of the AIMs Panels": 1
+      },
+      "type_conflicts": [
+        {
+          "section_id": "10.1371/journal.pone.0124365#sec-4",
+          "sec_type": "conclusions",
+          "heading": "Discussion"
+        }
+      ],
+      "skipped_element_kinds": {
+        "fig": 5,
+        "supplementary-material": 7,
+        "table-wrap": 1
+      },
+      "back_matter_containers": [
+        "ack",
+        "ref-list"
+      ],
+      "warnings": [
+        "empty-section: 10.1371/journal.pone.0124365#sec-5"
+      ],
+      "errors": []
+    },
+    {
+      "doi": "10.1371/journal.pone.0148740",
+      "xml_sha256": "ab694796b5f8516b7e51f0bf084fc0b2fbbee6b7dff85696c8cb8d547bc3111f",
+      "section_count": 23,
+      "paragraph_count": 31,
+      "abstract_paragraph_count": 3,
+      "normalized_type_histogram": {
+        "abstract": 4,
+        "conclusions": 6,
+        "introduction": 1,
+        "methods": 5,
+        "other": 1,
+        "results": 6
+      },
+      "unclassified_headings": {
+        "Brood temperatures are different between worker and drone brood": 1,
+        "Caste difference in RH regulation show a different pattern compared to temperature regulation": 1,
+        "Data conversion and statistics": 1,
+        "Experiment 1: Relative Humidity": 1,
+        "Experiment 1: Temperature": 1,
+        "Experiment 1: Variability of T and sRH": 1,
+        "Experiment 2: Effect of honey combs on regulation of humidity": 1,
+        "Experiment I. Differences of T and RH in drone and worker brood across three developmental stages": 2,
+        "Experiment II. Contribution of honey combs to RH regulation": 1,
+        "Honey bees": 1,
+        "Honey combs contribute little to humidity regulation": 1,
+        "Humidity in colony is largely due to regulation by honey bee adult workers": 1,
+        "Pupae required the lowest temperature in both worker and drone brood": 1
+      },
+      "type_conflicts": [
+        {
+          "section_id": "10.1371/journal.pone.0148740#sec-4",
+          "sec_type": "conclusions",
+          "heading": "Discussion"
+        }
+      ],
+      "skipped_element_kinds": {
+        "disp-formula": 2,
+        "fig": 3,
+        "supplementary-material": 7,
+        "table-wrap": 4
+      },
+      "back_matter_containers": [
+        "ack",
+        "ref-list"
+      ],
+      "warnings": [
+        "empty-section: 10.1371/journal.pone.0148740#sec-5"
+      ],
+      "errors": []
+    },
+    {
+      "doi": "10.1371/journal.pone.0187079",
+      "xml_sha256": "1e69893e18efb3cde0fc7b9fec8d301cff0c24e4d9394c998829404333dbb327",
+      "section_count": 14,
+      "paragraph_count": 24,
+      "abstract_paragraph_count": 1,
+      "normalized_type_histogram": {
+        "abstract": 1,
+        "conclusions": 1,
+        "introduction": 1,
+        "methods": 6,
+        "other": 1,
+        "results": 4
+      },
+      "unclassified_headings": {
+        "Experimental setup": 1,
+        "Immune-related gene expression in brown-eyed pupae": 1,
+        "Immune-related gene expression in white-eyed pupae": 1,
+        "Pathway analysis of honey bee immune gene expression data": 1,
+        "RNA isolation and cDNA synthesis": 1,
+        "Real-time PCR": 1,
+        "Statistical analysis": 1,
+        "The difference in the mean expression of each gene between groups infested with Varroa and group simultaneously infested with Varroa and treated with thiamethoxam": 1
+      },
+      "type_conflicts": [
+        {
+          "section_id": "10.1371/journal.pone.0187079#sec-4",
+          "sec_type": "conclusions",
+          "heading": "Discussion"
+        }
+      ],
+      "skipped_element_kinds": {
+        "fig": 3,
+        "supplementary-material": 4,
+        "table-wrap": 1
+      },
+      "back_matter_containers": [
+        "ref-list"
+      ],
+      "warnings": [
+        "empty-section: 10.1371/journal.pone.0187079#sec-5"
+      ],
+      "errors": []
+    },
+    {
+      "doi": "10.1371/journal.pone.0208630",
+      "xml_sha256": "842682f3050e68688c6a48aa1d75706c4c9d8016cc08e33219618a1b625f7dfa",
+      "section_count": 11,
+      "paragraph_count": 26,
+      "abstract_paragraph_count": 1,
+      "normalized_type_histogram": {
+        "abstract": 1,
+        "conclusions": 1,
+        "introduction": 1,
+        "methods": 6,
+        "other": 1,
+        "results": 1
+      },
+      "unclassified_headings": {
+        "Drone frame preparation": 1,
+        "Drone rearing and capture": 1,
+        "Semen collection and sample preparation": 1,
+        "Sperm viability analysis": 1,
+        "Statistical analysis": 1
+      },
+      "type_conflicts": [
+        {
+          "section_id": "10.1371/journal.pone.0208630#sec-4",
+          "sec_type": "conclusions",
+          "heading": "Discussion"
+        }
+      ],
+      "skipped_element_kinds": {
+        "fig": 3,
+        "supplementary-material": 1,
+        "table-wrap": 1
+      },
+      "back_matter_containers": [
+        "ack",
+        "ref-list"
+      ],
+      "warnings": [
+        "empty-section: 10.1371/journal.pone.0208630#sec-5"
+      ],
+      "errors": []
+    },
+    {
+      "doi": "10.1371/journal.pone.0228161",
+      "xml_sha256": "b2f5309143fdaa0c4fdb382f42885cbe777f56263d02216d51553c135b71dc54",
+      "section_count": 21,
+      "paragraph_count": 49,
+      "abstract_paragraph_count": 1,
+      "normalized_type_histogram": {
+        "abstract": 1,
+        "conclusions": 5,
+        "introduction": 1,
+        "methods": 9,
+        "other": 1,
+        "results": 4
+      },
+      "unclassified_headings": {
+        "Apparatus": 1,
+        "Conspecific and interspecific groups": 1,
+        "Failure to discriminate between types of stimulus animals": 1,
+        "Future directions and conclusions": 1,
+        "Measurement": 1,
+        "Measurement and analysis": 1,
+        "Ordinal analysis": 1,
+        "Overview": 1,
+        "Procedure": 1,
+        "Reduced performance in the conspecific and interspecific groups": 1,
+        "Regression analysis": 1,
+        "Social control groups": 1,
+        "Social discriminative stimuli": 1,
+        "Standard control groups": 1,
+        "Subjects": 1
+      },
+      "type_conflicts": [
+        {
+          "section_id": "10.1371/journal.pone.0228161#sec-4",
+          "sec_type": "conclusions",
+          "heading": "Discussion"
+        }
+      ],
+      "skipped_element_kinds": {
+        "fig": 5,
+        "supplementary-material": 24,
+        "table-wrap": 8
+      },
+      "back_matter_containers": [
+        "ack",
+        "ref-list"
+      ],
+      "warnings": [
+        "empty-section: 10.1371/journal.pone.0228161#sec-5"
+      ],
+      "errors": []
+    },
+    {
+      "doi": "10.1371/journal.pone.0244648",
+      "xml_sha256": "d64d5f37876fd834c67ec2c60d783704ea58e99f56b508dca1e3bdcf2055310b",
+      "section_count": 17,
+      "paragraph_count": 34,
+      "abstract_paragraph_count": 1,
+      "normalized_type_histogram": {
+        "abstract": 1,
+        "conclusions": 1,
+        "introduction": 1,
+        "methods": 8,
+        "other": 1,
+        "results": 5
+      },
+      "unclassified_headings": {
+        "2.1. Source of bees": 1,
+        "2.2. Sample and tissue collection": 1,
+        "2.3. RNA extraction and cDNA library synthesis": 1,
+        "2.4. RNA sequencing and bioinformatics analyses for differential gene expression": 1,
+        "2.5. Functional clustering analysis of differentially expressed genes": 1,
+        "2.6. Confirmation of differential expression of selected gene products by RT-qPCR": 1,
+        "2.7. Statistical analysis": 1,
+        "3.1. RNA yield and purity": 1,
+        "3.2. RNA sequencing of three honey bee tissues": 1,
+        "3.3. Functional clustering analysis of differentially expressed genes": 1,
+        "3.4. Real time quantitative PCR (RT-qPCR) confirms RNA sequencing data": 1
+      },
+      "type_conflicts": [
+        {
+          "section_id": "10.1371/journal.pone.0244648#sec-4",
+          "sec_type": "conclusions",
+          "heading": "4. Discussion"
+        }
+      ],
+      "skipped_element_kinds": {
+        "fig": 4,
+        "supplementary-material": 9,
+        "table-wrap": 5
+      },
+      "back_matter_containers": [
+        "ack",
+        "ref-list"
+      ],
+      "warnings": [
+        "empty-section: 10.1371/journal.pone.0244648#sec-5"
+      ],
+      "errors": []
+    },
+    {
+      "doi": "10.1371/journal.pone.0258398",
+      "xml_sha256": "1774a31c914d3782bf83c7cae167ad94291d308957ff84cd16fd17add9531ba7",
+      "section_count": 26,
+      "paragraph_count": 56,
+      "abstract_paragraph_count": 1,
+      "normalized_type_histogram": {
+        "abstract": 1,
+        "conclusions": 6,
+        "introduction": 1,
+        "methods": 10,
+        "other": 1,
+        "results": 7
+      },
+      "unclassified_headings": {
+        "Beehives, measurement techniques and time interval": 1,
+        "Changes in colony weight (total weight loss and daily weight loss rate)": 1,
+        "Colony size distribution (class)": 1,
+        "Daily consumption models (DCMs)": 1,
+        "Data manipulation": 1,
+        "Data series on light intensity and temperature": 1,
+        "Environmental factors": 1,
+        "Model descriptions": 1,
+        "Models and complexity": 1,
+        "Statistical analysis": 1,
+        "Study sites, apiaries and bee colonies": 1,
+        "Total weight model (TWM)": 1,
+        "Varroa infestation": 2,
+        "Weight assessment models (WAM)": 1,
+        "Weight loss of honey bee colonies": 1,
+        "a) Daily consumption models (DCMs)": 1,
+        "b) Total weight models (TWMs)": 1,
+        "c) Weight assessment models (WAMs)": 1
+      },
+      "type_conflicts": [
+        {
+          "section_id": "10.1371/journal.pone.0258398#sec-4",
+          "sec_type": "conclusions",
+          "heading": "Discussion"
+        }
+      ],
+      "skipped_element_kinds": {
+        "disp-formula": 5,
+        "fig": 8,
+        "inline-formula": 1,
+        "supplementary-material": 13,
+        "table-wrap": 3
+      },
+      "back_matter_containers": [
+        "ack",
+        "ref-list"
+      ],
+      "warnings": [
+        "empty-section: 10.1371/journal.pone.0258398#sec-6"
+      ],
+      "errors": []
+    },
+    {
+      "doi": "10.1371/journal.pone.0272921",
+      "xml_sha256": "7da749ae817e70c0653df2a227f17261937f2d8811e625b7c76cb00fa2e74d9c",
+      "section_count": 18,
+      "paragraph_count": 30,
+      "abstract_paragraph_count": 1,
+      "normalized_type_histogram": {
+        "abstract": 1,
+        "conclusions": 1,
+        "introduction": 1,
+        "methods": 7,
+        "other": 1,
+        "results": 7
+      },
+      "unclassified_headings": {
+        "2.1. Sampling area": 1,
+        "2.3. Pollination treatments": 1,
+        "2.4. Fruit growth parameters": 1,
+        "2.5. Yield parameters and oil quality": 1,
+        "2.6. Data analysis": 1,
+        "3.1. Fruit development": 1,
+        "3.2. Fruit growth rate": 1,
+        "3.2.1. Accumulative increase rate of fruit": 1,
+        "3.2.2. Daily increase rate of fruit": 1,
+        "3.3. Fruit yield parameters": 1,
+        "3.4. Oil content and fatty acid content in oil": 1
+      },
+      "type_conflicts": [
+        {
+          "section_id": "10.1371/journal.pone.0272921#sec-4",
+          "sec_type": "conclusions",
+          "heading": "4. Discussion"
+        }
+      ],
+      "skipped_element_kinds": {
+        "fig": 5,
+        "supplementary-material": 1,
+        "table-wrap": 2
+      },
+      "back_matter_containers": [
+        "ack",
+        "ref-list"
+      ],
+      "warnings": [
+        "empty-section: 10.1371/journal.pone.0272921#sec-5"
+      ],
+      "errors": []
+    },
+    {
+      "doi": "10.1371/journal.pone.0328626",
+      "xml_sha256": "bda31c1415b23c162353e67e5996a2a12e5828a326b05246b709c0cd4349508e",
+      "section_count": 21,
+      "paragraph_count": 33,
+      "abstract_paragraph_count": 1,
+      "normalized_type_histogram": {
+        "abstract": 1,
+        "conclusions": 1,
+        "introduction": 1,
+        "methods": 13,
+        "other": 1,
+        "results": 4
+      },
+      "unclassified_headings": {
+        "Declarations": 1,
+        "Dietary treatments": 1,
+        "Dry body weight": 2,
+        "Dry body weight.": 1,
+        "Food consumption": 3,
+        "Pollen consumption.": 1,
+        "Protein-to-carbohydrate.": 1,
+        "Statistical analyses": 1,
+        "Sucrose consumption.": 1,
+        "Survival": 1,
+        "Survival.": 1,
+        "Vitamin solutions": 1
+      },
+      "type_conflicts": [
+        {
+          "section_id": "10.1371/journal.pone.0328626#sec-4",
+          "sec_type": "conclusions",
+          "heading": "Discussion"
+        }
+      ],
+      "skipped_element_kinds": {
+        "fig": 5,
+        "supplementary-material": 5,
+        "table-wrap": 2
+      },
+      "back_matter_containers": [
+        "ack",
+        "ref-list"
+      ],
+      "warnings": [
+        "empty-section: 10.1371/journal.pone.0328626#sec-5"
+      ],
+      "errors": []
+    }
+  ],
+  "summary": {
+    "succeeded": 17,
+    "failed": 0
+  }
+}
