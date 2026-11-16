@@ -9,9 +9,9 @@
 
 ### User Story 1 — Traceable section chunks (Priority: P1)
 
-Person 1 produces chunks from F002 records for indexing while preserving every included paragraph's exact text and provenance. **Independent test:** synthetic sections and paragraphs can be chunked and validated without an embedding provider.
+Person 1 produces chunks from F002 records for indexing while preserving source substrings and provenance with exact non-whitespace character coverage. **Independent test:** synthetic sections and paragraphs can be chunked and validated without an embedding provider.
 
-1. **Given** a section with nonempty paragraphs, **when** chunks are built, **then** their text covers each paragraph exactly once in source order, with no paragraph from another section.
+1. **Given** a section with nonempty paragraphs, **when** chunks are built, **then** spans cover every non-whitespace character of each paragraph exactly once, in order, with whitespace-only gaps at split boundaries and no paragraph from another section.
 2. **Given** nested sections, a structured or plain abstract, an implicit body group, or an untitled section, **when** chunks are built, **then** each record remains in its owning section and synthetic `(untitled)` is not treated as a heading.
 3. **Given** empty paragraphs or a section with no own text, **when** chunks are built, **then** no empty embedding input or empty chunk is produced.
 4. **Given** an oversize paragraph or sentence, **when** chunks are built, **then** source-preserving offsets cover it once and a hard-split fallback is flagged when needed.
@@ -45,7 +45,7 @@ Person 1 validates chunk and vector artifacts before Person 2 uses them. **Indep
 
 - **FR-001**: Read and verify F002 `sections.jsonl` and `paragraphs.jsonl` for the pilot, preserving DOI, `section_id`, paragraph locators, `xml_sha256`, section path and type; fail on missing or inconsistent source records.
 - **FR-002**: Emit only nonempty paragraph-derived chunks under Option A, approved by Person 1 on 2026-11-15. Excluded content kinds remain counted in the chunk report. Figure/table caption chunks are a named follow-up after Golden v0. No text crosses section ownership or overlaps.
-- **FR-003**: Preserve chunk `text` verbatim. Store paragraph locator plus start/end character offsets for every span; validation reconstructs all nonempty paragraphs exactly once, in order, from those spans.
+- **FR-003**: Preserve chunk `text` as verbatim source substrings joined by the specified span separators. Store paragraph locator plus start/end character offsets for every span; validation checks every non-whitespace character of each nonempty paragraph exactly once, in order, with whitespace-only gaps at split boundaries.
 - **FR-004**: Use a configurable, versioned token counter and template. The provisional operational cap is 384 estimated tokens per final embedding input, configurable up to an absolute ceiling of 512, including heading context, separator and provider prefix. The chunker reserves prefix overhead; the embedding step rebuilds, recounts and fails on overflow.
 - **FR-005**: Produce deterministic chunk IDs, `chunking_version`, token-counter ID, template version, source `xml_sha256`, ignored-content counts and a deterministic chunk report. Repeated identical input/configuration must produce byte-identical files.
 - **FR-006**: Configure provider, model, requested dimensions, passage/query prefixes, batch input/token limits and retry limits. Default configuration is OpenAI `text-embedding-3-small`, 1,536 dimensions, empty prefixes. The model is not hard-coded into the chunker.
@@ -70,7 +70,7 @@ F002 JSONL and manifest-listed raw XML are authoritative for this pilot. `data/p
 
 ## Success Criteria
 
-- **SC-001**: All 17 pilot papers process; every nonempty F002 paragraph is covered once, in order, and zero chunks mix sections.
+- **SC-001**: All 17 pilot papers process; every non-whitespace character of every nonempty F002 paragraph is covered exactly once, in order, with whitespace-only gaps at split boundaries, and zero chunks mix sections.
 - **SC-002**: All final embedding inputs are nonempty and at or below the configured operational cap (provisionally 384 estimated tokens) and the absolute 512-token ceiling; overflows fail before a network call.
 - **SC-003**: Two unchanged chunk runs produce byte-identical chunk artifacts. A cold embedding run and a warm-cache rerun produce byte-identical `vectors.f32`, `manifest.json` and committed `embedding_report.json`; console output shows zero provider calls on the warm run.
 - **SC-004**: Synthetic offline tests cover transient/permanent failures, malformed/short/out-of-order responses, cache resume/corruption, shape and norm checks, and absence of secret leakage.
