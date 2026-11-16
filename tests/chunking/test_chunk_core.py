@@ -25,6 +25,13 @@ WORDS = ("velora", "cendrix", "torvex", "lumara", "nestrin", "kulvo")
 COUNTER = Utf8BytesDiv3Counter()
 
 
+def words(n: int) -> str:
+    """Return a repeatable string with exactly 2n B3 tokens."""
+    # n copies of six-byte "amber" use 6n - 1 bytes including spaces.
+    # ceil((6n - 1) / 3) = 2n.
+    return " ".join(["amber"] * n)
+
+
 def synthetic_text(seed: int, count: int) -> str:
     """Generate fixed-seed prose from invented words only."""
     generator = random.Random(seed)
@@ -50,22 +57,17 @@ def paragraph(
 
 
 def small_config(**changes: int) -> ChunkConfig:
-    """Supply approved limits while the T001 validation hook is RED."""
+    """Create a validated small-token configuration for boundary tests."""
     values = {
         "operational_cap_tokens": 96,
         "content_target_min_tokens": 5,
         "content_target_max_tokens": 20,
         "soft_min_tokens": 0,
+        "prefix_reserve_tokens": 0,
         "min_content_budget_tokens": 1,
     }
     values.update(changes)
-    config = object.__new__(ChunkConfig)
-    for name, value in values.items():
-        object.__setattr__(config, name, value)
-    object.__setattr__(
-        config, "prefix_reserve_tokens", changes.get("prefix_reserve_tokens", 0)
-    )
-    return config
+    return ChunkConfig(**values)
 
 
 def assert_span_coverage(
@@ -181,12 +183,15 @@ def test_small_paragraphs_pack_with_separator() -> None:
 
 def test_fitting_paragraph_is_never_split_to_fill() -> None:
     """T002: a whole fitting paragraph starts the next chunk."""
-    sources = [paragraph(synthetic_text(7, 9)), paragraph("amber cobalt", 2)]
+    # 14 + 12 tokens, with a separator, exceeds the target of 20.
+    sources = [paragraph(words(7)), paragraph(words(6), 2)]
     chunks = chunk_section(section(), sources, small_config(), COUNTER)
-    assert all(
-        len([span for span in item.spans if span.paragraph_index == 2]) <= 1
-        for item in chunks
-    )
+    assert len(chunks) == 2
+    assert chunks[0].text == sources[0].text
+    assert len(chunks[1].spans) == 1
+    span = chunks[1].spans[0]
+    assert span.paragraph_index == 2
+    assert (span.start, span.end) == (0, len(sources[1].text))
 
 
 def test_heading_overhead_lowers_effective_max() -> None:
@@ -347,18 +352,21 @@ def test_first_orphan_merges_with_next_when_budget_allows() -> None:
 
 def test_orphan_stays_when_merge_exceeds_budget() -> None:
     """T002: orphan merging never exceeds the heading-adjusted budget."""
+    # Heading overhead is 3: cap 19 leaves 16 content tokens.
+    # 15 words split into 8 and 7 words: 16 and 14 tokens.
+    # The final 3 words cost 6 tokens; merging costs 20 > 16.
     chunks = chunk_section(
         section(),
-        [paragraph(synthetic_text(9, 12)), paragraph("amber", 2)],
+        [paragraph(words(15)), paragraph(words(3), 2)],
         small_config(
-            operational_cap_tokens=24,
+            operational_cap_tokens=19,
             content_target_max_tokens=16,
             soft_min_tokens=8,
         ),
         COUNTER,
     )
-    assert len(chunks) > 1
-    assert chunks[-1].content_tokens < 8
+    assert len(chunks) == 3
+    assert [chunk.content_tokens for chunk in chunks] == [16, 14, 6]
 
 
 def test_adjacent_same_paragraph_spans_join_without_separator() -> None:
@@ -416,6 +424,32 @@ def test_all_embedding_inputs_fit_operational_cap() -> None:
         <= config.operational_cap_tokens
         for item in chunks
     )
+
+
+def test_embedding_inputs_fit_when_heading_budget_binds() -> None:
+    """T002: a binding heading budget caps every final input."""
+    # cap 30 - reserve 3 - heading overhead 3 = 24 content tokens.
+    sources = [paragraph(words(20), index) for index in range(1, 4)]
+    config = small_config(
+        operational_cap_tokens=30,
+        content_target_max_tokens=30,
+        prefix_reserve_tokens=3,
+    )
+    chunks = chunk_section(section(), sources, config, COUNTER)
+    assert all(
+        COUNTER.count(
+            build_embedding_text(item.heading_path, item.text, "passage: ")
+        )
+        <= 30
+        for item in chunks
+    )
+    assert any(item.content_tokens == 24 for item in chunks)
+
+
+def test_sentence_lowercase_follower_is_not_boundary() -> None:
+    """T002: lowercase text after a period stays in one span."""
+    text = "Amber. cobalt follows."
+    assert sentence_spans(text) == [(0, len(text))]
 
 
 def test_chunking_is_deterministic() -> None:

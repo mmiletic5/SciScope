@@ -42,19 +42,39 @@ class ChunkConfig:
 
     def _validate(self) -> None:
         """Reject invalid token limits."""
-        raise NotImplementedError("T001")
+        if not 1 <= self.operational_cap_tokens <= ABSOLUTE_CEILING_TOKENS:
+            raise ConfigError("invalid-operational-cap")
+        if not 0 <= self.prefix_reserve_tokens < self.operational_cap_tokens:
+            raise ConfigError("invalid-prefix-reserve")
+        if not (
+            1
+            <= self.content_target_min_tokens
+            <= self.content_target_max_tokens
+        ):
+            raise ConfigError("invalid-content-targets")
+        if self.soft_min_tokens < 0:
+            raise ConfigError("invalid-soft-minimum")
+        if self.min_content_budget_tokens < 1:
+            raise ConfigError("invalid-content-budget-minimum")
 
 
 def heading_context(section_path: tuple[str, ...]) -> str:
     """Build context from meaningful section headings."""
-    raise NotImplementedError("T001")
+    return HEADING_SEPARATOR.join(
+        heading
+        for heading in section_path
+        if heading.strip() and heading != UNTITLED_LABEL
+    )
 
 
 def build_embedding_text(
     section_path: tuple[str, ...], chunk_text: str, prefix: str = ""
 ) -> str:
     """Build the final versioned embedding input."""
-    raise NotImplementedError("T001")
+    context = heading_context(section_path)
+    if context:
+        return prefix + context + CONTEXT_TEXT_SEPARATOR + chunk_text
+    return prefix + chunk_text
 
 
 def content_budget(
@@ -63,4 +83,11 @@ def content_budget(
     section_path: tuple[str, ...],
 ) -> int:
     """Return content capacity after prefix and heading overhead."""
-    raise NotImplementedError("T001")
+    context = heading_context(section_path)
+    overhead = counter.count(context + CONTEXT_TEXT_SEPARATOR) if context else 0
+    budget = (
+        config.operational_cap_tokens - config.prefix_reserve_tokens - overhead
+    )
+    if budget < config.min_content_budget_tokens:
+        raise HeadingBudgetError("heading-budget-exhausted")
+    return budget

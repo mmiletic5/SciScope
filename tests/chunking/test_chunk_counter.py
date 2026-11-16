@@ -186,3 +186,11 @@ def test_budget_bounds_complete_embedding_input() -> None:
     assert counter.count(build_embedding_text(path, text, prefix)) <= (
         config.operational_cap_tokens
     )
+
+
+def test_default_minimum_rejects_budget_of_eight() -> None:
+    """T001: the default minimum of 32 rejects a budget of eight."""
+    # 94 heading bytes plus two separator bytes cost 32 B3 tokens.
+    config = ChunkConfig(operational_cap_tokens=40)
+    with pytest.raises(HeadingBudgetError):
+        content_budget(config, Utf8BytesDiv3Counter(), ("H" * 94,))

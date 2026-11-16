@@ -22,4 +22,4 @@ class Utf8BytesDiv3Counter:
 
     def count(self, text: str) -> int:
         """Count estimated tokens for text."""
-        raise NotImplementedError("T001")
+        return (len(text.encode("utf-8")) + 2) // 3
