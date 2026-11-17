@@ -1845,3 +1845,330 @@ git --no-pager diff --check
 
 STOP after T004 Phase 2. Group D (T005), CLI wiring, package integration,
 cross-record semantics and F003 set/vector validation are not authorized.
+
+## Implementation clarifications — Group D (T005 library)
+
+Person 1 authorizes **Phase 1 only**: the new frozen outcome and public
+function stub, new SYNTHETIC offline tests and this append-only addendum.
+This supersedes the preceding stop only for this scope. T005 grouping does
+not alter tasks.md. Group E (CLI, staging integration, dead subparser,
+real-pilot validation) is excluded. No existing implemented function body,
+collector vocabulary, schema, existing test/fixture, checkbox, evidence,
+backlog, dependency, commit or push changes. Initial HEAD is 59e8f25 on
+004-data-contract-delivery, with a clean working tree. The reported baseline
+is 2194 passed, 2 skipped on Windows; it was not rerun here.
+
+The following V1–V8 decisions are recorded verbatim from Person 1's request:
+
+- **V1 API (stubs only).** In `validate.py` add a frozen `ValidationOutcome(findings: tuple[Finding, ...], structural: bool, loaded: LoadedPackage)` and
+  `validate_package(package_dir: Path, reports: PackageReports, *, loaded: LoadedPackage | None = None, load_findings: tuple[Finding, ...] = ()) -> ValidationOutcome`. It runs `check_package_structure` exactly once (reusing `loaded`/`load_findings` when supplied, so nothing is parsed twice), then parses the three repository reports ONCE each (strict `decode_json`), then all semantic checks below, and merges everything. Never raises for corrupt input, never writes, reads only the six package files and the three reports (no raw XML, paragraphs, cache, environment, network, local `parser.py`/`classify.py`).
+- **V2 Evaluability gating (no cascades).** A package file is "evaluable" iff it is present in `loaded.records`/`loaded.manifests` and the T004 structure outcome has NO `<entity>-*` code for it (entity from the filename). A cross-record rule runs only if every file it reads is evaluable; reports are evaluable iff decoded and structurally valid (V8). A file-level gate (not per-record) is deliberate: one structurally bad record switches off that file's semantic checks (the structural finding already forces exit 2; fix and rerun). All other independent checks still run and are all reported; one failing file never hides findings about the others. Document this.
+- **V3 Merge, structural flag, ids.** `structural` is True iff any structural finding exists (T004 structural class, plus the new structural code `report-structure` of V8, plus decoding codes for reports). Findings from F003 validators are `Finding` objects with F003 ids (hex/`manifest`/`vectors`/`report`, all already allowed): do NOT push them through `DeliveryFindingCollector` (its code allowlist would rewrite them to `invalid-json`); merge `Finding` objects directly by code: ids union in encounter order truncated to 3, sorted by code. Summing rule: for the SAME code coming from two different sources (T004 and the F003 reuse both emit `vectors-size` and `partial-set` for one defect) the merged count is the MAX of the two counts, not the sum; for codes from a single source counts are unchanged. Delivery-semantic findings use `DeliveryFindingCollector` with unit = (file, record index) for record-level rules, `("manifest", 0)` for manifest-level and `(<report basename>, 0)` for report-level; id = chunk_id (64-hex) for chunk-level codes, the file basename for paper/section-level codes, `manifest` for manifest-level, the report basename for report-level. No value, DOI, path or exception text may reach a `Finding`.
+- **V4 Cross-record semantic codes (new, all exit-1 class).** Define them in plan.md with exact rule, safe id and unit:
+  1. `delivery-duplicate-record`: duplicate paper `doi`; duplicate section `(doi, section_id)`; duplicate `chunk_id`; duplicate chunk `(doi, section_id, ordinal)`.
+  2. `delivery-orphan-record`: section whose `doi` has no paper; chunk whose `doi` has no paper or whose `(doi, section_id)` has no section; also a DOI whose normalized form (algorithm of `plos_pilot/doi.py`; reuse it, never reimplement) differs from the stored string (DOI ownership); a `section_id` that does not start with `<doi>#`.
+  3. `delivery-parent-invalid`: `parent_section_id` null only for roots; otherwise it must exist in the SAME paper, appear EARLIER in file order (preorder), not be the section itself, and no cycles (iterative, bounded, never recursive).
+  4. `delivery-section-structure-mismatch`: `depth` consistent with the parent (derive exact root-depth convention from `jats/cli.py`/parser and record it); `section_path` consistent with the parent's path (derive the exact relation from the parser); abstract sections (`section_id` pattern `<doi>#abstract...`) have `normalized_type == "abstract"` and no other section does. State plainly in plan.md that the consumer cannot recompute the taxonomy from headings (`sec-type` is not delivered); it checks only enum (contract), the abstract rule and chunk/section agreement.
+  5. `delivery-xml-sha-mismatch`: `xml_sha256` of every section and chunk must equal its paper's `xml_sha256`.
+  6. `delivery-locator-mismatch`: every section `source_locator`, chunk `source_locator` and span `source_locator` must (a) match the full locator grammar (`contract.LOCATOR_PATTERN`; `locator_digest` checks only prefix/digest, not the path) and (b) carry a digest equal to the record's `xml_sha256` via `locator_digest`; chunk `source_locator` must equal its first span's locator.
+  7. `delivery-chunk-field-mismatch`: chunk `normalized_type` and `section_path` must equal its section's; `chunk_kind` is the contract enum already; every span must satisfy `end > start` (cross-field, if the contract does not already check it; check `contract.py` first and say which) and spans must be non-empty.
+  8. `delivery-ordinal-gap`: ordinals per `(doi, section_id)` are contiguous from the first ordinal used by `chunking/core.py` (derive start value from code, record it), in file order.
+  9. `delivery-text-hash-mismatch`: `text_sha256 == sha256(text.encode("utf-8"))`.
+  10. `delivery-chunk-id-mismatch`: recompute with the existing `chunking.output.chunk_id` from `chunking_version`, `doi`, `section_id`, `ordinal` and the ordered `ChunkSpan`s; never reimplement the hash.
+  11. `delivery-version-mismatch`: `chunking_version`, `token_counter_id`, `template_version` identical across (a) all chunk records, (b) `delivery_manifest.processing_versions`, (c) the embedding manifest, (d) `chunk_report`; parser/taxonomy source digests are informational: check shape/internal consistency only, NEVER compare with local source files.
+  12. `delivery-report-mismatch`: against the parsed reports — DOI sets and per-paper `xml_sha256` equal between papers.jsonl, parse_report.papers and chunk_report.papers; per-paper `section_count` (parse_report and chunk_report) and `chunk_count` (chunk_report) equal the delivered numbers; `sections_with_chunks` if present; aggregate totals (parse_report `summary.succeeded` = papers; chunk_report summary totals; embedding_report `paper_count`, `chunk_count`, `vector_count`) equal manifest `counts`/the delivered counts. State exactly which report field is compared with which delivered number; the consumer cannot prove paragraph coverage and never claims to.
+  13. `delivery-embedding-set-mismatch`: every field of `delivery_manifest.embedding_set` (provider, model, dimensions, dtype, row_mapping, passage/query prefixes, normalization declared/observed_norm_min/observed_norm_max/tolerance, chunks_sha256, vectors_sha256, embedding_model_revision null) must agree with the (F003-validated) `embedding_manifest.json` and `embedding_report.json` (requested = returned = set dimensions).
+- **V5 F003 reuse (do not reimplement).** When the chunks file and `embedding_manifest.json` are evaluable and the reports are valid: call `embedding.validate.validate_embedding_structure(manifest, report)` (a `SourceInputError` maps to the structural code `report-structure`, id `report`, exit-2 class) and `embedding.validate.validate_embedding_set(records, chunks_sha256=<sha256 of the exact delivered chunks bytes from loaded.raw_files>, manifest=..., report=..., vectors=<exact vector bytes>, counter=Utf8BytesDiv3Counter(), operational_cap_tokens=384, norm_tolerance=0.01, allow_partial=False)`, exactly the arguments `package.validate_staged_inputs` uses; do not call `validate_chunks` (it needs paragraphs; consumer cannot prove paragraph coverage) and do not manufacture paragraph records. The F003 findings are returned unchanged (V3 merge).
+- **V6 Report decoding and structure.** Reports are parsed here (T004 only compares their bytes): decode failures reuse `invalid-utf8`/`invalid-json`/`duplicate-json-key` with the report basename as id (structural). A decoded `chunk_report` is checked with `chunk_validate.validate_chunk_report_structure` and `parse_report` with a small new structural check (required: `papers` list of objects with `doi`, `xml_sha256`, `section_count`; `summary` with integer `succeeded`, `failed`; exact types via `is_json_*`), `embedding_report` via `validate_embedding_structure`; any failure → `report-structure` (id = report basename, or `report` when it comes from the embedding validator), structural. Report-level semantic rules (V4.12) run only for valid reports.
+- **V7 Independence and safety.** Semantic rules are independent; use iterative algorithms; bounded memory proportional to the package; deterministic ordering (file order, then code). Zero false positives on a valid package is part of the contract: the valid package from `run_delivery` must produce zero findings and `structural == False`.
+- **V8 Regression and boundaries.** Changing the bytes of the local `parser.py`/`classify.py` sources (the `DeliveryInputs.parser_source`/`taxonomy_source` files of the fixture tree) after delivery must not produce any finding. The access-boundary test records every open (as in `test_deliver_structure.py`): only the six package files and the three reports may be opened; no writes; no environment access; sockets blocked.
+
+### Renewed solution-research before feature tests
+
+Problem: validate relationships in a received package without source paragraphs
+or XML, reusing F003 as a library and preserving its findings. V1–V8 resolve
+the scope; no new dependency or unapproved implementation is needed.
+
+| Approach | Facts, compatibility and tradeoff |
+| --- | --- |
+| Public F003 functions plus delivery-only joins and strict T004 decoding | Recommended. Existing repository APIs accept loaded records, exact bytes and reports; package.validate_staged_inputs supplies the cap/counter/tolerance arguments. Compatible with the project's Python 3.12 and zero runtime dependencies, with no new license obligation. File gates must precede calls; no paragraph-coverage claim. |
+| Reimplement vector/set/input validation | Would duplicate maintained local F003 behavior and diagnostics. Unnecessary integration and drift risk; prohibited by V5. No library/version/license change evaluated. |
+| Run producer validate_chunks with fabricated paragraphs | Its SourceBundle includes actual paragraphs and coverage checks; a receiver cannot supply those from this package. Reject this approach under V5; it would assert unavailable evidence. |
+
+Renewed authoritative checks: [Python 3.12 JSON](https://docs.python.org/3.12/library/json.html)
+documents object_pairs_hook and nonstandard number defaults; retain T004's
+strict public decoder rather than relying on json.loads defaults.
+[pytest parameter IDs](https://docs.pytest.org/en/stable/example/parametrize.html)
+documents explicit pytest.param IDs; every new parameter case has a short
+explicit or natural ID, including byte payloads. Existing declarations are
+Python >=3.12,<3.13, pytest >=8,<9; no installed-version, new release/license
+or security-audit claim. Internal F003 API facts are from the inspected
+checkout, not external documentation. This brief renewed check is recorded
+here because the authorized documentation scope is plan.md only.
+
+### Final public declarations and derivations
+
+The only source additions are these declarations; validate_package raises
+NotImplementedError. Existing bodies and collector constants are unchanged.
+
+```python
+@dataclass(frozen=True, slots=True)
+class ValidationOutcome:
+    findings: tuple[Finding, ...]
+    structural: bool
+    loaded: LoadedPackage
+
+
+def validate_package(
+    package_dir: Path,
+    reports: PackageReports,
+    *,
+    loaded: LoadedPackage | None = None,
+    load_findings: tuple[Finding, ...] = (),
+) -> ValidationOutcome: ...
+```
+
+| Convention | Derived rule | Source at starting HEAD |
+| --- | --- | --- |
+| Root depth and parent | Root depth 1, parent null, empty parent path for abstract and top-level body sec; implicit body-p groups also depth 1 | src/sciscope/jats/parser.py:274–282, 296–304, 308–318; jats/cli.py:40–53 serializes unchanged |
+| Child depth | Parent depth + 1 | src/sciscope/jats/parser.py:243–253 |
+| Path | parent.section_path + [original_heading if original_heading.strip() else "(untitled)"]; preserve original nonblank heading exactly, without stripping it. Root path contains that one label. Implicit groups use [(untitled)]. | src/sciscope/jats/parser.py:199–200, 313; jats/cli.py:45 |
+| Abstract | Container ID doi#abstract, descendants append .N and remain abstract; other section families are body sections | src/sciscope/jats/parser.py:203–205, 243–251, 274–282 |
+| Ordinal | Start at 1 within each section; increment in persisted file order | src/sciscope/chunking/core.py:276–287; chunking/output.py:294–302 |
+| Span bounds | Contract checks start >= 0 and end >= 1 independently; end > start remains a cross-field semantic rule | src/sciscope/delivery/contract.py:174–181 |
+| Span presence and kind | Nonempty spans and chunk_kind == paragraph are already structural constraints | src/sciscope/delivery/contract.py:190, 195 |
+| Identity | Call chunking.output.chunk_id with ordered ChunkSpan objects; it excludes paragraph_index from the hash | src/sciscope/chunking/output.py:56–76; chunking/core.py:38–45 |
+| Locator | Full contract.LOCATOR_PATTERN plus locator.locator_digest equals record xml_sha256; the latter alone does not check path grammar | src/sciscope/delivery/contract.py:22–25; jats/locator.py:41–51 |
+| DOI | normalize_doi(stored).doi must equal stored, with sanitized handling of its ValueError | src/sciscope/plos_pilot/doi.py:45–90 |
+
+The consumer **cannot recompute taxonomy from headings** because sec-type
+is not delivered. It checks only the contract enum, abstract-family rule
+and chunk/section agreement. It never imports local classification/parser
+logic to infer taxonomy. It cannot prove paragraph coverage, original text
+reconstruction, paragraph_count accuracy, XML traversal or vector origin.
+No required convention was left underived.
+
+### Gating, delegation and merge details for Phase 2
+
+V2 is a deliberate whole-file gate: one structural record error disables
+all semantic checks that consume that file, including its otherwise valid
+rows. It does not disable independent joins/checks in other files. Presence
+alone is insufficient. In particular, absent/failed parses are never replaced
+with empty lists. Report comparisons are split into independently evaluable
+comparisons (for example parse summary versus papers can still run when
+chunks are structurally invalid). F003 set validation needs readable vector
+bytes in addition to the V5 gates; missing bytes are not fabricated.
+
+The references to report structure as "V8" in V2/V3 are preserved verbatim;
+the report definition is V6. Decode each readable report once through
+decode_json; T004 still reads report bytes for hashes without parsing them.
+This does not promise a single physical read of each report. The supplied
+LoadedPackage identity and load_findings must survive; never decode or load
+package files a second time. check_package_structure runs exactly once.
+
+The existing contract uses constants for all three versions in chunks,
+delivery processing_versions and embedding manifest. Mutating any of those
+to another string therefore produces entity-bad-value and gates dependent
+version comparisons; tests must not demand an impossible semantic cascade.
+chunk_report's version strings admit drift structurally and exercise
+delivery-version-mismatch. Similarly malformed locator grammar and empty
+spans are structural gates, while grammar-valid digest disagreement and
+positive equal/reversed span bounds exercise semantic codes. Fixed embedding
+dtype/row_mapping/normalization declaration are structural enum gates too.
+These constraints are retained; no schema or contract weakening is planned.
+
+Call each public embedding entry point once directly, resolving module
+attributes at call time. F003 validate_embedding_set internally invokes
+validate_embedding_structure(..., exact=False); this is existing F003
+behavior, not a second direct receiver call. The direct-call spy substitutes
+a set stub returning findings so the structure-spy count is exactly one.
+The real norm/hash tests exercise the unchanged real set implementation.
+No F003 body changes or validate_chunks calls are planned. SourceInputError
+from report validation maps only to report-structure, never its exception
+payload. No diagnostic carries a raw value or DOI.
+
+Merge the T004 outcome first, delivery findings second, F003 findings last.
+Within a source retain its aggregated count; across sources use MAX for a
+shared code, preserving ordered unique safe IDs truncated to three and
+sorting the final tuple by code. Do not use T004's private _merge_findings:
+its summing and code sanitization intentionally differ. Do not funnel F003
+findings through DeliveryFindingCollector. Only Phase 2 extends delivery
+collector vocabulary with the 13 semantic names and report-structure.
+
+### Complete new and reused diagnostic vocabulary
+
+All units below use zero-based physical record indices. Duplicate checks
+flag subsequent colliding records; multiple collisions/defects in one record
+count once for that code. Cyclic ancestry walks use bounded iterative state.
+
+| New code | Exact failure rule | Class | Safe ID / unit |
+| --- | --- | --- | --- |
+| delivery-duplicate-record | Repeated paper doi, section (doi,section_id), chunk_id, or chunk (doi,section_id,ordinal) | Semantic | Paper/section basename or chunk_id; (file,index) |
+| delivery-orphan-record | Section lacks paper; chunk lacks paper/section; normalize_doi changes stored DOI; section_id not prefixed by stored doi# | Semantic | Paper/section basename or chunk_id; (file,index) |
+| delivery-parent-invalid | Null parent on a nonroot (depth != 1); missing, foreign-paper, self, forward parent or cycle | Semantic | sections.jsonl; (sections.jsonl,index) |
+| delivery-section-structure-mismatch | Root depth/path differ from derivation; child depth != parent.depth+1 or path != parent.path + own label; abstract family/type equivalence fails | Semantic | sections.jsonl; (sections.jsonl,index) |
+| delivery-xml-sha-mismatch | Section/chunk xml_sha256 != matching paper digest | Semantic | sections.jsonl or chunk_id; (file,index) |
+| delivery-locator-mismatch | Section/chunk/span locator fails full grammar/digest equality, or chunk locator != first span locator; grammar-invalid files are already gated by T004 | Semantic | sections.jsonl or chunk_id; (file,index) |
+| delivery-chunk-field-mismatch | Chunk path/type != its section, nonpositive ordered span range (end <= start), or empty spans; empty spans already gated by T004 | Semantic | chunk_id; (chunks.jsonl,index) |
+| delivery-ordinal-gap | Next file-order ordinal per (doi,section_id) != previous count+1, starting at 1 | Semantic | chunk_id; (chunks.jsonl,index) |
+| delivery-text-hash-mismatch | text_sha256 != sha256(exact UTF-8 text) | Semantic | chunk_id; (chunks.jsonl,index) |
+| delivery-chunk-id-mismatch | Existing chunk_id recomputation != stored chunk_id | Semantic | Stored safe chunk_id; (chunks.jsonl,index) |
+| delivery-version-mismatch | Any V4.11 three-version equality differs among evaluable sources | Semantic | chunk_id, manifest, or chunk_report.json according to affected source; (chunks.jsonl,index), (manifest,0), or (chunk_report.json,0) |
+| delivery-report-mismatch | Any comparison in the following table disagrees | Semantic | Report basename; (report basename,0) |
+| delivery-embedding-set-mismatch | Any set comparison in the embedding agreement table disagrees | Semantic | manifest; (manifest,0) |
+| report-structure | Decoded report fails required shape/types or F003 raises SourceInputError | Structural | Report basename, or report for embedding validator; (report basename,0) |
+
+| Reused codes | Class | Safe IDs and treatment |
+| --- | --- | --- |
+| All 37 T004 STRUCTURAL_CODES (inventory, decoding, purity and six entity × five structural suffixes), unchanged | Structural | Existing fixed file/report basenames, report, manifest as defined in Group C; additionally report decoding uses its basename |
+| delivery-integrity-mismatch, delivery-count-mismatch, source-report-mismatch | Semantic | Existing payload/JSONL/report basename, T004 findings retained |
+| vectors-size, partial-set | Semantic | vectors, manifest; T004/F003 shared defect count uses MAX |
+| chunks-sha-mismatch, set-version-mismatch, set-dimensions, set-chunk-mismatch, normalization-unsupported, normalization-mismatch, calibration-exceeded | Semantic, F003 unchanged | manifest |
+| set-input-mismatch, set-input-over-cap, vector-norm-out-of-tolerance | Semantic, F003 unchanged | Safe 64-hex entry chunk IDs |
+| vectors-sha-mismatch, vectors-nonfinite | Semantic, F003 unchanged | vectors |
+| report-manifest-mismatch | Semantic, F003 unchanged | report |
+| report-impure | Semantic, F003 unchanged | manifest or report |
+
+No F003 chunk-validator codes are introduced: validate_chunks is never
+called. Existing decoder names invalid-utf8, invalid-json and duplicate-json-key
+are structural for reports. Allowed IDs remain the six package basenames,
+three report basenames, manifest/vectors/report and lowercase 64-hex only.
+Exit classes here describe future caller precedence; no CLI is added/tested.
+
+### Exact report comparison table (V4.12)
+
+Each row is separately gated by its required files/report. Delivered counts
+count records, including legal zero-own-text sections. Compare manifest counts
+where that manifest is evaluable; never allow its defect to hide a comparison
+against independently evaluable records. Missing structurally required report
+fields are report-structure, not invented defaults. parse_report's minimal
+check permits its existing additional per-paper diagnostics; use is_json_string
+and is_json_integer for the required nested values, excluding bool/float ints.
+
+| Report field | Delivered comparison | Required package data |
+| --- | --- | --- |
+| parse_report.papers[*].doi and chunk_report.papers[*].doi | Each report DOI set equals papers.jsonl DOI set; shared papers therefore agree across reports | papers |
+| Each report papers[*].xml_sha256 | Equals papers.jsonl xml_sha256 for that DOI | papers |
+| Each report papers[*].section_count | Number of delivered sections with that DOI | sections |
+| chunk_report.papers[*].chunk_count | Number of delivered chunks with that DOI | chunks |
+| chunk_report.papers[*].sections_with_chunks, when present | Number of distinct delivered (doi,section_id) chunk owners for that DOI | chunks |
+| parse_report.summary.succeeded | len(papers.jsonl), and delivery_manifest.counts.papers when evaluable | papers, optionally delivery manifest |
+| parse_report.summary.failed | Required integer for structure; no extra zero-failure requirement invented by V4.12 | No semantic comparison |
+| chunk_report.summary.paper_count | len(papers.jsonl) and manifest counts.papers | papers, optionally delivery manifest |
+| chunk_report.summary.section_count | len(sections.jsonl) and manifest counts.sections | sections, optionally delivery manifest |
+| chunk_report.summary.chunk_count | len(chunks.jsonl) and manifest counts.chunks | chunks, optionally delivery manifest |
+| chunk_report.summary.sections_with_chunks, when present | Number of distinct (doi,section_id) pairs in delivered chunks | chunks |
+| embedding_report.paper_count | len(papers.jsonl) and manifest counts.papers | papers, optionally delivery manifest |
+| embedding_report.chunk_count | len(chunks.jsonl) and manifest counts.chunks | chunks, optionally delivery manifest |
+| embedding_report.vector_count | Actual complete vector rows len(vectors.f32)/(4 × validated dimensions), embedding manifest vector_count and delivery files[vectors.f32].record_count; complete set also equals delivered chunks/manifest counts.chunks | vectors and evaluable dimension metadata; chunks/manifest for those comparisons |
+
+The exact current chunk report structure requires sections_with_chunks;
+"when present" preserves V4 wording, without relaxing the existing F003
+checker. Paragraph/blank/omission/exclusion/token statistics are not recomputed
+from unavailable paragraphs. The consumer cannot prove paragraph coverage.
+
+### Exact embedding agreement table (V4.13)
+
+F003-valid here means structurally checked; semantic F003 findings still
+merge and do not suppress independent delivery comparisons.
+
+| delivery_manifest.embedding_set field | Comparison |
+| --- | --- |
+| provider, model | Same named fields in embedding manifest and embedding report |
+| dimensions | embedding manifest requested_dimensions == returned_dimensions == report requested_dimensions == returned_dimensions == set dimensions |
+| dtype | embedding manifest vectors_dtype == float32-le; report has no dtype |
+| row_mapping | Fixed embedding_manifest.entries; row ownership is entries order, never chunk-file position; report has no mapping field |
+| passage_prefix, query_prefix | Same named embedding manifest fields; absent from report |
+| normalization.declared, observed_norm_min, observed_norm_max | Same nested embedding manifest fields, with observed norms checked against vector bytes by F003; absent from report |
+| normalization.tolerance | 0.01, the exact norm_tolerance argument; absent from F003 manifest/report |
+| chunks_sha256 | Same field in embedding manifest and report; F003 also checks exact delivered chunks bytes |
+| vectors_sha256 | embedding manifest vectors_sha256; F003 checks exact vector bytes; absent from report |
+| embedding_model_revision | null, as required by this group; not fabricated from absent F003 revision fields |
+
+### Synthetic inventory and static expected RED
+
+Fixtures reuse neighboring delivery_fixtures/package_fixtures and actual
+run_delivery output. The new neighboring validate_fixtures creates disposable
+parser/classifier source paths using dataclasses.replace before delivery,
+so regression mutations never touch repository sources. No existing fixture
+changes. Sockets are blocked from setup onward; FakeEmbedder is inherited.
+All prose/data are labeled SYNTHETIC; no article prose, keys or network.
+File rewrites intentionally leave descriptor collateral visible. Semantic
+tests assert the target code and safe ID and no structural findings, rather
+than an exact semantic set. Structural-gate tests explicitly assert structural
+True. No test xfails or catches NotImplementedError as success.
+
+| Test group | Functions | Expanded cases | Expected RED | Expected pass |
+| --- | ---: | ---: | ---: | ---: |
+| Valid package, bytes and frozen outcome | 1 | 1 | 1 | 0 |
+| Four duplicate identities | 1 | 4 | 4 | 0 |
+| Cross-record single-field semantics (13 codes covered with other groups) | 1 | 26 | 26 | 0 |
+| Parent self/forward/cycle/cross-paper/null-child | 1 | 5 | 5 | 0 |
+| Nested valid/depth/path/untitled conventions | 1 | 4 | 4 | 0 |
+| Locator grammar and empty-spans structural gates | 1 | 4 | 4 | 0 |
+| Equal span bounds and reversed ordinal file order | 2 | 2 | 2 | 0 |
+| Versions: three fields × four sources | 1 | 12 | 12 | 0 |
+| Report comparisons | 1 | 16 | 16 | 0 |
+| Variable embedding set facts | 1 | 11 | 11 | 0 |
+| Embedding report dimensions/provider/model | 1 | 4 | 4 | 0 |
+| Real F003 vector norm/chunks hash | 1 | 2 | 2 | 0 |
+| T004/F003 vectors-size and partial-set MAX | 1 | 2 | 2 | 0 |
+| Exact F003 arguments; structure exception; merge/IDs | 3 | 3 | 3 | 0 |
+| File gate and independent simultaneous failures | 2 | 2 | 2 | 0 |
+| Report decoding/shape: three reports × six defects | 1 | 18 | 18 | 0 |
+| Nested report wrong types | 1 | 11 | 11 | 0 |
+| Successful/failed loader reuse, each report decoded once | 1 | 2 | 2 | 0 |
+| Existing DOI/locator/chunk identity helpers | 1 | 1 | 1 | 0 |
+| Local-source regression; every-open boundary | 2 | 2 | 2 | 0 |
+| Seeded 200-mutation fuzz loop (one pytest case) | 1 | 1 | 1 | 0 |
+| Fixed embedding enum gates | 1 | 3 | 3 | 0 |
+| Nested report missing fields | 1 | 7 | 7 | 0 |
+| Record unit counts and ordinary load/check/decode once | 2 | 2 | 2 | 0 |
+| Total | 30 | 145 | 145 | 0 |
+
+Static AST parameter expansion gives **30 functions, 145 cases**; the fuzz
+loop is one test, not 200 collected tests. Every new case reaches the sole
+new behavioral stub before its outcome assertions. Expected failure is
+NotImplementedError, never a collection/import/setup error or a mocked
+operation assertion. Existing GREEN producer setup is a prerequisite that
+Person 1 must verify locally; fixture execution was NOT RUN here. Short
+IDs prevent the Group C Windows environment-variable limit regression.
+
+Predicted whole suite on the supplied Windows baseline: **145 failed,
+2194 passed, 2 skipped** (2341 total). Predicted focused tests/delivery:
+**145 failed, 1266 passed, 2 skipped** (1413 total). All new failures must
+be confined to tests/delivery/test_deliver_validate.py and only through
+NotImplementedError. No new skips are introduced. If both existing symlink
+probes succeed, prediction is 145 failed, 2196 passed, 0 skipped overall.
+These are static predictions, not observed RED or regression evidence.
+
+### Verification and exact local handoff commands
+
+| Check | Observed vs NOT RUN |
+| --- | --- |
+| Starting branch/HEAD/status | Observed 004-data-contract-delivery, 59e8f25, clean |
+| Artifact/code/committed report-shape inspection and renewed solution-research | Observed; no article prose copied, no dependency change |
+| Static AST syntax and parameter arithmetic | Observed 30 functions, 145 cases; no pytest collection/import or fixture execution |
+| Direct .venv/Scripts/ruff.exe check . --no-cache | PASS after formatting the new tests and shortening one docstring; no existing file auto-fixes |
+| Direct .venv/Scripts/ruff.exe format --check . | PASS, 127 files, including Markdown Python blocks |
+| Direct .venv/Scripts/mypy.exe src | PASS, 41 source files |
+| Source body/constant and scope guards | PASS: AST comparison against HEAD preserves every existing function/class/import/constant in validate.py; only ValidationOutcome/validate_package added; plan append-only; only four authorized files modified/added |
+| git --no-pager diff --check | PASS; new files additionally covered by Ruff and static whitespace review |
+| uv, focused/full pytest, observed RED, fixtures/run_delivery execution | NOT RUN by explicit run constraint; Person 1 runs locally |
+| Existing 2196-case regression suite | User-reported 2194 passed, 2 skipped on Windows before this change; NOT RUN here |
+| Real pilot, CLI, staging regression (Group E) | NOT RUN; excluded from this scope |
+| Human verification, CI, GREEN or T005 completion | NOT RUN / not claimed; all checkboxes unchanged |
+
+Person 1 runs these exact PowerShell commands from the repository root:
+
+```powershell
+$env:PYTHONPATH = 'src'
+uv run --locked python -m pytest tests/delivery -q
+uv run --locked pytest -q
+uv run --locked ruff check . --no-cache
+uv run --locked ruff format --check .
+uv run --locked mypy src
+git --no-pager diff --check
+```
+
+STOP after Group D Phase 1. No implementation, GREEN, Group E, commit or push.

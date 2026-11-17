@@ -116,6 +116,36 @@ class StructureOutcome:
     loaded: LoadedPackage
 
 
+@dataclass(frozen=True, slots=True)
+class ValidationOutcome:
+    """Combined structural and semantic findings with reusable package data."""
+
+    findings: tuple[Finding, ...]
+    structural: bool
+    loaded: LoadedPackage
+
+
+def validate_package(
+    package_dir: Path,
+    reports: PackageReports,
+    *,
+    loaded: LoadedPackage | None = None,
+    load_findings: tuple[Finding, ...] = (),
+) -> ValidationOutcome:
+    """Validate a received package offline without source XML or paragraphs.
+
+    Args:
+        package_dir: Directory containing the six delivery files.
+        reports: Paths to the three matching repository reports.
+        loaded: Optional prior loader result, preserved without reparsing.
+        load_findings: Prior loader findings to retain in the combined result.
+
+    Returns:
+        All safely evaluable findings and their structural precedence.
+    """
+    raise NotImplementedError
+
+
 class DeliveryFindingCollector:
     """Aggregate trusted codes by file/index with only fixed or digest IDs."""
 
