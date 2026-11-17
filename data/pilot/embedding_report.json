@@ -1,0 +1,28 @@
+{
+  "format_version": "embedding-set-v1",
+  "status": "complete",
+  "provider": "openai",
+  "model": "text-embedding-3-small",
+  "requested_dimensions": 1536,
+  "returned_dimensions": 1536,
+  "chunks_sha256": "77dac1d542d8dc4f55c205ae3db2e92a4906091963760aed38f22b9d0005fde1",
+  "chunk_count": 728,
+  "vector_count": 728,
+  "paper_count": 17,
+  "estimated_input_tokens": 188108,
+  "usage": {
+    "prompt_tokens": 123740,
+    "total_tokens": 123740
+  },
+  "provider_input_count": 728,
+  "approximate_cost": {
+    "usd": 0.002475,
+    "label": "approximate",
+    "basis": "reported usage x USD 0.02 per 1M tokens; official model page; team billing not verified"
+  },
+  "template_version": "embedding-text-v1",
+  "token_counter_id": "utf8-bytes-div3-v1",
+  "chunking_version": "chunking-v1",
+  "creation_date": "2026-11-17",
+  "custom_base_url_used": false
+}

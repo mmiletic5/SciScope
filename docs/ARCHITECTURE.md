@@ -5,7 +5,7 @@ validated citations. Module boundaries and API contracts require owner review
 before implementation.
 
 ```text
-PLOS/JATS XML -> parser -> Paper/Section/Chunk -> local embeddings
+PLOS/JATS XML -> parser -> Paper/Section/Chunk -> embeddings
                          |                       |
                          +---- provenance --------+
                                   |
@@ -17,6 +17,8 @@ PLOS/JATS XML -> parser -> Paper/Section/Chunk -> local embeddings
                                   |
                      React/TypeScript research workflows
 ```
+
+In the F003 pilot, chunk and vector artifacts are file-based (`python -m sciscope.pipeline.cli {chunk,embed,validate}`); vectors come from hosted OpenAI only through an explicit `--live` run, while local `multilingual-e5-small` remains the D-004 proposal.
 
 Person 1 owns acquisition, parsing, chunking, embeddings, and initial golden
 evaluation data. Person 2 owns storage, filtering, retrieval, ranking, and
