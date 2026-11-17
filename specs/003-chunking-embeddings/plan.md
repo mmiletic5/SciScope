@@ -11,7 +11,7 @@ Build F002 paragraph-derived section chunks, then an explicitly selected embeddi
 
 Research preceded specification; Person 1 approved this plan and spec subject to corrections A-E, now recorded here. All code tasks begin with labeled synthetic RED behavior tests and a renewed `$solution-research` check. No paid calls in tests/CI; live calls require explicit selection. Source provenance and deterministic processing are required. Person 2 contract review precedes F004 integration. Final human verification and evidence precede task completion.
 
-Planned layout: `src/sciscope/chunking/{__init__,config,counter,split,core,report}.py`, `src/sciscope/embedding/{__init__,config,provider,openai_client,cache,store,pipeline}.py`, `src/sciscope/pipeline/cli.py`; unique `tests/chunking/test_chunk_*.py` and `tests/embedding/test_embed_*.py`. F002 `src/sciscope/jats/{locator,parser,source,cli}.py` remains unchanged under Option A. Feature directory contains only `spec.md`, `plan.md`, `tasks.md`, `research.md`. No data-model, quickstart, contracts or checklist files.
+Planned layout: `src/sciscope/chunking/{__init__,config,counter,split,core,report}.py`, `src/sciscope/embedding/{__init__,config,inputs,provider,openai_client,cache,store,pipeline}.py`, `src/sciscope/pipeline/cli.py`; unique `tests/chunking/test_chunk_*.py` and `tests/embedding/test_embed_*.py`. F002 `src/sciscope/jats/{locator,parser,source,cli}.py` remains unchanged under Option A. Feature directory contains only `spec.md`, `plan.md`, `tasks.md`, `research.md`. No data-model, quickstart, contracts or checklist files.
 
 ## Decisions for Person 1 (R1–R9)
 
@@ -39,6 +39,199 @@ Planned layout: `src/sciscope/chunking/{__init__,config,counter,split,core,repor
 Nested-section paragraphs remain included only in their own section. F002 skip counts (fig 82, table-wrap 39, supplementary-material 91, disp-formula 9, list 1, inline-formula 1) are the public baseline; raw XML survey counts differ where elements are nested or outside emitted scope. No silent conversion of omitted content into paragraph text. Caption extraction, if approved later, must use F002's XML safety gate and retain original F002 output hashes.
 
 ## Implementation clarifications
+
+**Group C Phase 2 (2026-11-17):** Implement T005 before T006 using the
+approved D1–D12 contracts and no new dependency or external verification.
+The Windows ignore-test repair passes bytes to `git check-ignore --stdin`
+and decodes stdout explicitly, avoiding CRLF translation. The live guard
+precedes path/environment access; paths resolve before key lookup, and key
+validation precedes cache writes while transport creation remains lazy.
+A single final input exceeding the per-request token budget also fails as
+`input-over-cap` before cache writes, since it cannot form a valid batch.
+Base URL normalization lowercases the hostname, removes the default HTTPS
+port and trailing slashes. Cache batch consistency is checked across
+referenced entries within a model/dimension namespace; failed writes restore
+the in-memory accounting registry, preserving individually committed files
+for resume. Escaped lone surrogates are invalid chunk record values because
+final inputs must be strict UTF-8. The UTC provider stamps each successful
+batch; set dates and totals are recomputed from referenced cache metadata.
+No T007 validation/norm-tolerance/dry-run work or task ticks are included.
+
+**Group C Phase 1 (2026-11-17):** Person 1 supplied final D1–D12 decisions
+for T005 then T006: typed contracts and labeled synthetic offline RED tests
+only; behavior remains `NotImplementedError`, with real constants,
+dataclasses, Protocols and sanitized exception classes. No task completion,
+live run, evidence/backlog sync, dependency/config/ignore change, T007 work,
+or chunking/JATS/acquisition behavior change is authorized in this phase.
+The starting branch is `003-chunking-embeddings`, HEAD `e44e094`.
+
+Renewed `$solution-research` and `$google-python-engineering` were applied
+before feature tests. **Local-only research:** inspected the existing B3
+counter, public `build_embedding_text`, `CHUNK_RECORD_FIELDS`, LF-only loader
+semantics, public atomic `write_outputs`, CLI and offline test guard. Compared
+reuse through these public contracts, an independent serializer/publisher,
+and SDK integration. Reuse plus an injected stdlib transport preserves the
+zero-runtime-dependency contract and rollback behavior; duplicate publication
+logic adds integrity risk, and an SDK needs an unapproved dependency change.
+The Official OpenAI facts and links in `research.md` are prior planning
+evidence only: **no external fact, version, license, compatibility, current
+price, API limit, or account observation was reverified**; no network is
+authorized. This Phase 1 does not claim the live verification gates passed.
+
+- **D1 — layout:** Add `inputs.py` to the embedding package for the public
+  reusable reader. T005 uses `test_embed_provider.py` and the additional
+  `test_embed_transport.py`; T006 adds `test_embed_store.py` and
+  `test_embed_pipeline.py`. Shared synthetic helpers are `embed_fixtures.py`;
+  `conftest.py` blocks both `urllib.request.urlopen` and
+  `socket.socket.connect`. Test filenames are unique across `tests/`.
+- **D2 — CLI:** `embed --live --provider openai`; only `openai` is a CLI
+  provider. The library fake can never be selected to publish CLI outputs.
+  Validate arguments/config, then reject missing `--live` with exit 2,
+  `live-not-selected`, before any file/environment access or transport
+  construction. Resolve paths before reading; an output aliasing another
+  output, the chunk input, or the cache directory is `output-path-conflict`
+  (2). Defaults: pilot chunks, cache/vectors/manifest under
+  `data/embeddings/pilot/`, report `data/pilot/embedding_report.json`, small
+  model, dimensions 1536, empty prefixes, cap 384, request count/token limits
+  8/2048, attempts 3; optional positive `--limit N`. Config/input/chunk config
+  errors exit 2; provider/cache/write errors exit 1; success exits 0.
+  Stderr is only `error: <code>` and, for corrupt cache,
+  `entry: <64-hex key>`; OSError maps to `output-write-failed`.
+- **D3 — provider:** Runtime-checkable `Embedder` exposes provider/model/
+  dimensions and both embedding methods. Results contain input-ordered tuple
+  vectors, prompt/total usage, sanitized headers and total attempt count.
+  `build_passage_input` delegates to public `build_embedding_text` with the
+  exact passage prefix; providers receive final passages unchanged. Queries
+  prepend only `query_prefix`. Both methods reject empty lists, blank items,
+  and excess count before any request (`empty-input-list`, `blank-input`,
+  `too-many-inputs`). The fake is deterministic, order preserving and L2
+  normalized, depending only on final text/dimensions with injected usage.
+- **D4 — transport:** `post_json(TransportRequest)` receives only an
+  object-valued payload mapping and timeout, never a URL/key. Response is
+  status, parsed JSON or None, and lowercase allowlisted `retry-after`/
+  `x-ratelimit-*` headers whose values are printable ASCII, length <=64.
+  Transport owns the connection; timeout/connection errors have no message,
+  cause or context. Suppressing display with `from None` alone is insufficient
+  for the no-`__context__` contract: sanitized failures must leave the active
+  exception handler before being raised.
+- **D5 — OpenAI:** Payload keys are exactly `model,input,dimensions,
+  encoding_format`, with `float` encoding and default ASCII JSON. Validate
+  shape/model, response count, indices, dimensions, finite numeric values
+  (excluding bool/string), and nonnegative integer usage (excluding bool).
+  Error codes: `response-shape`, `response-model-mismatch`, `response-count`,
+  `response-index`, `response-dimensions`, `response-nonfinite`,
+  `response-usage`, `response-not-json`; no response validation retry.
+  Reorder by integer index. Retry transient 429, 5xx, timeout/connection;
+  quota code OR type `insufficient_quota` is `quota-exceeded` without retry.
+  Permanent mappings: 400 `request-rejected`, 401 `authentication-failed`,
+  403 `permission-denied`, 404 `endpoint-or-model-not-found`, other 4xx
+  `http-<status>`, 3xx `unexpected-redirect`. Retry-After accepts only plain
+  nonnegative finite decimal seconds <=3600. Attempt k uses
+  `base=min(max_backoff,initial_backoff*2**(k-1))` and
+  `delay=max(retry_after or 0,base+uniform(0,base*0.25))`. Attempts include the
+  first request; exhaustion is `retry-exhausted`, and elapsed time plus the
+  next delay over budget is `retry-budget-exceeded` without sleeping.
+- **D6 — connection:** Only an injected process-environment mapping supplies
+  keys/base URLs. Missing/blank key is `missing-api-key`; any key character
+  outside ASCII 0x21–0x7E is `invalid-api-key`, checked before HTTP header
+  construction. Base defaults to `https://api.openai.com`; custom bases need
+  HTTPS/host and no userinfo/query/fragment (`invalid-base-url`). Normalize
+  trailing slashes; append `/embeddings` after a `/v1` path, otherwise
+  `/v1/embeddings`. `OpenAIConnection` hides key and URL from repr. The default
+  opener refuses redirects. Send Authorization, JSON Content-Type/Accept,
+  and `User-Agent: sciscope-embed/0`. Read at most 16 MiB (injectable cap,
+  with at most one extra byte to detect overflow); oversized, non-JSON or
+  NaN/Infinity bodies become None. HTTPError bodies expose only error code/
+  type. Sanitize every other opener exception, including key-bearing
+  ValueError, with no chaining. No logging imports or non-CLI output.
+- **D7 — inputs:** Read bytes, hash the exact raw file, strict UTF-8, split
+  only on LF and drop exactly one final empty element; internal blanks are
+  invalid, CRLF/missing final LF accepted. Reject NaN/Infinity, wrong exact
+  chunk field sets, blank text, bad text digest, invalid section paths,
+  non-lowercase/non-64-hex or duplicate chunk IDs, empty input, mixed chunk
+  versions, counter/template mismatches. Codes respectively include
+  `chunks-unreadable`, `chunks-invalid-utf8`, `chunks-invalid-json`,
+  `chunks-bad-record`, `chunks-duplicate-id`, `chunks-empty`,
+  `chunks-mixed-versions`, `counter-mismatch`, `template-mismatch`.
+  Preserve raw untitled headings. Hash/recount exact final prefixed inputs;
+  exceeding operational cap or 512 is `input-over-cap` before cache writes
+  or network.
+- **D8 — cache:** Canonical SHA256 fields are model, decimal dimensions,
+  exact-input digest; use private 8-byte big-endian field-count/byte-length
+  framing, never import a private chunk helper. Each `<64-hex>.entry` is one
+  compact sorted ASCII JSON metadata line, LF, and dimensions*4 float32-LE
+  bytes. Metadata records format/model/dimensions/input/vector digests,
+  estimate/counter/date plus batch ID/count/estimate/prompt/total usage.
+  Batch ID hashes sorted input digests joined with LF. Validate identity,
+  format, byte length, checksum, finite values and shared batch metadata;
+  any defect is `cache-entry-corrupt`, with no deletion or silent re-embed.
+  Temp file and replace are in the cache directory; ignore stale `*.tmp`.
+  Persist each successful validated batch before requesting the next. Final
+  vectors always come from stored float32 bytes.
+- **D9 — durable accounting:** Recompute from the final referenced cache
+  entries, summing each UNIQUE batch ID once: batch estimated tokens, prompt/
+  total usage and input counts. Estimates and usage always cover the same
+  batches across probes/resume/warm reruns. `creation_date` is the EARLIEST
+  referenced batch's `embedded_on` UTC YYYY-MM-DD, replacing item 5's former
+  first-run configured timestamp; no separate state file.
+- **D10 — outputs:** Sort by chunk ID, row i matches manifest entry i;
+  publish vectors, manifest and report in ONE public `write_outputs` call.
+  JSON uses fixed insertion order, `ensure_ascii=False`, indent 2 and final
+  LF. Manifest includes `embedding-set-v1`, complete/partial status,
+  provider/model/requested/returned dimensions, declared L2 and fsum observed
+  norm range rounded to 9 places, prefixes/template/counter/chunk versions,
+  exact `chunks_sha256`, file chunk/vector counts, earliest date, durable
+  usage/estimate/provider-input totals, custom-URL boolean, fixed
+  `vectors.f32` name, `float32-le`, vector digest, and chunk/input digest
+  pairs. Report uses the same set totals/provenance plus selected paper count
+  and approximate USD cost rounded to 6 places at the prior model-page
+  planning price 0.02/1M. Basis is `reported usage x USD 0.02 per 1M tokens;
+  official model page; team billing not verified`. No output includes cache
+  hits/misses, call/retry counts, headers, key, URL, absolute path or prose.
+- **D11 — pipeline:** Read/validate -> select file-order prefix -> build,
+  hash, count and overflow-check -> deduplicate by input digest -> cache
+  lookup -> greedily batch misses in selection order within count and token
+  limits -> lazily create ONE embedder only for misses -> call/float32/cache
+  each batch -> assemble/publish. Concurrency is always 1, not configurable.
+  A warm run constructs neither embedder nor transport. Pre-publication
+  failures preserve all previous outputs. `limit>=chunk_count` is complete;
+  a smaller positive limit is partial, using the same output paths; a later
+  full run restores the complete set, reusing all available cached inputs.
+- **D12 — console:** Exactly line 1 `chunks: <chunk_count> selected: <n>
+  unique-inputs: <u> cache-hits: <h> cache-misses: <m> api-calls: <c>
+  retries: <r> status: <complete|partial>` and line 2
+  `usage-total-tokens: <u> estimated-input-tokens: <e>`, then zero or more
+  allowlisted `x-ratelimit-<name>: <value>` lines from this run's LAST
+  response only; none on a warm run. Calls count successful requests;
+  retries count failed attempts actually retried.
+
+**Signature refinements for Phase 2:** `ChunkInput` stores validated raw
+chunk identity/text/path/version fields; `LoadedChunks` contains file-order
+chunks, raw-file digest and common versions. Config-dependent final inputs
+are built in the pipeline because `load_chunk_inputs(path,counter)` must
+remain reusable without embedding config for T007. `EmbeddingCache(directory)`
+has `get(model,dimensions,input_sha256)` and `put_batch(entries)`;
+`decode_entry` takes expected identity as keyword arguments for explicit
+cache-key validation. `CacheEntry` stores metadata plus immutable
+`vector_bytes`. Manifest builder receives entries keyed by chunk ID, retaining
+duplicate-input mappings; report builder consumes manifest totals plus
+`paper_count` to avoid a second accounting path. `write_embedding_files`
+receives prepared vector bytes, both mappings, and three paths. `EmbedOptions`
+contains paths/limit; `EmbedStats` holds ephemeral console fields and durable
+totals separately. `run_embedding` injects a zero-argument embedder factory
+and UTC YYYY-MM-DD string provider. `main` injects keyword-only environment,
+connection-to-transport factory, sleep, monotonic clock, uniform and UTC date.
+`environ=None` is a lazy process-environment sentinel: Phase 2 resolves it
+only AFTER the live guard, never at import/default evaluation. Sleep/clock/
+uniform/factory defaults name the real stdlib/class callables; the UTC helper
+is a stub until Phase 2, then uses the real UTC date. `OpenUrl` accepts a
+urllib Request and keyword timeout, returning the small `HttpResponse`
+Protocol. Provider metadata uses read-only Protocol properties to support
+immutable implementations. Unspecified retry defaults are now explicit:
+timeout 30s, initial backoff 1s, maximum backoff 30s, total retry budget 120s.
+Malformed response tests isolate defects: count is checked before index
+range/coverage when the number of otherwise shaped items differs; missing
+or non-integer (including bool) index is a shape error.
 
 **Group B Phase 2c (2026-11-17):** Person 1 approved verbatim source gaps
 between spans from the same paragraph after reviewing the 17-paper run.
@@ -74,6 +267,13 @@ with previous output bytes restored.
 
 **Known limits (not implemented in F003):**
 
+- Group C: a crash between the entry writes of one batch can later double
+  count that batch's usage and estimate; rare and explicitly accepted.
+- Group C: a partial set cut from a larger earlier batch reports that entire
+  batch's totals, made visible through `provider_input_count`.
+- Group C: response `model` must equal the requested string; revisit in
+  Phase 2b if the live run returns a different string.
+- Group C: aggregate calibration still cannot prove per-input fit.
 - `chunk_record` rebuilds the section map per chunk, O(chunks x sections);
   revisit around 500 papers in F005.
 - `final_input_estimated_tokens` uses an empty prefix and ignores
