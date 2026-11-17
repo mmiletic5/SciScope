@@ -800,3 +800,109 @@ Expected pytest failures are confined to tests/delivery and missing behavior
 (NotImplementedError or the old schema shape); existing 928 tests are
 expected to remain passing but must be verified locally. Do not mark task
 boxes complete from these predictions. Stop after this Group A Phase 1 scope.
+
+## Implementation clarifications — Group A, Phase 2
+
+Person 1 authorizes T001/T002 implementation only, after the preceding RED
+test-writing phases. No observed RED result was supplied or run here; the
+user explicitly assigns pytest execution to Person 1. No task checkbox is
+changed, and automated/human verification remains pending until T007.
+Only DATA_CONTRACT.json, delivery/contract.py, delivery/papers.py, this
+addendum and the single permitted test function change in Phase 2.
+
+- **P1 One pattern source.** `contract.py` defines the compiled module-level
+  HASH_PATTERN, DOI_PATTERN, LOCATOR_PATTERN, PUBLICATION_DATE_PATTERN,
+  RETRIEVED_AT_PATTERN and CREATION_DATE_PATTERN. The schema uses their exact
+  `.pattern` strings. The schema was rendered once from the same declarative
+  field tables; runtime never reads the schema or imports jsonschema. The
+  only test addition, `test_schema_patterns_match_runtime_constants`, checks
+  every schema pattern and coverage of all six constants. It was added in
+  Phase 2 **without an observed RED**; existing tests/fixtures are unchanged.
+- **P2 End guard.** All six anchored patterns end in `(?![\s\S])$` so Python
+  re.search rejects a final LF. The same strings are in the schema; no
+  separate fullmatch-only runtime interpretation hides a schema mismatch.
+- **P3 Pattern content.** Hash is 64 lowercase hexadecimal characters; DOI
+  is the exact F001 `^10\.[0-9]{4,9}/\S+` grammar plus the end guard. DOI
+  lowercase/normalization consistency is semantic (T005), not a pattern
+  restriction. Locator uses jats:v1, a lowercase digest and one or more
+  Unicode `[^\W\d][\w\.-]*\[[1-9][0-9]*\]` components. Publication date
+  is ASCII YYYY / YYYY-MM / YYYY-MM-DD shape only, including structurally
+  legal 2024-13. Retrieved-at is UTC ISO seconds with optional 1–6 fractional
+  digits and literal +00:00; creation_date is YYYY-MM-DD. Builder calendar
+  validation is separate and exact.
+- **P4 Descriptions carry the contract.** Schema descriptions record the
+  normalize_doi reference and DOI-to-local-XML quote rule; taxonomy v0 enum
+  and heading > sec-type > nearest explicit ancestor > other precedence
+  (abstract always abstract); locator grammar and locator_digest limitations;
+  no-display `(untitled)` sentinel; raw EN/en language and case-insensitive
+  comparison; raw license; integer literals rather than 1.0; manifest-entry
+  ID vector ownership only; informational parser/taxonomy source hashes,
+  never compared with local files; and null model revision when inapplicable.
+  The existing `$id` remains https://sciscope.example/schemas/data_contract.json.
+  Title/description now state flat F001–F003 shapes and draft status until
+  Person 2 approves the contract PR.
+- **P5 Paper builder internals.** Both input sides are indexed by
+  normalize_doi, including valid keys on records with invalid other fields.
+  DOI exception text is caught and discarded. Every retained field is checked
+  independently, using the same paper field specifications as check_paper;
+  this also catches nested missing author fields. Missing counterpart,
+  duplicate, raw-license and field/date errors collect before raising.
+  Excluded upstream fields are never copied or traversed. Output uses the
+  exact PAPER_FIELDS order and normalized DOI order, preserving raw values
+  in fresh dictionaries/arrays. Calendar checking uses datetime.date and
+  the ASCII shape pattern, with no whitespace/LF/fullwidth-digit acceptance
+  or 1600 floor. PaperBuildError retains only approved codes (unknown codes
+  become paper-malformed-record), deduplicates/sorts them and joins with
+  comma-space for str(error). No file/network/key/cache access.
+
+Renewed solution-research for the small drift guard compared the existing
+local-$defs/declarative stdlib approach with adding a runtime schema library;
+retain the approved stdlib approach with no dependency/license change.
+[Official Python re documentation](https://docs.python.org/3/library/re.html)
+reconfirms compiled patterns and the final-newline `$` behavior;
+[official schema structuring documentation](https://json-schema.org/understanding-json-schema/structuring)
+reconfirms local `$defs` JSON Pointer references. No new library version or
+security claim is made. Both checks preceded the drift-guard addition.
+
+| Writer verification / decision | Code evidence | Result |
+| --- | --- | --- |
+| Locator root | `jats/locator.py::SourceDocument.resolve` compares root name with local_name(self.root), and root index with 1 | It does **not** hardcode article[1]. Preserve the supplied Unicode component grammar; document-specific root/traversal checks remain semantic. No extra article-root constraint. |
+| DOI grammar | `plos_pilot/doi.py::_DOI_PATTERN`, normalize_doi | Same F001 grammar with true end guard, no structural lowercase test. |
+| Publication-date shape | `plos_pilot/metadata.py::_date` formats year/month/day components | Three supported precisions, shape only structurally; approved builder rejects invalid calendar combinations. |
+| Retrieved-at | `plos_pilot/download.py::download_selected` calls retrieved_at.astimezone(UTC).isoformat() | Literal UTC +00:00, optional microseconds; the requested 1–6 fractional digits accepts the writer's six-digit fractional form without imposing a calendar check. |
+| Creation date | `pipeline/cli.py::_utc_date` returns datetime.now(UTC).date().isoformat(); `embedding/pipeline.py::run_embedding` passes it to cache entries; `embedding/store.py::build_manifest` emits creation_date | YYYY-MM-DD shape, independently of timestamp pattern. |
+| Checkers | `chunking/validate.py::is_json_string/integer/number` reused by one field-spec walker | Sorted unique safe codes, wrong types stop value/pattern checks for that field, missing/extra/type defects collected independently. Malformed roots yield only entity-bad-type. No mutation, recursive schema, or input-dependent exception formatting. |
+| Schema layout | Root delivery_manifest, exactly nine approved `$defs`, all references local | Every declared object has a fixed required set and additionalProperties false; nullable parent/revision/parser-version and permitted empty values preserved. C3 integer representation divergence remains documented. |
+
+No deviation from the requested Phase 2 behavior was found in static
+review. The locator root interpretation follows the prompt's conditional
+rule and the real resolver rather than assuming every SourceDocument is
+rooted at article. TEST ISSUES: **none identified by static review**; no
+existing test or fixture was changed. Test execution is still required.
+
+| Phase 2 verification | Observed result or explicit prediction |
+| --- | --- |
+| Local `.venv/Scripts/ruff.exe check . --no-cache` | PASS |
+| Local `.venv/Scripts/ruff.exe format --check .` | PASS, including Markdown Python blocks |
+| Local `.venv/Scripts/mypy.exe src` | PASS (38 source files) |
+| `git --no-pager diff --check` | PASS |
+| Focused pytest | NOT RUN; predicted 710 passed, 0 failed (624 contract, 86 paper cases) |
+| Whole-suite pytest, either entry point | NOT RUN; predicted **1638 passed, 0 failed** = prior 1637 + 1 unparameterized drift guard; existing 928 assumed passing |
+| Draft202012Validator.check_schema | NOT RUN; predicted PASS for the new Draft 2020-12 schema |
+| Locked-tool verification, CI and human verification | NOT RUN / UNVERIFIED; no observed GREEN or completion claim |
+
+Person 1 runs these exact commands from the repository root:
+
+```powershell
+$env:PYTHONPATH = 'src'
+uv run --locked python -m pytest tests/delivery -q
+uv run --locked pytest -q
+uv run --locked python -m pytest tests -q
+uv run --locked ruff check . --no-cache
+uv run --locked ruff format --check .
+uv run --locked mypy src
+git --no-pager diff --check
+```
+
+T001/T002 remain unchecked until T007 human verification; no commit/push.
+Stop after this Group A Phase 2 scope.

@@ -274,3 +274,28 @@ def test_only_integral_floats_have_documented_divergent_verdicts() -> None:
     assert len({(case.entity, case.name) for case in MUTATIONS}) == len(
         MUTATIONS
     )
+
+
+def test_schema_patterns_match_runtime_constants(
+    schema: dict[str, Any],
+) -> None:
+    """Guard all pattern strings; added in Phase 2 without an observed RED."""
+    patterns = {
+        "doi": contract.DOI_PATTERN.pattern,
+        "source_locator": contract.LOCATOR_PATTERN.pattern,
+        "publication_date": contract.PUBLICATION_DATE_PATTERN.pattern,
+        "retrieved_at": contract.RETRIEVED_AT_PATTERN.pattern,
+        "creation_date": contract.CREATION_DATE_PATTERN.pattern,
+    }
+    seen: set[str] = set()
+    for node in _objects(schema):
+        for field, definition in node.get("properties", {}).items():
+            if "pattern" not in definition:
+                continue
+            expected = patterns.get(field, contract.HASH_PATTERN.pattern)
+            assert definition["pattern"] == expected, field
+            seen.add(definition["pattern"])
+    assert seen == {*patterns.values(), contract.HASH_PATTERN.pattern}
+    assert {
+        node["pattern"] for node in _objects(schema) if "pattern" in node
+    } == seen
