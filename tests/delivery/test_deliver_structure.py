@@ -92,7 +92,7 @@ DECODING = (
     (b'{"x":Infinity}', "invalid-json"),
     (b'{"x":-Infinity}', "invalid-json"),
     (b'{"x":1e999}', "invalid-json"),
-    (b"[" * 2000 + b"0" + b"]" * 2000, "invalid-json"),
+    (b"[" * 100000 + b"0" + b"]" * 100000, "invalid-json"),
 )
 
 
