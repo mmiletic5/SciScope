@@ -1367,3 +1367,302 @@ git --no-pager diff --check
 
 Stop after this Group B Phase 2 scope. No commit/push, completion checkbox,
 EVIDENCE.md or PROJECT_TODO.md changes; T004–T006 are not implemented.
+
+## Implementation clarifications — Group C (T004)
+
+Person 1 authorizes **Phase 1 only** on 2026-11-17: new validate.py interface
+stubs, tests/delivery/test_deliver_structure.py, and this appended addendum.
+Spec/plan approval and Group A/B GREEN (1711 passed, 1 skipped on Windows)
+are user-reported; they were not rerun here. The later session authorization
+supersedes historical planning-only statements above. No implementation,
+GREEN, existing source/test/fixture/schema/doc/data changes, checkbox change,
+evidence/backlog update, commit or push. The explicit run restriction leaves
+EVIDENCE.md and PROJECT_TODO.md untouched. Person 1 runs RED locally.
+
+The following S1–S9 decisions are recorded verbatim from this session:
+
+- **S1 Scope split.** T004 = everything checkable per file or per descriptor without joining records across files: inventory, decoding, per-record structure, descriptor facts, report descriptors, purity, partial-set marker, vector-file size shape. T005 (not now) = cross-record semantics (foreign keys, parents, digests inside locators, hashes of text, chunk ids, version equality across records/reports, count comparison against report contents, reuse of F003 vector/set validators) and the `validate-delivery` CLI. Do not implement or test T005 checks; do not call F003 validators here except what is listed below.
+- **S2 API in `src/sciscope/delivery/validate.py`** (finalize names in plan.md): a frozen `LoadedPackage` (raw bytes of the six files, parsed records per file, parsed manifests; only for files that parsed), a `PackageReports` input (paths of the three repository reports: `parse_report.json`, `chunk_report.json`, `embedding_report.json`; read as bytes for descriptor comparison only), `load_package(package_dir) -> tuple[LoadedPackage, list[Finding]]`-style loader and `check_package_structure(...) -> StructureOutcome` where `StructureOutcome` carries `findings: tuple[Finding, ...]`, `structural: bool` (True when any structural finding exists → T005/CLI will use exit 2) and the `LoadedPackage` for reuse by T005 so nothing is parsed twice. All checks are independent and collected; one failing file never hides findings about the others; nothing raises for corrupt input. Never modify the package.
+- **S3 Safe IDs.** A delivery finding collector (new class in `validate.py`, not a change to F003) whose allowed IDs are only: the six fixed package basenames, the three fixed report basenames, `manifest`, `vectors`, `report`, and lowercase 64-hex. Anything else is shown as `report`. Counting unit = (file, record index). Output format later is the existing `error: <code> count: <k> first: <ids>` / `failures: <n>`; here you only produce `Finding` objects. No value, prose, path or exception text may ever reach a `Finding`.
+- **S4 Inventory (structural).** Exactly the six regular files `papers.jsonl`, `sections.jsonl`, `chunks.jsonl`, `vectors.f32`, `embedding_manifest.json`, `delivery_manifest.json`; anything else is a finding: `delivery-missing-file`, `delivery-extra-file` (including nested directories, hidden files and leftover `.sciscope-delivery-*` entries), `delivery-not-regular-file` (directory/symlink/other at a fixed name; never follow symlinks). The three repository reports must exist and be regular files (`delivery-missing-file`, id = its basename). Missing/extra/non-regular = structural. Symlink tests use `pytest.mark.skipif` when symlinks cannot be created.
+- **S5 Decoding (structural).** Strict UTF-8 without BOM (`invalid-utf8`), strict JSON (`invalid-json`: malformed, NaN/Infinity/-Infinity, finite-looking overflow such as `1e999`, nesting-depth/recursion errors), duplicate object keys at any depth (`duplicate-json-key`), JSONL split ONLY on LF (never `splitlines()`; raw U+0085/U+2028/U+2029 inside strings must survive), a single final empty segment allowed, interior blank lines rejected (`invalid-json`), an empty JSONL file is allowed to parse (emptiness is a T005 count matter) but `delivery_manifest.json` and `embedding_manifest.json` must be single JSON objects. Reuse the private strict reader ideas from `package.py` (do not import private names; extract or re-implement behind a public helper in `validate.py` and record the choice; if you move code out of `package.py`, say so in plan.md and keep its tests green).
+- **S6 Per-record structure (structural).** Run `contract.check_paper/check_section/check_chunk` on every JSONL record, `check_embedding_manifest` on `embedding_manifest.json` and `check_delivery_manifest` on `delivery_manifest.json`; each non-empty code tuple becomes a finding whose code is the contract code unchanged (e.g. `paper-bad-pattern`), unit = (file, index), id = file basename. A non-object JSONL line produces `<entity>-bad-type`.
+- **S7 Descriptor facts (semantic, exit-1 class).** Using the parsed `delivery_manifest.json`: for each of the five payload descriptors compare sha256, bytes and record_count with the actual file (record_count = LF-delimited records for JSONL, vector rows for `vectors.f32` = bytes / (4 × `embedding_set.dimensions`), 1 for the embedding manifest) → code `delivery-integrity-mismatch`, id = the file basename; compare `counts` with the three JSONL record counts → `delivery-count-mismatch`; compare each `source_reports` descriptor (sha256, bytes) with the repository report file → `source-report-mismatch`, id = report basename; compare `embedding_set.chunks_sha256` and `vectors_sha256` with the actual SHA-256 of `chunks.jsonl`/`vectors.f32` → `delivery-integrity-mismatch`; vector file shape: `vectors.f32` size must equal `record_count × dimensions × 4` and be a multiple of 4 → `vectors-size` (existing F003 code name, id `vectors`). These run only when the manifest structure is valid.
+- **S8 Partial-set marker and purity.** `embedding_manifest.status == "partial"` → `partial-set` (existing code, id `manifest`). Delivery-manifest purity as a runtime-only rule (NOT in the schema, so schema/runtime parity is unaffected; document it): every string value in `delivery_manifest.json` other than hex digests must be a short token (≤ 128 chars), without control characters, without whitespace and not path-like (no backslash, no leading `/`, no drive prefix, no `..`), except `passage_prefix` and `query_prefix`, which may contain spaces but no control characters and are ≤ 64 chars. Violations → `delivery-manifest-impure`, id `manifest`. State plainly in plan.md that this detects prose/paths structurally and is not a secret scanner.
+- **S9 Parity at file level.** For every shared `MUTATIONS` case of entity paper/section/chunk/embedding_manifest/delivery_manifest EXCEPT the DOCUMENTED-C3 cases: build a valid package (use the real `run_delivery` on `package_fixtures.make_tree`, which is GREEN), apply the mutation callback to the first real record of the corresponding file (or to the whole manifest), rewrite the file, and assert that structure findings with that entity's code prefix exist iff `not mutation.runtime_accepts`; also assert the same verdict through the local-`$ref` jsonschema validator on that mutated real record (so schema, runtime and file-level validator agree). Hash/count findings caused by rewriting are ignored for this comparison. Mutations only touch fields whose paths exist in the real record; if a path does not exist in the real record, say so in plan.md and handle it explicitly (do not silently skip).
+
+### Brief renewed solution-research before tests
+
+Problem: independently load potentially corrupt package files, retain exact
+bytes/parses for T005, and collect safe file-level findings using the approved
+contract. Decisions S1–S9 resolve the task boundary; no new requirement or
+dependency is proposed. Relevant existing code inspected: contract/papers/
+package/publish, chunking Finding/collector/strict readers/is_json_* helpers,
+embedding validation, the shared corpus and the Group A/B tests/fixtures.
+
+| Approach | Verified facts, tradeoff, recommendation |
+| --- | --- |
+| Public stdlib decoder in validate.py; reuse public contract.check_* | Recommended. Python 3.12 JSON exposes object_pairs_hook, parse_constant and parse_float; its defaults accept repeated keys and nonfinite constants. Explicit hooks plus finite-float rejection are necessary. Reimplement the small private package.py reader ideas behind public decode_json; retain package.py unchanged under this run's scope. Small duplication avoids importing private producer functions and preserves all existing tests. No added package/license obligation. |
+| Reuse F003 strict readers unchanged | Existing readers sanitize failures and split JSONL on LF, but reject at the first file and lack nested duplicate-key and overflow rejection. Reuse Finding and public contract predicates/checkers; do not call F003 vector/set validators in T004. |
+| Add runtime jsonschema | Existing dev jsonschema supports Draft202012Validator/check_schema and local references. It does not replace decoding, byte integrity or inventory checks; conflicts with approved stdlib runtime. Keep dev-only, no install/version change. |
+
+Official sources read before these new tests: [Python 3.12 JSON](https://docs.python.org/3.12/library/json.html),
+[Python 3.12 pathlib](https://docs.python.org/3.12/library/pathlib.html), and
+[jsonschema validation](https://python-jsonschema.readthedocs.io/en/stable/validate/).
+The first two sources are specifically the project Python 3.12 documentation;
+the unversioned Python URLs redirected to 3.15 and were not used to infer
+3.12-only API support. pathlib documents lstat/is_symlink and file-type queries;
+never infer regular-file safety from is_file alone because it follows links.
+jsonschema documentation identifies release 4.26.0; existing research.md records
+its MIT license/Python floor. No renewed release/license/security audit or
+installed-version verification was performed. Repository compatibility is
+Python >=3.12,<3.13 and the existing dev dependency jsonschema >=4.23,<5;
+no new runtime dependency. Actual decoder/filesystem behavior is NOT RUN.
+This brief check is kept in the authorized plan addendum; research.md stays
+unchanged. No essential unresolved decision blocks the Phase 1 stubs/tests.
+
+### Final interfaces and collection policy
+
+All behavior bodies in the new validate.py raise NotImplementedError.
+Only frozen, slotted dataclasses and interface declarations exist; no file
+validation is implemented. Types use collections.abc.Mapping and pathlib.Path:
+
+```python
+@dataclass(frozen=True, slots=True)
+class LoadedPackage:
+    raw_files: Mapping[str, bytes]
+    records: Mapping[str, tuple[object, ...]]
+    manifests: Mapping[str, object]
+
+
+@dataclass(frozen=True, slots=True)
+class PackageReports:
+    parse_report: Path
+    chunk_report: Path
+    embedding_report: Path
+
+
+@dataclass(frozen=True, slots=True)
+class StructureOutcome:
+    findings: tuple[Finding, ...]
+    structural: bool
+    loaded: LoadedPackage
+
+
+class DeliveryFindingCollector:
+    def __init__(self) -> None: ...
+
+    def add(
+        self, code: str, identifier: str, unit: tuple[str, int]
+    ) -> None: ...
+
+    def findings(self) -> list[Finding]: ...
+
+
+def decode_json(data: bytes) -> tuple[object, tuple[str, ...]]: ...
+
+
+def load_package(package_dir: Path) -> tuple[LoadedPackage, list[Finding]]: ...
+
+
+def check_package_structure(
+    package_dir: Path,
+    reports: PackageReports,
+    *,
+    loaded: LoadedPackage | None = None,
+    load_findings: tuple[Finding, ...] = (),
+) -> StructureOutcome: ...
+```
+
+raw_files retains successfully read fixed-file bytes, even if decoding fails.
+records maps each fully decoded JSONL file to its ordered records; a corrupt
+file is absent, whereas a successfully parsed empty file has an empty tuple.
+manifests retains successfully decoded manifest values, including non-object
+roots so the public contract checker can report its unchanged bad-type code.
+No fabricated parse result replaces a failed file. Frozen dataclasses freeze
+their fields; they do not promise transitive immutability of decoded objects.
+The validator must not mutate them or the package.
+
+load_package collects six-file inventory/decoding findings only. The combined
+checker calls it exactly once when loaded is None; supplied loaded and
+load_findings are reused unchanged, with outcome.loaded preserving identity.
+Reports are read only by the combined checker as bytes, never decoded or
+parsed in T004. Package/report symlinks are refused before opening; dangling
+links at fixed package names are nonregular rather than missing. Nonregular
+reports use delivery-missing-file per S4. Unknown extra basenames map to report;
+extra directories count as one inventory entry and are not traversed.
+
+decode_json returns (value, ()) on success, including (None, ()) for JSON null;
+failure returns (None, (safe_code,)). It must reject a UTF-8 BOM as invalid-utf8,
+use nested duplicate-key detection and reject both constants and parse_float
+overflow. No exception/value text is retained. Recursion failures are invalid-json.
+LF-only splitting removes at most one final empty segment; CR is retained and
+accepted only where JSON permits it as whitespace. Empty JSONL decodes without
+a structural finding; S7 may still report its descriptor/count disagreement.
+The loader independently attempts every other file when one file fails.
+
+S6 collects every returned contract code separately, unchanged, once per
+(file, zero-based record index) for that code. File-level checks/manifests use
+index 0; descriptor and embedding_set digest mismatches for the same payload
+deduplicate under that payload's unit. Multiple bad fields in a record never
+inflate the unit count. DeliveryFindingCollector sorts codes, counts distinct
+units, and retains at most three distinct safe IDs in encounter order.
+Its code allowlist is the complete vocabulary below; unknown caller codes
+become invalid-json and unknown IDs become report. Unit strings never become
+display identifiers. Each allowed basename/token/digest is tested independently
+so truncating to three IDs cannot hide accidental masking.
+
+S7 runs only after contract.check_delivery_manifest returns no codes; byte
+facts for available files remain checkable even when their content is corrupt.
+Never divide by invalid dimensions or infer vector rows from chunk order.
+vectors-size is semantic under S7 despite detecting binary shape; partial-set
+is semantic too. No vector finiteness, norms, embedding-entry joins or F003
+validator calls occur in T004. Purity is structural: it detects prose/paths
+structurally and **is not a secret scanner**. It is runtime-only, absent from
+DATA_CONTRACT.json and excluded from entity-prefix parity verdicts. Control
+characters include C0/DEL/C1 (Unicode Cc); ordinary token whitespace is checked
+with Unicode whitespace semantics. Prefixes use their <=64/no-controls rule.
+Digest strings remain exempt; existing real 64-hex fields are exercised by
+the valid-package test. Valid 128-character ordinary tokens are accepted.
+
+### Complete code vocabulary and precedence
+
+No printing or CLI is added. structural is True iff at least one structural
+finding exists, including when semantic findings coexist; semantic-only
+findings leave it False. T005 later maps that precedence to exit 2 vs exit 1.
+
+| Codes | Origin | Class / safe ID |
+| --- | --- | --- |
+| delivery-missing-file | New delivery inventory/report code | Structural; fixed package/report basename |
+| delivery-extra-file | New delivery inventory code | Structural; report for arbitrary extra entry names |
+| delivery-not-regular-file | New delivery inventory code | Structural; fixed package basename |
+| invalid-utf8, invalid-json | Reused strict-reader code names | Structural; fixed package basename; collector unknown-code fallback uses invalid-json |
+| duplicate-json-key | Reused Group B decoder code name | Structural; fixed package basename |
+| paper-{missing-field,extra-field,bad-type,bad-value,bad-pattern} | Reused Group A codes unchanged | Structural; papers.jsonl |
+| section-{missing-field,extra-field,bad-type,bad-value,bad-pattern} | Reused Group A codes unchanged | Structural; sections.jsonl |
+| chunk-{missing-field,extra-field,bad-type,bad-value,bad-pattern} | Reused Group A codes unchanged | Structural; chunks.jsonl |
+| embedding_manifest-{missing-field,extra-field,bad-type,bad-value,bad-pattern} | Reused Group A codes unchanged | Structural; embedding_manifest.json |
+| delivery_manifest-{missing-field,extra-field,bad-type,bad-value,bad-pattern} | Reused Group A codes unchanged, including nested embedding_set errors | Structural; delivery_manifest.json |
+| embedding_set-{missing-field,extra-field,bad-type,bad-value,bad-pattern} | Existing standalone Group A checker vocabulary accepted by collector | Structural; reserved for standalone callers, not emitted by S6 file checks |
+| delivery-manifest-impure | New runtime-only purity code | Structural; manifest |
+| delivery-integrity-mismatch | Reused Group B code | Semantic; affected payload basename |
+| delivery-count-mismatch | New delivery count code | Semantic; affected JSONL basename |
+| source-report-mismatch | New descriptor code | Semantic; report basename |
+| vectors-size | Reused F003 code name, no F003 call | Semantic; vectors |
+| partial-set | Reused F003 code name, no F003 call | Semantic; manifest |
+
+The brace notation expands to five literal suffixes per entity, not a new
+code containing braces. No T005 foreign-key/hash/version/report-content or
+vector-value codes belong to this phase. All six fixed package basenames,
+all three report basenames, manifest/vectors/report and lowercase 64-hex
+are the only allowed display IDs. No source path, record value or exception
+message may reach a Finding.
+
+### Synthetic test inventory and static predictions
+
+All 38 test functions are in the new test_deliver_structure.py. Tests use
+neighboring imports only, reusing both delivery_fixtures and package_fixtures;
+no fixture module is added or changed. Setup calls make_tree then the real
+GREEN run_delivery. Sockets are blocked before setup. Text is invented and
+labeled SYNTHETIC; no real article prose, credentials or paid calls.
+
+| Test group | Functions | Expanded cases | Expected RED | Expected pass |
+| --- | ---: | ---: | ---: | ---: |
+| Valid package, exact retained bytes/parses, unchanged tree | 1 | 1 | 1 | 0 |
+| Missing package/report files; extras; directory at each fixed name | 3 | 23 | 23 | 0 |
+| Symlink matrix in one privilege-dependent skipif case | 1 | 1 | 1 or skipped | 0 |
+| Per-text-file decoding matrix (5 x 10) | 1 | 50 | 50 | 0 |
+| Public decoder failures and valid/null/Unicode values | 2 | 14 | 14 | 0 |
+| Interior blanks; final endings; CRLF rows; extra LF/CR-only; raw controls | 5 | 35 | 35 | 0 |
+| Unicode separators in every text kind; empty JSONL; manifest object roots | 3 | 16 | 16 | 0 |
+| Non-object records; every record counted; checker code passthrough | 3 | 35 | 35 | 0 |
+| Each payload descriptor field (5 x 3) | 1 | 15 | 15 | 0 |
+| Each report descriptor field (3 x 2); opaque report bytes | 2 | 9 | 9 | 0 |
+| Manifest counts; two embedding_set digests; three vector shape defects | 3 | 8 | 8 | 0 |
+| Partial-set marker | 1 | 1 | 1 | 0 |
+| Purity (2 nested locations x 13); prefixes (2 x 5); token/digests | 3 | 37 | 37 | 0 |
+| Independent failures/retained parses; invalid-manifest S7 gating | 2 | 2 | 2 | 0 |
+| Collector safety/unit deduplication; every allowed ID; file/index units | 3 | 15 | 15 | 0 |
+| Successful and failed loader-result reuse | 2 | 2 | 2 | 0 |
+| No environment/cache/XML/paragraph/source access, F003 calls or writes | 1 | 1 | 1 | 0 |
+| File/schema/runtime parity on emitted records | 1 | 219 | 219 | 0 |
+| Total | 38 | 484 | 484, or 483 plus 1 skipped | 0 |
+
+Arithmetic: 1 + 23 + 1 + 50 + 14 + 35 + 16 + 35 + 15 + 9 + 8 + 1 + 37
++ 2 + 15 + 2 + 1 + 219 = **484**. These are static parameter expansions,
+not pytest collection or observed RED. A read-only AST/constant expansion
+evaluated the existing pure fixture corpus and test parameter expressions;
+it did not import the new test module, run delivery/fixtures with filesystem
+I/O, invoke pytest, or execute a test. No test catches NotImplementedError,
+xfails, or treats missing behavior as success. Every nonskipped new case
+calls a new stub before behavioral assertions, so its expected failure is
+NotImplementedError rather than missing imports or assertion-based GREEN.
+Symlink support is checked with the existing disposable-temp probe; one new
+case loops over six package links, three report links, and extra/dangling
+links. No platform-name assumption or existing fixture change is made.
+
+S9 selects **219** cases: paper 35, section 26, chunk 47,
+embedding_manifest 35, delivery_manifest 76. Standalone embedding_set cases
+remain covered by Group A; nested set mutations in delivery_manifest are
+included here. DOCUMENTED-C3 integral-float cases are explicitly excluded.
+The parity test compares only the entity's unchanged structural-code prefix
+to the tagged runtime verdict; other descriptor/count/purity/partial findings
+do not affect that comparison. It also calls the real runtime checker and a
+Draft202012Validator with local references on that same mutated real record.
+
+Mutation path review: all pre-existing target paths are present in the first
+emitted records (nonempty authors/spans/entries and all manifest children).
+There are **12 intentionally absent final keys**, representing extra-field
+mutations, not missing fixture data: extra-field for each of the five entities;
+chunk span-extra; delivery files-extra-SYNTHETIC-extra.json and
+files-extra-delivery_manifest.json; delivery source-reports-extra and
+processing-parser-extra-key; embedding entry-extra-field and usage-extra-field.
+Their enclosing paths exist; apply inserts the new key and the test asserts
+rejection. Nothing is skipped or redirected to a factory. All other callbacks
+replace/remove existing fields. The static closure-path check confirmed all
+parent paths on the shared factory shapes; actual emitted-record execution
+is explicitly NOT RUN. The real fixture writers were reviewed for matching
+field shapes. KeyError or another setup error during Person 1's run would
+be a test issue requiring correction, never accepted as meaningful RED.
+
+Expected whole suite with symlink privileges available: **484 failed,
+1712 passed** (2196 cases). On the user-reported Windows baseline without
+symlink privilege: **483 failed, 1711 passed, 2 skipped**. The two skips are
+the unchanged existing Group B case and this new Group C case. Thus all
+existing 1712 cases retain their expected outcome (1711 pass + 1 skip).
+If the new probe succeeds while retaining that recorded baseline, prediction
+is **484 failed, 1711 passed, 1 skipped**. Focused tests/delivery prediction:
+**484 failed, 784 passed**, or **483 failed, 783 passed, 2 skipped** without
+symlink privilege. These are conditional predictions only; failures must be
+confined to test_deliver_structure.py and due only to NotImplementedError.
+
+### Verification and exact local handoff commands
+
+| Check | Observed vs NOT RUN |
+| --- | --- |
+| Initial branch/status | Observed 004-data-contract-delivery, initially clean |
+| Repository/artifact/code inspection and renewed official-source check | Observed before new tests; no new dependency or schema change |
+| AST syntax/constant case arithmetic and pure mutation-path review | Observed 38 functions, 484 cases, 219 parity cases; no test execution/collection |
+| Direct .venv/Scripts/ruff.exe check . --no-cache | PASS; initial new-file lint issues corrected before final check |
+| Direct .venv/Scripts/ruff.exe format --check . | PASS (125 files, including Markdown Python blocks) |
+| Direct .venv/Scripts/mypy.exe src | PASS (41 source files, including the new interface stubs) |
+| git --no-pager diff --check and final scope | PASS; only appended plan.md plus new validate.py and test_deliver_structure.py; no existing source/test/schema/doc/data or checkbox changes |
+| uv / locked-tool parity | NOT RUN by explicit sandbox/run constraint |
+| Focused/full pytest, actual make_tree/run_delivery execution, observed RED | NOT RUN; Person 1 runs locally |
+| Existing 1712 cases | User-reported 1711 passed, 1 skipped on Windows before change; NOT RUN here |
+| Symlink probe/test execution, CI and human verification | NOT RUN; no actual platform skip count claimed |
+| GREEN, T004 completion, implementation | Not claimed / intentionally absent; all checkboxes unchanged |
+
+Person 1 runs these exact PowerShell commands from the repository root:
+
+```powershell
+$env:PYTHONPATH = 'src'
+uv run --locked python -m pytest tests/delivery -q
+uv run --locked pytest -q
+uv run --locked ruff check . --no-cache
+uv run --locked ruff format --check .
+uv run --locked mypy src
+git --no-pager diff --check
+```
+
+STOP after Group C Phase 1. No Phase 2 behavior or T005 work is authorized.
