@@ -2,7 +2,7 @@
 
 **Feature Branch**: `003-chunking-embeddings`
 **Created**: 2026-11-15
-**Status**: Approved by Person 1, 2026-11-15, subject to A-E; implementation not started
+**Status**: Implemented and verified; accepted by Person 1, 2026-11-17 (see EVIDENCE.md)
 **Input**: P2-11 through P2-19 for the 17-paper F002 pilot.
 
 ## User Scenarios & Testing

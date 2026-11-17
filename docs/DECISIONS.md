@@ -18,6 +18,8 @@ plan has yet been approved.
 | D-010 | Open | Golden relevance rubric, negative cases, and metric interpretation. | Person 1, Person 2 |
 | D-011 | Closed 2026-11-14 | Contract and constitution changes go through PR review; no formal ratification. | TEAM |
 
+F003 pilot (2026-11-17) used hosted OpenAI `text-embedding-3-small` (1536 dimensions) through an explicit `--live` run; `multilingual-e5-small` was not run in F003. The OpenAI configuration defaults are `passage_prefix=""` and `query_prefix=""`, differing from D-004's `passage:`/`query:` proposal. Status stays Proposed pending Person 2 and a Golden v0 comparison; see EVIDENCE.md.
+
 The local dependency check is limited to existing repository artifacts and the
 official [uv lock/sync guide](https://docs.astral.sh/uv/concepts/projects/sync/),
 [uv GitHub Actions guide](https://docs.astral.sh/uv/guides/integration/github/),

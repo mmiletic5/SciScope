@@ -69,15 +69,15 @@ Human review and verification remain pending; no checkbox is completed by this d
 - [x] **P2-08** | Owner: Person 1 | Deliverable: F002 abstract extraction | Phase: 2 | Depends on: P2-06
 - [x] **P2-09** | Owner: Person 1 | Deliverable: F002 section classification and taxonomy review | Phase: 2 | Depends on: P2-07, P1-06
 - [x] **P2-10** | Owner: Person 1 | Deliverable: F002 stable source text locators and read-only passage helper | Phase: 2 | Depends on: P2-07, P1-10
-- [ ] **P2-11** | Owner: Person 1 | Deliverable: paragraph-aware and section-aware chunker | Phase: 2 | Depends on: P2-07, P2-10, P1-07
-- [ ] **P2-12** | Owner: Person 1 | Deliverable: table and table-caption handling | Phase: 2 | Depends on: P2-06, P2-11
-- [ ] **P2-13** | Owner: Person 1 | Deliverable: figure-caption handling | Phase: 2 | Depends on: P2-06, P2-11
-- [ ] **P2-14** | Owner: Person 1 | Deliverable: reference-section handling | Phase: 2 | Depends on: P2-06, P2-11
-- [ ] **P2-15** | Owner: Person 1 | Deliverable: chunk identifiers and processing version metadata | Phase: 2 | Depends on: P2-11, P1-10
-- [ ] **P2-16** | Owner: Person 1 | Deliverable: tokenizer-based chunk length limits | Phase: 2 | Depends on: P2-11, P1-08
-- [ ] **P2-17** | Owner: Person 1 | Deliverable: local `multilingual-e5-small` loading configuration | Phase: 2 | Depends on: P1-08
-- [ ] **P2-18** | Owner: Person 1 | Deliverable: embedding generation pipeline | Phase: 2 | Depends on: P2-15, P2-17
-- [ ] **P2-19** | Owner: Person 1 | Deliverable: embedding shape, value, and version validation | Phase: 2 | Depends on: P2-18
+- [x] **P2-11** | Owner: Person 1 | Deliverable: paragraph-aware and section-aware chunker | Phase: 2 | Depends on: P2-07, P2-10, P1-07
+- [ ] **P2-12** | Owner: Person 1 | Deliverable: table and table-caption handling | Phase: 2 | Depends on: P2-06, P2-11 | Note: F003 Option A only counts and omits this content; chunking of it is a named follow-up after Golden v0
+- [ ] **P2-13** | Owner: Person 1 | Deliverable: figure-caption handling | Phase: 2 | Depends on: P2-06, P2-11 | Note: F003 Option A only counts and omits this content; chunking of it is a named follow-up after Golden v0
+- [ ] **P2-14** | Owner: Person 1 | Deliverable: reference-section handling | Phase: 2 | Depends on: P2-06, P2-11 | Note: F003 Option A only counts and omits this content; chunking of it is a named follow-up after Golden v0
+- [x] **P2-15** | Owner: Person 1 | Deliverable: chunk identifiers and processing version metadata | Phase: 2 | Depends on: P2-11, P1-10
+- [x] **P2-16** | Owner: Person 1 | Deliverable: tokenizer-based chunk length limits | Phase: 2 | Depends on: P2-11, P1-08
+- [x] **P2-17** | Owner: Person 1 | Deliverable: embedding provider and model configuration (F003 re-scoped: OpenAI `text-embedding-3-small` pilot; local `multilingual-e5-small` loading not implemented, D-004 open) | Phase: 2 | Depends on: P1-08
+- [x] **P2-18** | Owner: Person 1 | Deliverable: embedding generation pipeline | Phase: 2 | Depends on: P2-15, P2-17
+- [x] **P2-19** | Owner: Person 1 | Deliverable: embedding shape, value, and version validation | Phase: 2 | Depends on: P2-18
 - [ ] **P2-20** | Owner: Person 1 | Deliverable: data contract validation | Phase: 2 | Depends on: P2-06 through P2-19, P1-10
 - [ ] **P2-21** | Owner: Person 1 | Deliverable: XML processing quality tests | Phase: 2 | Depends on: P2-06 through P2-14
 - [ ] **P2-22** | Owner: Person 1 | Deliverable: curated honeybee golden questions and reference answers | Phase: 2 | Priority: High — first development cycle | Depends on: P1-12, P2-04, P2-06, P2-10
