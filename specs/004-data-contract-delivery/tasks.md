@@ -1,7 +1,7 @@
 # Tasks: Data contract refresh and pilot delivery
 
 **Input**: [spec.md](spec.md), [plan.md](plan.md), [research.md](research.md).
-**Status**: PLANNED, all unchecked; no implementation approval recorded.
+**Status**: Approved for implementation by Person 1 on 2026-11-17 (R22, R28, R29, D5 amendment and abstract exclusion included)
 **Owner**: Person 1; Person 2 reviews the shared contract PR.
 
 Seven tasks split the former T004 into structure/file checks and cross-record

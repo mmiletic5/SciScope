@@ -1,7 +1,7 @@
 # Feature Specification: Data contract refresh and pilot delivery
 
 **Feature Branch**: `004-data-contract-delivery` | **Created**: 2026-11-17
-**Status**: Draft; specification and plan approval NOT RECORDED; planning only.
+**Status**: Approved for implementation by Person 1 on 2026-11-17 (R22, R28, R29, D5 amendment and abstract exclusion included)
 **Input**: Person 1's F004 instructions, D1–D10, and this session's approved
 clarification that vector rows map through embedding-manifest entry IDs.
 

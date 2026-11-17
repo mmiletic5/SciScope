@@ -2,7 +2,7 @@
 
 **Branch**: `004-data-contract-delivery` | **Date**: 2026-11-17 | **Spec**: [spec.md](spec.md)
 **Owner**: Person 1; shared-contract reviewer: Person 2.
-**Status**: Draft; implementation approval NOT RECORDED.
+**Status**: Approved for implementation by Person 1 on 2026-11-17 (R22, R28, R29, D5 amendment and abstract exclusion included)
 
 ## Summary and technical context
 
@@ -335,7 +335,9 @@ from sciscope.delivery.reader import vectors_by_chunk_id
 
 package = Path("data/delivery/pilot")
 vectors = vectors_by_chunk_id(
-    package / "embedding_manifest.json", package / "vectors.f32", dimensions=1536
+    package / "embedding_manifest.json",
+    package / "vectors.f32",
+    dimensions=1536,
 )
 ```
 
@@ -491,3 +493,256 @@ pilot's 1536 fits those documented limits, without an import claim. Guide
 cites [vector type](https://github.com/pgvector/pgvector#vector-type),
 [HNSW](https://github.com/pgvector/pgvector#hnsw) and
 [IVFFlat](https://github.com/pgvector/pgvector#ivfflat).
+
+## Implementation clarifications — Group A (T001–T002)
+
+Person 1 approved spec/plan implementation on 2026-11-17, including R22,
+R28, R29, the D5 amendment and abstract exclusion. The Status lines record
+that approval; earlier planning-only statements above are historical. This
+run authorizes **Phase 1 stubs and synthetic RED tests only** for T001–T002;
+the phase label here is the session's RED-only stage, not a renumbering of
+the tasks artifact. No GREEN, schema replacement, package, CLI, dependency,
+data, existing documentation, evidence/backlog, checkbox, commit or push.
+Person 1 runs RED locally. Automated execution and human acceptance remain
+separate gates; no task is marked complete.
+
+The following C1–C7 decisions are recorded verbatim from this session:
+
+- **C1 Contract file.** In Phase 2 `docs/DATA_CONTRACT.json` becomes one Draft 2020-12 file: root = `delivery_manifest`; `$defs` for paper, section, chunk, span, embedding_set, embedding_manifest (derive its shape from the real F003 writer; `additionalProperties: false` only where the writer's field set is fixed), file descriptor, source-report descriptor, processing_versions. Local `#/$defs/...` references only. Tests build per-entity validators from that single file by wrapping a `$ref` plus the `$defs` (no network refs).
+- **C2 Runtime checkers.** `src/sciscope/delivery/contract.py` exposes pure functions `check_paper`, `check_section`, `check_chunk`, `check_embedding_set`, `check_embedding_manifest`, `check_delivery_manifest`, each taking one parsed JSON object and returning a sorted tuple of unique structure codes (empty tuple = structurally valid). They never raise on bad input and never echo values. Code vocabulary (finalize names in plan.md): `<entity>-missing-field`, `<entity>-extra-field`, `<entity>-bad-type`, `<entity>-bad-value`, `<entity>-bad-pattern`. Aggregation into `Finding` with safe IDs happens in T004/T005, not here. Reuse the existing `is_json_*` helpers.
+- **C3 Integer strictness.** Runtime keeps the existing strictness (`type(value) is int`: booleans and integral floats like `1.0` are rejected). JSON Schema `integer` accepts `1.0` and cannot be made stricter, so integral-float mutations are tagged in the fixtures as a DOCUMENTED divergence (schema accepts, runtime rejects) and excluded from parity; all other mutations must agree. The contract descriptions state that integers are written as integer literals.
+- **C4 Pattern semantics.** Patterns (SHA-256 hex, DOI, locator v1, dates) must reject a trailing `"\n"` identically under Python `re.search` (what jsonschema uses) and in the runtime checkers; for example use a negative lookahead before `$`. Add trailing-LF mutations for each pattern field. Locator v1: `jats:v1:<64 lowercase hex>:/<component>/...`, each component fully matching `([^\W\d][\w\.-]*)\[([1-9][0-9]*)\]` with Unicode semantics (exactly as in the plan). DOI pattern and taxonomy enum exactly as implemented in code.
+- **C5 Shared corpus.** `delivery_fixtures.py` provides factory functions returning FRESH dicts of valid synthetic records for every entity (labeled "SYNTHETIC"; include a zero-own-text section, an untitled/implicit section, a structured abstract section, a Unicode heading, `EN` and `en` languages, a free-text license and a URL license, `parent_section_id` null and non-null, `embedding_model_revision` null) and a tuple `MUTATIONS` of frozen dataclass items `(name, entity, apply, schema_accepts, runtime_accepts)`. Cover: missing/extra field, wrong type, boolean-as-integer, integral float (C3), null where forbidden, empty strings where nonempty is required, empty `authors`, empty `journal`, empty chunk `text`, empty-but-allowed `given_names`, bad enum, bad hash case/length/trailing LF, bad DOI, bad locator (uppercase digest, zero index, leading zero, bad component, trailing LF), unknown `chunk_kind`, span with `end <= start` or `start < 0`, non-positive dimensions, `dimensions` mismatch types, `status` not `draft`. T004 will extend this corpus with file-level cases and a formal parity test; do not weaken a constraint to fit a fixture.
+- **C6 Real constraints only.** Derive every field set and constraint from the code (list the source file for each in plan.md). Where code does not constrain a value (e.g. `language`), use the minimal schema (nonempty string, NO letter-case constraint) and say so. `publication_year` has no 1600 minimum (not authorised). `schema_version` and `contract_version` are const `"0.3.0"`; `status` const `"draft"`.
+- **C7 Paper builder (T002).** `src/sciscope/delivery/papers.py`: pure functions `derive_publication_year(date_text: str) -> int` (leading four digits of F001-valid year / year-month / full date; invalid → error) and `build_papers(metadata_records, manifest_records) -> tuple[dict[str, object], ...]` (one-to-one join by normalized DOI, equal unique DOI sets, licenses must agree, DOI order, field order exactly as in the plan's "Record and identity contract", raw string/array values preserved, excluded fields never copied). No file I/O (loading is T003). On any join/validation problem raise `PaperBuildError` carrying sorted, sanitized codes (collect ALL problems first: duplicate DOI, missing counterpart, license mismatch, invalid date/year, invalid DOI, malformed record). Finalize code names in plan.md. Inputs are never mutated.
+
+### Renewed solution-research check (2026-11-17)
+
+Problem: assert the flat v0.3 shapes through one local schema while retaining
+the existing strict stdlib JSON helpers and no runtime dependency. The two
+relevant approaches remain (A) local `$defs` with dev jsonschema plus stdlib
+runtime checks, and (B) adding jsonschema at runtime. Recommend A under D7:
+no new dependency or license, with shared mutation coverage to expose drift.
+Dependency declaration remains `jsonschema>=4.23,<5` (dev only), Python
+`>=3.12,<3.13`; the earlier research artifact records 4.26.0/MIT metadata.
+No new package/version/license recommendation or security audit is claimed.
+
+Renewed authoritative checks:
+
+- [JSON Schema structuring](https://json-schema.org/understanding-json-schema/structuring)
+  documents local JSON Pointer references and `$defs`; wrappers contain the
+  original `$defs` plus `#/$defs/<entity>`. The delivery-manifest root is
+  validated directly; it needs no duplicate definition. Tests reject remote
+  references before constructing validators. No resolver/network hook needed.
+- [JSON Schema integers](https://json-schema.org/understanding-json-schema/reference/numeric)
+  confirms `1.0` is an integer in schema semantics. C3 preserves the runtime
+  helper's stricter representation rule; only those tagged cases diverge.
+- [jsonschema 4.26.0 pattern implementation](https://raw.githubusercontent.com/python-jsonschema/jsonschema/v4.26.0/jsonschema/_keywords.py)
+  uses Python `re.search`. [Python re documentation](https://docs.python.org/3/library/re.html)
+  documents `$` before a final newline and negative lookahead. Use an end
+  guard such as `(?![\s\S])$` after the existing field grammar. This preserves
+  Unicode locator semantics and rejects LF; do not replace it with ASCII names.
+
+**Additional decision approved by Person 1 in this session:** general
+`span.end > span.start` is semantic validation in T005 because Draft 2020-12
+cannot compare arbitrary sibling numbers. T001 schema/runtime structure
+checks enforce `start >= 0`, `end >= 1`; its `end <= start` cases use the
+zero boundary (`0/0`, `0/-1`) and are rejected by both. No arbitrary positive
+span-order comparison is claimed by structural parity. Likewise numeric
+requested/returned dimension agreement remains set semantics in T005;
+T001 tests wrong dimension types and non-positive dimensions. No other
+unresolved design decision is introduced by this addendum.
+
+### Sources, shapes and constraint boundaries
+
+| Entity or constraint | Source file / approved authority | Phase 2 rule pinned by Group A |
+| --- | --- | --- |
+| Paper input fields, authors and descriptive values | `src/sciscope/plos_pilot/metadata.py` (`parse_article`, `_date`), committed `metadata.jsonl` structure only | Required title/authors/journal/date/article_type/license/language; authors are objects with nonempty surname and possibly empty given_names; subjects order unchanged. Metadata has abstract, which is excluded from papers. |
+| Paper provenance and license agreement | `src/sciscope/plos_pilot/download.py`, committed `manifest.jsonl` structure only; D3/C7 | source_url/retrieved_at/xml_sha256 from manifest; compare raw license strings; exclude original_doi/raw_xml_path/query_provenance. Never infer SPDX/version. |
+| DOI | `src/sciscope/plos_pilot/doi.py` | Reuse normalize_doi for join keys. Stored DOI grammar `^10\.[0-9]{4,9}/\S+` with true end guard, not just `$`. Normalization lowercases/trims/handles approved prefixes and punctuation; only normalized DOI is derived alongside publication_year. Other raw values are unchanged. |
+| Date/year | `metadata.py::_date`; C4/C7 and record contract | Year/year-month/full date precision; leading four ASCII digits, valid positive calendar year/date, no 1600 minimum. F001 formats source components but does not independently validate every calendar combination; the approved builder rejects invalid dates. Retrieved-at keeps download writer's UTC ISO string, not a new delivery timestamp. |
+| Section fixed fields/order | `src/sciscope/jats/cli.py::_section_rows` | Exact eleven fields in the record contract. Root parent null; nested parent non-null; original_heading can be empty; section_path carries `(untitled)`. |
+| Section identities/depth/count | `src/sciscope/jats/parser.py` | DOI-bound IDs, implicit body-p groups and structured abstract descendants; depth positive, own paragraph_count nonnegative. Zero-own-text is legal; do not require chunks for every section. Cross-record relationships remain T005. |
+| Taxonomy | `src/sciscope/jats/classify.py`, parser abstract handling; D4 | Exactly abstract, introduction, methods, results, results_discussion, discussion, conclusions, other. Preserve the mappings/precedence already recorded above. |
+| Locator and XML digest | `src/sciscope/jats/locator.py` | Lowercase 64-hex digest; full Unicode component grammar, positive indices without leading zero; reject trailing LF. locator_digest alone does not validate the path; traversal/ownership is outside structural checks. |
+| Chunk fixed fields/order and span shape | `src/sciscope/chunking/output.py::CHUNK_RECORD_FIELDS`, `chunk_record`; `core.py`/`report.py` | Exact eighteen fields, four span fields; paragraph chunk_kind, nonempty text, positive ordinal/index, nonnegative start; end bound as approved above. Preserve booleans, omitted array, versions and Unicode. Hash/identity consistency is T005, not a fixture claim. |
+| JSON primitive predicates and findings | `src/sciscope/chunking/validate.py` | Reuse is_json_string/integer/number; int excludes bool and float, numbers finite. New checkers return code tuples, not Finding. Findings/IDs are T004/T005. |
+| Embedding manifest and fixed nested objects | `src/sciscope/embedding/store.py::build_manifest`, `pipeline.py`, `validate.py::validate_embedding_structure` | Exact F003 root field set; normalization {declared, observed_norm_min, observed_norm_max}, usage {prompt_tokens,total_tokens}, entries {chunk_id,input_sha256}; no added revision/tolerance here. AdditionalProperties false only for these fixed sets. |
+| Embedding set | Same F003 writers/validator plus approved D5 amendment and C1–C6 | New set metadata uses positive dynamic dimensions, float32-le, L2 norms/tolerance, nullable revision, row_mapping embedding_manifest.entries. No provider enum or fixed 384. Prefixes may be empty. |
+| New delivery manifest/descriptors/versions | D6/R22/R28/R29 and Manifest, modules and interfaces above | Root fields and fixed five payload/three source-report names; no self descriptor; exact descriptor keys. parser null/version hash and taxonomy v0/hash informational only. Version/status constants and actual chunking/counter/template/locator identifiers. |
+| Language and license | `metadata.py`, D3/C6/R10/R11 | Nonempty raw strings, no language case/English enum and no license URL-only constraint. Fixtures include EN/en plus mixed case, free text and URL licenses. |
+
+Definition names are `paper`, `section`, `chunk`, `span`, `embedding_set`,
+`embedding_manifest`, `file_descriptor`, `source_report_descriptor`, and
+`processing_versions`. Factory dictionaries are structural examples only;
+their invented cross-record hashes/counts are not a validated six-file package.
+Nested fixed shapes inherit their enclosing entity's structure-code prefix.
+
+### Interfaces and final code vocabularies
+
+Every body below is a stub raising `NotImplementedError` in this phase.
+`__init__.py` contains only a package docstring. No schema/runtime logic is
+implemented and no existing helper is modified.
+
+```python
+def check_paper(value: object) -> tuple[str, ...]: ...
+def check_section(value: object) -> tuple[str, ...]: ...
+def check_chunk(value: object) -> tuple[str, ...]: ...
+def check_embedding_set(value: object) -> tuple[str, ...]: ...
+def check_embedding_manifest(value: object) -> tuple[str, ...]: ...
+def check_delivery_manifest(value: object) -> tuple[str, ...]: ...
+```
+
+The finalized structure-code Cartesian vocabulary is:
+
+- Entity prefix: `paper`, `section`, `chunk`, `embedding_set`,
+  `embedding_manifest`, `delivery_manifest` (underscore spellings match `$defs`).
+- Suffix: `missing-field`, `extra-field`, `bad-type`, `bad-value`, `bad-pattern`.
+- Join with one hyphen, for example `embedding_manifest-bad-type`.
+  Codes are sorted/unique; malformed roots produce only `<entity>-bad-type`.
+  For present wrong types, report bad-type before attempting value/pattern
+  checks; missing/extra/type errors are collected independently. Unknown
+  values/keys never enter messages. Correctly typed empty strings/ranges/enums
+  use bad-value; grammar violations use bad-pattern.
+
+```python
+class PaperBuildError(ValueError):
+    codes: tuple[str, ...]
+
+    def __init__(self, codes: Sequence[str]) -> None: ...
+
+
+def derive_publication_year(date_text: str) -> int: ...
+
+
+def build_papers(
+    metadata_records: Sequence[object],
+    manifest_records: Sequence[object],
+) -> tuple[dict[str, object], ...]: ...
+```
+
+Here `Sequence` is `collections.abc.Sequence`. Broad element types permit
+malformed parsed records to reach the collector without unsafe casts or
+file loading. Functions never mutate inputs and do no I/O. Required input
+fields are the retained allowlists plus DOI/license; excluded or unrelated
+upstream fields are ignored and never copied. Missing excluded fields do
+not fail the builder. A correctly typed record may have multiple defects.
+Index every valid normalized DOI even when other retained fields are invalid,
+so independent join/license problems remain detectable. An unkeyable row
+still contributes invalid-doi/malformed-record, while unmatched valid DOI
+keys contribute counterpart errors. Duplicate groups do not short-circuit
+validation of other fields or license comparisons.
+
+Final paper error codes (deduplicated and lexicographically sorted):
+
+- `paper-duplicate-metadata-doi`
+- `paper-duplicate-manifest-doi`
+- `paper-missing-metadata`
+- `paper-missing-manifest`
+- `paper-license-mismatch`
+- `paper-invalid-publication-date` (includes invalid year)
+- `paper-invalid-doi` (a string fails normalize_doi)
+- `paper-malformed-record` (non-object, missing retained field, wrong type,
+  or invalid non-date retained structure/value)
+
+`PaperBuildError.codes` contains only those codes; `str(error)` joins them
+with `", "`. No DOI, raw date, text, license or path appears. Invalid
+publication_date strings use invalid-publication-date; non-string dates
+use malformed-record. No exception text from normalize_doi is propagated.
+
+### Synthetic tests and expected RED inventory
+
+Tests import the neighboring module as `from delivery_fixtures import ...`.
+There is no `tests/delivery/__init__.py`. Fixtures label invented text as
+SYNTHETIC; they perform no file/network/key access and return fresh nested
+objects. MUTATIONS is a tuple of frozen dataclasses; each application copies
+replacement containers. No xfail/skip hides missing behavior. T004 extends
+the same corpus, filtering only DOCUMENTED-C3 cases from formal parity.
+
+`test_deliver_contract.py` covers:
+
+- Draft202012Validator.check_schema and dialect, root/required/definitions/
+  local references, the two version constants and draft status.
+- Good records for every schema entity (including child descriptors/span),
+  and all six runtime checkers; raw language variants, pre-1600 year,
+  zero-own-text, implicit/untitled, structured abstract, Unicode locator.
+- Every mutation's separately tagged schema/runtime verdict, non-object
+  roots, sorted unique collected codes, safe vocabulary and unchanged inputs.
+- Fixture field order against CHUNK_RECORD_FIELDS, AST extraction of the
+  actual section writer and embedding-manifest writer; fresh nested factories,
+  unique mutation names, explicit C3 divergence tags.
+
+`test_deliver_papers.py` covers:
+
+- Success with shuffled metadata/manifest order, DOI spelling normalization,
+  exact field order, provenance ownership, raw strings/arrays/subjects/license/
+  EN/en, empty given_names and excluded fields; unchanged inputs.
+- Standalone year derivation at all three precisions, pre-1600 and year 0001;
+  retained publication_date precision through the builder.
+- Invalid precision/calendar/year/LF/whitespace/Unicode-digit dates; exact
+  errors for duplicates on both sides, missing counterparts, invalid DOI,
+  malformed/missing fields/records and license mismatch; unchanged failures.
+- Collection of all eight independent error codes, equal-count unequal DOI
+  sets, sorted unique PaperBuildError codes, and blocked filesystem/network
+  access around successful and failing pure builder calls.
+
+Counts and RED/pass predictions are recorded after static review below.
+RED is **expected, not observed**: all runtime tests reach NotImplementedError;
+schema behavior/layout/constants tests fail against the unchanged old nested
+schema. Schema verdict tests assert the root layout first, producing clear
+old-schema failures instead of unresolved local-reference exceptions.
+Already-pass predictions are the existing document's check_schema, actual
+writer field checks, fixture freshness and mutation-tag integrity. No existing
+928-test result, locked-tool result, or human acceptance is claimed here.
+
+| File | Test functions | Expanded cases (static count) | Expected RED | Expected pass |
+| --- | ---: | ---: | ---: | ---: |
+| `tests/delivery/test_deliver_contract.py` | 14 | 441 | 426 | 15 |
+| `tests/delivery/test_deliver_papers.py` | 9 | 86 | 86 | 0 |
+| `tests/delivery/delivery_fixtures.py` | 0 | 0 | 0 | 0 |
+
+The corpus has ten entity factories, 32 good schema examples (28 for the
+six runtime checkers), and 163 mutations, six of which are DOCUMENTED-C3
+integral-float divergences. Contract case arithmetic: 1 metaschema + 1 layout
++ 3 constants + 32 good schema + 28 good runtime + 163 schema mutations
++ 163 runtime mutations + 30 non-object roots + 6 collected-code cases
++ 3 writer checks + 10 freshness checks + 1 divergence-integrity check = 441.
+Expected passes: metaschema (1), writer checks (3), freshness (10), divergence
+integrity (1). Paper arithmetic: 1 success + 5 year precision/boundary
++ 3 builder precision + 17 bad dates + 1 error class + 56 failure cases
++ 1 collect-all + 1 unequal sets + 1 no-I/O = 86. These are statically
+derived counts; pytest collection/execution is NOT RUN.
+
+Static/tool review in this run (direct local `.venv/Scripts` executables,
+not `uv run --locked`; no dependency synchronization):
+
+- `ruff check . --no-cache`: PASS.
+- `ruff format --check tests/delivery src/sciscope/delivery`: PASS (six files).
+- `mypy src`: PASS (38 source files, including the three new stub files).
+- `git --no-pager diff --check`: PASS for tracked changes. New files were
+  reviewed for trailing whitespace as part of the final static check.
+- Whole-repository `ruff format --check .`: FAIL with local Ruff 0.17.5,
+  solely on the pre-existing plan example at line 338. Its existing
+  vectors_by_chunk_id call needs its three arguments on separate lines.
+  That snippet is outside this addendum and remains untouched under the
+  explicit restriction on existing planning-file edits. All new code and
+  addendum snippets pass the format check. Locked-tool outcome is UNVERIFIED.
+- Focused/full pytest, prior 928 regression tests, meaningful observed RED,
+  CI and human verification: NOT RUN / UNVERIFIED. No claim of GREEN.
+
+Person 1 runs these exact commands from the repository root:
+
+```powershell
+$env:PYTHONPATH = 'src'
+uv run --locked python -m pytest tests/delivery -q
+uv run --locked pytest -q
+uv run --locked ruff check . --no-cache
+uv run --locked ruff format --check .
+uv run --locked mypy src
+git --no-pager diff --check
+```
+
+Expected pytest failures are confined to tests/delivery and missing behavior
+(NotImplementedError or the old schema shape); existing 928 tests are
+expected to remain passing but must be verified locally. Do not mark task
+boxes complete from these predictions. Stop after this Group A Phase 1 scope.
