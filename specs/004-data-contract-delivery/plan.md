@@ -2333,3 +2333,345 @@ print("findings:", len(outcome.findings))
 ```
 
 STOP after Group D Phase 2. No Group E, commit or push.
+
+## Implementation clarifications — Group E (T005 command and staging)
+
+Person 1 authorizes **Phase 1 only**: new SYNTHETIC command/staging tests,
+this append-only addendum, and only the validate-delivery main route and
+_validate_delivery stub in cli.py. Starting branch is
+004-data-contract-delivery, HEAD b0cfccd, initially clean. Specification and
+plan approval, 2339 passed plus 2 Windows skips, and the real-pilot library
+smoke (structural False, findings 0) are **user-reported**, not rerun here.
+This authorization supersedes the earlier stop only within this scope.
+No behavior implementation, GREEN, T006/T007, existing test/fixture edits,
+checkbox changes, EVIDENCE.md/PROJECT_TODO.md updates, commit or push.
+
+The following E1–E8 decisions are recorded verbatim from Person 1's request:
+
+- **E1 Command shape.** `validate-delivery` is routed in `main` like `deliver` (dedicated exact option parser, no argparse, so no environment probes). Options: `--package-dir` (default `DeliveryInputs().output_dir` = `data/delivery/pilot`), `--parse-report`, `--chunk-report`, `--embedding-report` (defaults = the same fields of `DeliveryInputs()`), both `--opt value` and `--opt=value`; `--help`/`-h` prints a usage line and exits 0; unknown option, repeated option, missing value → sanitized `invalid-usage` on stderr in the standard `error: ... count: ... first: ...` / `failures: 1` form, exit 2. NO partial override, NO other flags (no operational cap, no tolerance, no `--allow-partial`).
+- **E2 Behavior and output.** It calls `validate.validate_package(package_dir, PackageReports(parse, chunk, embedding))` exactly once (module attribute resolved at call time) and nothing else: no other file, no environment variable, no network, no cache, no raw XML, no paragraphs, no local `parser.py`/`classify.py`, no write of any kind. Findings → existing `_print_findings` (stderr; sorted codes, summed counts, at most 3 safe ids, then `failures: <n>`). Exit codes: `outcome.structural` → 2 (all findings still printed); semantic-only findings → 1; success → 0. Success prints ONE stdout line exactly: `validated delivery papers: <n> sections: <n> chunks: <n> vectors: <n> files: 6 failures: 0` with the numbers read from the validated delivery manifest (`counts.papers/sections/chunks` and `files["vectors.f32"].record_count`) — only reachable when there are no findings, so the manifest is valid. Any unexpected exception → `delivery-failed` (id `report`), exit 1, with no exception text; `OSError` likewise sanitized. The CLI never prints a value, path, DOI or exception text.
+- **E3 Staging wiring.** In `package.run_delivery`, after the staged six-file package is complete and the existing producer checks (`_check_produced`, `_check_integrity`) have run, and BEFORE `publish._publish`, call `validate.validate_package(staged, PackageReports(inputs.parse_report, inputs.chunk_report, inputs.embedding_report))` (module attribute at call time; `validate.py` must not import `package.py`, so no import cycle). Any finding refuses publication through the existing `_refuse(findings, 2 if outcome.structural else 1)`; nothing is published, the previous package directory and the committed `data/pilot/delivery_manifest.json` stay byte-identical, no stage/backup leftovers remain, and the sanitized findings are what the `deliver` CLI prints. Successful runs keep byte-identical outputs and two-run determinism; the existing 74 Group B tests and the 145 Group D tests must keep passing unchanged.
+- **E4 Dead code.** Remove the unused `deliver` argparse subparser from `_parser()` in `cli.py` and nothing else there (`_DELIVERY_FIELDS`, `_deliver`, `_delivery_inputs`, routing stay). `main(["deliver", ...])` keeps working through the dedicated route; `_parser().parse_args(["deliver"])` then fails with the sanitized usage error.
+- **E5 Regression (informational source digests).** After a valid delivery, changing the bytes of the local `parser.py`/`classify.py` (the fixture `parser_source`/`taxonomy_source` files) must not change `validate-delivery` (still exit 0, same line). Re-running `deliver` after changing them produces a manifest with different `processing_versions.parser/taxonomy.source_sha256` that still validates (exit 0) and a different committed-manifest copy that is still byte-identical to the package manifest.
+- **E6 Corrupt-package matrix at command level.** For each of: missing file, extra file, directory in place of a file, BOM/invalid UTF-8/malformed/duplicate-key per text file, a structural record defect, a semantic cross-record defect (one case per exit-1 code family: duplicate/orphan/parent/section-structure/xml-sha/locator/chunk-field/ordinal/text-hash/chunk-id/version/report/embedding-set), an F003 defect (vector norm), a descriptor/count/report-digest mismatch, partial set, vector size — assert exit code (2 vs 1), the exact sorted `error: ...` stderr lines for at least the representative cases, `failures: <n>`, empty stdout, package bytes unchanged. Multiple simultaneous defects of both classes: exit 2, all codes printed.
+- **E7 Access boundary at command level.** Through `main`, record every `open`/`io.open`/`os.open`: only the six package files and the three reports are opened; no write/mkdir/unlink/rename; `os.environ` access list empty; sockets blocked; no cache directory access; with the injectable `environ` argument of `main` verify no key is read.
+- **E8 Phase 1 RED taxonomy.** Because E3/E4 wiring tests cannot fail through a stub, classify every new test in plan.md by expected RED kind: `NotImplementedError` (all `validate-delivery` command tests) vs `AssertionError` (staging wiring/dead-subparser tests, which fail because the behavior is absent). Predict the counts of each kind and the whole-suite line `X failed, Y passed[, 2 skipped]`. No test may pass vacuously today, none may xfail, none may catch `NotImplementedError` as success.
+
+### Brief renewed solution-research before tests
+
+Problem: expose the existing receiver validator without additional access,
+validate the completed stage before publication, and remove the dead parser
+registration. E1–E8 settle the design; no requirement remains unresolved.
+Inspected the four F004 artifacts, Group C/D addenda, producer/publication/
+receiver implementations, cli.py and neighboring producer/receiver fixtures
+and tests. Apply google-python-engineering and retain Python >=3.12,<3.13,
+stdlib runtime and the existing dev tools. No dependency/lockfile change.
+
+| Approach | Facts, compatibility, integration and recommendation |
+| --- | --- |
+| Dedicated exact receiver parser plus existing validator/printer | Recommended under E1/E2. Local deliver already routes before argparse; reuse this routing pattern, with receiver-specific duplicate rejection. Existing receiver outcome supplies validated manifest data, findings and structural precedence. Stdlib Python 3.12, no added package/license obligation; a small private parser must enforce exact spelling and duplicates. |
+| Register another argparse subparser | Python 3.12 argparse supports subcommands and has allow_abbrev=True by default. Existing repository research traced its locale/terminal-width environment probes. This conflicts with E1/E7; do not adopt or change other parsers. |
+| Reimplement checks in the CLI or stage | Duplicates the maintained Group C/D rules and diagnostic merge logic, increasing drift. Resolve validate.validate_package through its module once at each integration boundary; keep validate independent of package to avoid a cycle. No new library/version/license evaluation is needed. |
+
+Renewed primary sources read before writing tests:
+[Python 3.12 argparse](https://docs.python.org/3.12/library/argparse.html)
+documents subparser construction and option abbreviation;
+[Python 3.12 unittest.mock](https://docs.python.org/3.12/library/unittest.mock.html)
+documents wrapping real functions, assert_called_once_with, exception
+side_effect and patching the lookup namespace. Tests patch the validate
+module attribute after fixture setup, so a bound function imported elsewhere
+cannot bypass the spy. Sources identify the Python 3.12 documentation;
+installed Python/tool versions, fresh dependency releases/licenses and a
+security audit were not verified. No external dependency is added. Runtime
+behavior and actual RED remain NOT RUN; code findings are static evidence.
+This brief check lives here because plan.md is the only permitted artifact
+edit; research.md stays unchanged.
+
+### Final interfaces, parsing and stage sequence
+
+Only the first declaration below is newly stubbed in Phase 1. It raises
+NotImplementedError unconditionally; main routes the exact leading
+validate-delivery token before its argparse try block, including argv=None
+through sys.argv. Everything following is the Phase 2 contract, not an
+implementation. Existing signatures remain unchanged:
+
+```python
+def _validate_delivery(argv: list[str]) -> int: ...
+
+
+def main(
+    argv: list[str] | None = None,
+    *,
+    environ: Mapping[str, str] | None = None,
+    transport_factory: Callable[
+        [OpenAIConnection], Transport
+    ] = UrllibTransport,
+    sleep: Callable[[float], None] = time.sleep,
+    monotonic: Callable[[], float] = time.monotonic,
+    uniform: Callable[[float, float], float] = random.uniform,
+    utc_date: Callable[[], str] = _utc_date,
+) -> int: ...
+
+
+def run_delivery(inputs: DeliveryInputs) -> DeliverySummary: ...
+
+
+def validate_package(
+    package_dir: Path,
+    reports: PackageReports,
+    *,
+    loaded: LoadedPackage | None = None,
+    load_findings: tuple[Finding, ...] = (),
+) -> ValidationOutcome: ...
+```
+
+No new public library declaration or option-parser signature is required.
+The dedicated command receives argv including its leading command token.
+Four Path values default to DeliveryInputs().output_dir, .parse_report,
+.chunk_report and .embedding_report respectively. Separated values and
+equals values (including paths with spaces) have equal meaning. An option
+seen twice is invalid even across mixed spellings. Empty values in either
+spelling, absent values, a following option in place of a value, abbreviated
+flags, positionals and every other flag are invalid-usage before validation
+or I/O. Individual path overrides retain the other defaults; E1's “NO
+partial override” prohibits accepting a partial embedding set, as confirmed
+by the explicit ban on --allow-partial. It does not require supplying all
+four optional paths together. Help prints a static usage line without
+constructing argparse or calling validate_package. No precedence is added
+for combinations of help with malformed options; those are outside these
+tests. No environment, transport, write, clock or source-file read is needed.
+
+Call validate.validate_package(package_dir, validate.PackageReports(parse,
+chunk, embedding)) exactly once, with two positional arguments and no extra
+keywords. On no findings, get the numbers only from
+outcome.loaded.manifests["delivery_manifest.json"]. The command must not
+reopen/reparse that manifest or infer counts from records, vector bytes,
+embedding entries or fixture constants. An injected trusted success outcome
+with distinctive counts and all opens blocked tests this distinction.
+Findings pass as a list to the existing _print_findings; its summing and
+three-ID limit are explicitly tested with repeated groups. Library findings
+are already trusted/sanitized; the library's MAX cross-source rule remains
+unchanged. The command adds no finding codes or alternate merge algorithm.
+
+Producer Phase 2 sequence: guard/copy → existing validate_staged_inputs →
+build papers/assemble manifest → _check_produced → write manifest →
+_check_integrity → **validate.validate_package on the complete stage** →
+_refuse on any findings → existing publish._publish only on success.
+_check_integrity currently calls _check_produced again, so the order spy
+observes produced, produced, integrity, validate, publish. It checks the six
+regular basenames, report paths, sibling stage and exactly one receiver call
+per delivery. Repeat twice with the real validator/publisher wrapped; every
+package byte and committed manifest byte must equal the earlier delivery.
+No extra receiver call belongs inside _check_integrity or publication.
+Importing validate from package is acyclic because validate does not import
+package; no reverse import is authorized.
+
+Real-defect staging regression, derived from code rather than a producer
+replacement: change acquisition_manifest[0].xml_sha256 to another valid
+64-hex digest. build_papers uses that acquisition digest; upstream checks
+validate sections/paragraphs/reports but never join them to acquisition
+metadata. The paper remains structurally valid, and descriptors describe
+the newly generated bytes, so both producer checks accept it. Only the
+full receiver sees paper/section/chunk XML disagreement, with
+delivery-xml-sha-mismatch and delivery-report-mismatch. A second case also
+sets the empty first section's depth to 2 and parse summary.succeeded to 99.
+The loader validates these primitive types but does not enforce hierarchy
+or that summary total; chunk checks ignore the empty section's depth. Full
+validation must additionally collect delivery-parent-invalid and
+delivery-section-structure-mismatch. Wrappers around both producer checks
+prove completion before refusal. No producer-step monkeypatch or fabricated
+validator result is used in these two cases. This reasoning is static;
+Person 1 must verify the real-input regressions locally.
+
+Injected structural/semantic findings separately require exit 2/1 through
+deliver, exact sanitized diagnostics, zero publisher calls, one receiver
+call, and an unchanged full fixture snapshot. Snapshots include the previous
+package, committed manifest, reports, cache, source fixtures, empty
+directories and both output parents, detecting stage/backup leftovers.
+No modification to publication/rollback is authorized in Phase 1.
+
+The informational-source regression uses package.run_delivery with the
+fixture's explicit parser_source/taxonomy_source paths, because deliver's
+approved CLI does not expose those two options. This is the same producer
+operation used by deliver, without touching repository sources or inventing
+flags. It first validates an old package, changes both disposable source
+files, validates the old package again, reruns delivery, verifies both
+changed provenance digests and byte-identical manifest copies, and validates
+again with the exact same success line.
+
+### Complete stdout, stderr and status contract
+
+Every line below ends with LF. Quoted “empty” means no output at all.
+Counts are numeric; paths, DOI, prose, values and exception messages never
+appear in either stream. Validating emits no deliver-style summary.
+
+| Command condition | Stdout | Stderr | Exit |
+| --- | --- | --- | ---: |
+| validate-delivery --help or -h | usage: validate-delivery [--package-dir PATH] [--parse-report PATH] [--chunk-report PATH] [--embedding-report PATH] | empty | 0 |
+| Unknown/repeated/missing/empty/unsupported option or positional | empty | error: invalid-usage count: 1 first: report; then failures: 1 (two lines) | 2 |
+| No findings | validated delivery papers: P sections: S chunks: C vectors: V files: 6 failures: 0 | empty | 0 |
+| Semantic findings only | empty | Sorted error: CODE count: K first: IDS lines; then failures: N | 1 |
+| Any structural finding, including mixed classes | empty | All safely evaluable findings, same sorted format; then failures: N | 2 |
+| Unexpected Exception, including OSError/PermissionError | empty | error: delivery-failed count: 1 first: report; then failures: 1 (two lines) | 1 |
+| deliver receiver returns findings | empty | Existing _print_findings output for those findings; then failures: N | 2 if structural, otherwise 1 |
+| deliver success after receiver passes | delivered papers: P sections: S chunks: C vectors: V files: 6 | empty | 0 |
+| deliver --help after dead-subparser removal | Existing twelve-option usage: deliver line unchanged | empty | 0 |
+| _parser().parse_args(["deliver"]) after cleanup | No CLI printing contract for this internal API | Raises ConfigError("invalid-usage"), without echoing arguments | Exception, no process exit |
+
+N is the sum of all printed group counts, after _print_findings merges equal
+codes by sum and distinct safe IDs by encounter order capped at three.
+Structural precedence never discards semantic lines. Representative exact
+stderr is pinned independently of the library in three cases:
+
+```text
+# Extra file, exit 2:
+error: delivery-extra-file count: 1 first: report
+failures: 1
+
+# Manifest papers count 99, exit 1:
+error: delivery-count-mismatch count: 1 first: papers.jsonl
+error: delivery-report-mismatch count: 3 first: parse_report.json,chunk_report.json,embedding_report.json
+failures: 4
+
+# Parse-report descriptor SHA mismatch, exit 1:
+error: source-report-mismatch count: 1 first: parse_report.json
+failures: 1
+```
+
+The comments and blank separators in this explanatory block are not emitted.
+Other corruption cases assert the targeted existing code and expected class,
+then compare every sorted output line and total to independently formatted
+real library findings. Rewriting a file intentionally retains hash/count
+collateral, rather than concealing it by editing descriptors. Every E6 case
+requires empty stdout and an unchanged whole fixture snapshot after the CLI.
+
+### Code vocabulary used
+
+No new validator code is introduced. Keep Group C/D vocabularies and all
+F003 delegation findings unchanged, including collateral findings. The
+command adds only the already established invalid-usage and delivery-failed
+fallbacks with fixed id report. Produced-record/status conventions from
+Group B remain unchanged before the new receiver hook.
+
+| Codes exercised or forwarded | Classification and safe IDs |
+| --- | --- |
+| invalid-usage | CLI usage, 2, report |
+| delivery-failed | Unexpected CLI exception including OSError, 1, report |
+| delivery-missing-file, delivery-extra-file, delivery-not-regular-file | Existing inventory structural, 2, fixed basename or report |
+| invalid-utf8, invalid-json, duplicate-json-key | Existing strict decoding structural, 2, fixed package/report basename |
+| chunk-bad-type; all existing STRUCTURAL_CODES contract families and report-structure | Structural, 2; fixed basenames/manifest/report; no renaming |
+| delivery-duplicate-record, delivery-orphan-record, delivery-parent-invalid, delivery-section-structure-mismatch, delivery-xml-sha-mismatch, delivery-locator-mismatch | Existing cross-record semantics, 1; file basename or trusted chunk digest |
+| delivery-chunk-field-mismatch, delivery-ordinal-gap, delivery-text-hash-mismatch, delivery-chunk-id-mismatch, delivery-version-mismatch, delivery-report-mismatch, delivery-embedding-set-mismatch | Existing semantics, 1; basename, manifest or chunk digest |
+| delivery-integrity-mismatch, delivery-count-mismatch, source-report-mismatch, partial-set, vectors-size | Existing descriptor/set semantics, 1; fixed file/report basename, manifest or vectors |
+| vector-norm-out-of-tolerance and its normalization-mismatch/vectors-sha-mismatch collateral | Existing F003 semantics, 1; trusted chunk digest/manifest/vectors IDs unchanged |
+| Other existing F003 collateral, such as set-input-mismatch, chunks-sha-mismatch, report-manifest-mismatch and set-chunk-mismatch | Existing F003 code and safe ID forwarded unchanged, 1; no Group E allowlist rewrites |
+
+### Complete synthetic inventory and expected RED taxonomy
+
+Only tests/delivery/test_deliver_command.py is new. It imports neighboring
+package_fixtures/validate_fixtures, without imports from tests or changes to
+existing helpers. Fixtures use the actual writer, two invented papers,
+three sections, two chunks and two fake two-dimensional vectors. All text
+is SYNTHETIC, all sources disposable; sockets are blocked from setup onward.
+No live provider, article prose, key or network. Every parametrized case has
+a short explicit pytest.param id or short natural string/bool ID. No xfail,
+skip or NotImplementedError catch is added. Counts below use static AST
+parameter expansion only, not pytest collection or fixture execution.
+
+| Test function | Expanded | NotImplementedError RED | AssertionError RED | Expected pass |
+| --- | ---: | ---: | ---: | ---: |
+| test_help | 2 | 2 | 0 | 0 |
+| test_each_option_spelling | 8 | 8 | 0 | 0 |
+| test_invalid_option_values | 28 | 28 | 0 | 0 |
+| test_unknown_options | 6 | 6 | 0 | 0 |
+| test_default_paths | 1 | 1 | 0 | 0 |
+| test_success_uses_validated_manifest_once | 1 | 1 | 0 | 0 |
+| test_actual_success | 2 | 2 | 0 | 0 |
+| test_inventory | 3 | 3 | 0 | 0 |
+| test_text_decoding | 32 | 32 | 0 | 0 |
+| test_record_and_descriptor_defects | 17 | 17 | 0 | 0 |
+| test_duplicate_records | 1 | 1 | 0 | 0 |
+| test_vector_defects | 2 | 2 | 0 | 0 |
+| test_exact_representative_diagnostics | 3 | 3 | 0 | 0 |
+| test_simultaneous_classes | 1 | 1 | 0 | 0 |
+| test_exception_sanitization | 3 | 3 | 0 | 0 |
+| test_findings_use_existing_printer | 2 | 2 | 0 | 0 |
+| test_source_digest_regression | 1 | 1 | 0 | 0 |
+| test_command_access_boundary | 1 | 1 | 0 | 0 |
+| test_staging_order_and_two_runs | 1 | 0 | 1 | 0 |
+| test_staging_refuses_injected_findings | 2 | 0 | 2 | 0 |
+| test_staging_real_defects | 2 | 0 | 2 | 0 |
+| test_dead_subparser_removed | 1 | 0 | 1 | 0 |
+| test_deliver_default_route_survives | 1 | 0 | 1 | 0 |
+| test_deliver_help_route_survives | 1 | 0 | 1 | 0 |
+| Total: 24 functions | 122 | 114 | 8 | 0 |
+
+All 114 command cases reach _validate_delivery and propagate its unconditional
+NotImplementedError, outside main's argparse exception handler. Library
+oracle calls, fixture generation and guards preceding main are expected to
+succeed against the user-reported GREEN baseline. No guard, mock failure,
+import/collection/setup error or unsafe operation is an acceptable RED.
+
+The staging order case instead reaches the assertion that the receiver spy
+was called: it is currently called zero times. The two injected staging cases
+and two real staging cases currently publish successfully (return 0), so
+their exit assertions fail. The dead-subparser helper uses an explicit
+assertion that ConfigError was raised, making its three callers fail with
+AssertionError while deliver remains registered; it does not use a pytest
+“DID NOT RAISE” failure as a substitute for the required taxonomy. The two
+deliver routing tests also assert unchanged successful behavior, then
+require the removal, so neither can pass vacuously in Phase 1. No missing
+production behavior is implemented merely to obtain those eight failures.
+
+Expected new file: **122 failed, 0 passed** = **114 NotImplementedError +
+8 AssertionError**. Expected whole-suite Windows line:
+**122 failed, 2339 passed, 2 skipped** (2463 total). Expected tests/delivery
+line: **122 failed, 1411 passed, 2 skipped** (1535 total). If both existing
+symlink probes work, predict 122 failed, 2341 passed overall and 122 failed,
+1413 passed focused. New failures must occur only in
+tests/delivery/test_deliver_command.py. These are predictions, not observed
+RED or GREEN. The existing 2341 cases, including all 74 Group B and 145
+Group D cases, must keep their baseline outcomes unchanged.
+
+### Verification and Person 1 handoff
+
+| Check | Observed result or NOT RUN |
+| --- | --- |
+| Initial branch/HEAD/status | Observed 004-data-contract-delivery, b0cfccd, clean |
+| Renewed primary-source research and repository review | Observed before new tests; no runtime/design claim beyond the inspected code |
+| Static Python AST expansion, without test imports | Observed 24 functions, 122 cases: 114 command, 8 staging/cleanup |
+| Direct .venv/Scripts/ruff.exe check . --no-cache | PASS after correcting new-test formatting/lint findings |
+| Direct .venv/Scripts/ruff.exe format --check . | PASS, including Markdown Python blocks |
+| Direct .venv/Scripts/mypy.exe src | PASS, 41 source files |
+| git --no-pager diff --check and scope inspection | PASS; only the permitted CLI route/stub, new test file and appended plan addendum differ |
+| uv / locked-tool parity | NOT RUN under the explicit sandbox/run restriction |
+| Focused/full pytest, fixture execution, observed RED taxonomy | NOT RUN; Person 1 runs locally |
+| Prior 2339 passed, 2 skipped and real-pilot library smoke | User-reported before this run; NOT RUN here |
+| Human verification, CI, GREEN or task completion | NOT RUN / not claimed; all checkboxes unchanged |
+
+The command boundary additionally rejects stat/lstat/scandir/listdir probes
+under either the fixture cache or default cache directory, so a cache
+directory lookup cannot evade the open guards. The first full format check
+after adding this addendum reported one new Markdown signature wrapping
+issue; it was corrected within this addendum and the repeat check passed.
+Static scope review also verified the original plan bytes are an unchanged
+prefix and the new test file has no trailing whitespace. These are source
+checks, not test execution or observed RED.
+
+Person 1 runs these exact PowerShell commands from the repository root:
+
+```powershell
+$env:PYTHONPATH = 'src'
+uv run --locked python -m pytest tests/delivery -q
+uv run --locked pytest -q
+uv run --locked ruff check . --no-cache
+uv run --locked ruff format --check .
+uv run --locked mypy src
+git --no-pager diff --check
+```
+
+Expected failures are only the 122 new cases in test_deliver_command.py,
+with the exact RED-kind split above. Person 1 must report the observed
+results before any Phase 2 behavior. Stop after Group E Phase 1; do not
+implement the command body, staging hook, dead-subparser removal, T006 or
+T007. No commit/push, EVIDENCE.md/PROJECT_TODO.md edit or checkbox change.

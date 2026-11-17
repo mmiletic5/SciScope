@@ -345,6 +345,11 @@ def _print_findings(findings: list[Finding]) -> None:
     print(f"failures: {sum(counts.values())}", file=sys.stderr)
 
 
+def _validate_delivery(argv: list[str]) -> int:
+    """Validate a received delivery through the dedicated command route."""
+    raise NotImplementedError
+
+
 def _deliver(argv: list[str]) -> int:
     """Run delivery with dedicated parsing and sanitized finding diagnostics."""
     try:
@@ -563,6 +568,8 @@ def main(
     """Run chunk generation with sanitized statuses and numeric output."""
     _configure_console()
     delivery_argv = sys.argv[1:] if argv is None else argv
+    if delivery_argv and delivery_argv[0] == "validate-delivery":
+        return _validate_delivery(delivery_argv)
     if delivery_argv and delivery_argv[0] == "deliver":
         return _deliver(delivery_argv)
     try:
