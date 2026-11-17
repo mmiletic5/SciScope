@@ -58,13 +58,18 @@ class ChunkConfig:
             raise ConfigError("invalid-content-budget-minimum")
 
 
-def heading_context(section_path: tuple[str, ...]) -> str:
-    """Build context from meaningful section headings."""
-    return HEADING_SEPARATOR.join(
+def meaningful_headings(section_path: tuple[str, ...]) -> tuple[str, ...]:
+    """Keep real, nonblank headings while preserving their source order."""
+    return tuple(
         heading
         for heading in section_path
         if heading.strip() and heading != UNTITLED_LABEL
     )
+
+
+def heading_context(section_path: tuple[str, ...]) -> str:
+    """Build context from meaningful section headings."""
+    return HEADING_SEPARATOR.join(meaningful_headings(section_path))
 
 
 def build_embedding_text(

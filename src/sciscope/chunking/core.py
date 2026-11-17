@@ -6,10 +6,10 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 
 from sciscope.chunking.config import (
-    UNTITLED_LABEL,
     ChunkConfig,
     ChunkingError,
     content_budget,
+    meaningful_headings,
 )
 from sciscope.chunking.counter import TokenCounter
 from sciscope.chunking.split import largest_end_within_limit, sentence_spans
@@ -112,7 +112,7 @@ def _hard_sentence_pieces(
         )
         cut = fitting_end
         if fitting_end < end:
-            for position in range(fitting_end - 1, start, -1):
+            for position in range(fitting_end, start, -1):
                 if (
                     paragraph.text[position].isspace()
                     and paragraph.text[start:position].strip()
@@ -245,11 +245,7 @@ def chunk_section(
     if current is not None:
         packed.append(current)
     packed = _merge_orphans(packed, budget, config.soft_min_tokens, counter)
-    heading_path = tuple(
-        heading
-        for heading in section.section_path
-        if heading.strip() and heading != UNTITLED_LABEL
-    )
+    heading_path = meaningful_headings(section.section_path)
     return [
         Chunk(
             doi=section.doi,

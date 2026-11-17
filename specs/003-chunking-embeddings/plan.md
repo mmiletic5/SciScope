@@ -40,6 +40,20 @@ Nested-section paragraphs remain included only in their own section. F002 skip c
 
 ## Implementation clarifications
 
+**Group B Phase 2 (2026-11-17):** Loader input precedence is per file in
+sections, paragraphs, parse-report order: unreadable/missing file, invalid
+UTF-8, invalid JSON, then missing field, extra field, and wrong type
+(`report-extra-field` for report extras). Only after all three parse, apply
+consistency checks in this order: `doi-order`, `failed-paper-records`,
+`doi-set`, `duplicate-section`, `unknown-section` or
+`cross-doi-section`, `paragraph-order`, `section-paragraph-count`,
+`section-locator-digest`, `paragraph-locator-digest`, `xml-report-digest`.
+The first failure wins. Output files are fully staged beside targets before
+replacement; if publication fails, restore all previous target bytes (or
+absence) and remove staging files. The hard-split boundary scan includes
+whitespace at `fitting_end`; `heading_context` and `chunk_section` share one
+meaningful-headings helper.
+
 **T003/T004 (2026-11-16, Phase 1 contract; behavior pending):** A renewed local
 solution check compared reuse of F002 JSONL plus `locator_digest`, a generic
 splitter/serializer, and a new dependency. F002 already supplies ordered,

@@ -84,11 +84,27 @@ class ExcludedCounts:
 
 def count_excluded(paper_report: Mapping[str, Any]) -> ExcludedCounts:
     """Count F002 outer skips and back-container presence by policy category."""
-    raise NotImplementedError("T003")
+    excluded = dict.fromkeys(EXCLUDED_CATEGORY_NAMES, 0)
+    unlisted: dict[str, int] = {}
+    skipped: Mapping[str, int] = paper_report["skipped_element_kinds"]
+    for kind, count in sorted(skipped.items()):
+        policy = EXCLUDED_CATEGORIES.get(kind)
+        category = policy.category if policy is not None else "other_omitted"
+        excluded[category] += count
+        if policy is None:
+            unlisted[kind] = count
+
+    back = dict.fromkeys(BACK_MATTER_CATEGORY_NAMES, 0)
+    containers: Sequence[str] = paper_report["back_matter_containers"]
+    for kind in sorted(set(containers)):
+        back_category = BACK_MATTER_CATEGORIES.get(kind)
+        if back_category is not None:
+            back[back_category] += 1
+    return ExcludedCounts(excluded, unlisted, back)
 
 
 def count_paragraphs_with_omitted(
     paragraphs: Sequence[Mapping[str, Any]],
 ) -> int:
     """Count paragraph records whose omitted-kind list is nonempty."""
-    raise NotImplementedError("T003")
+    return sum(bool(paragraph["omitted"]) for paragraph in paragraphs)
