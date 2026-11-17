@@ -316,7 +316,7 @@ def symlinks_supported() -> bool:
 
     try:
         with tempfile.TemporaryDirectory(
-            prefix="synthetic-symlink-", dir=REPO
+            prefix="synthetic-symlink-"
         ) as directory:
             target = Path(directory) / "target"
             target.mkdir()

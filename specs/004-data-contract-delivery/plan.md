@@ -1234,3 +1234,136 @@ missing T003 behavior, including the future ignore rule. Existing tests are
 expected to pass unchanged; Person 1 must verify fixture validity and actual
 RED locally. No observed RED/GREEN, CI, human verification or completed task
 is claimed. STOP after Group B Phase 1; no Phase 2 work is authorized here.
+
+## Implementation clarifications — Group B, Phase 2
+
+Person 1 authorizes T003 implementation in this session: package.py, an
+optional publication-only publish.py, deliver CLI wiring, one ignore rule,
+this addendum and the single permitted symlink-probe support change. No
+pytest/uv run is authorized in this sandbox. The Phase 1 RED counts remain
+predictions; no observed RED result has been supplied in this session.
+Apply google-python-engineering; stdlib runtime only, no dependency/lockfile
+change. T003 stays unchecked until automated and human verification at T007.
+
+- **P1 Seams.** Call validator functions and `contract.check_*` through module attributes (`chunk_validate.validate_chunks`, `embedding_validate.validate_embedding_set`, ...) and the four publication moves through `os.replace` (module attribute), exactly so the Phase 1 tests' wrappers and failure injection work. Never import a name that bypasses a seam the tests patch.
+- **P2 Order of operations** exactly as the addendum: guard aliases (before reading inputs or creating parents) → copy four payloads to the stage → `validate_staged_inputs` on staged copies → strict private JSONL read of F001 files → `build_papers` → render → manifest from validated facts (parser/taxonomy hashes from `parser_source`/`taxonomy_source` bytes) → `contract.check_*` over every produced record and the manifest → re-read staged files and compare hashes/bytes/record counts (`delivery-integrity-mismatch`) → stage committed copy → four moves with rollback.
+- **P3 Windows.** Close every file handle before a move; read/write with `Path.read_bytes`/explicit `with` blocks; never `shutil.rmtree` a path this invocation does not own; cleanup is best effort and never raises, never follows a leftover symlink; any OSError/PermissionError becomes the sanitized code `output-write-failed` (exit 1).
+- **P4 Sanitization.** No path, record value, prose, key or exception text in stdout/stderr, in `DeliveryError`, or in any code path; unknown exception types map to `delivery-failed` (exit 1).
+- **P5 No behaviour added beyond the plan.** No new CLI option, no timestamps, no environment reads, no transport, no cache access, no progress output.
+
+### Implemented structure and static review
+
+package.py keeps the approved public signatures, frozen path/count dataclasses,
+pure builder and renderers. It orchestrates byte copying, existing upstream
+validation, F001 reading/paper assembly, metadata, Group A checkers and final
+integrity checks. The publication protocol is isolated in the allowed
+publication-only delivery/publish.py, with private helpers for sibling stages,
+closed-handle committed-copy staging, unique backup names, four os.replace
+moves, rollback and best-effort cleanup. package.py remains approximately
+500 lines; no unrelated logic was moved out or new runtime module introduced.
+
+All validator/checker calls use module attributes; both forward and rollback
+moves call os.replace through the os module. The staged-validation seam is
+called once; later checks never reread original sections/chunks/vectors to
+replace the staged facts. This preserves the Phase 1 source-change wrapper's
+meaning: shipped copies are validated even if an original changes afterward.
+Final integrity re-reads the six-file inventory, hashes/sizes/physical record
+counts, dimensions-based vector rows, source-report descriptors and serialized
+manifest, then rechecks produced structures. Payload chunks/vector descriptors
+also agree with embedding_set's validated digests. No dependency on future
+delivery/validate.py or reader.py; T005 still owns full consumer semantics.
+
+Private F001 JSONL reading splits only LF, rejects duplicate nested keys,
+nonstandard constants, floating-point overflow to infinity, malformed JSON
+and malformed UTF-8, and discards decoder exception text. Rendering delegates
+manifest JSON to the existing render_json convention; papers are DOI-sorted
+and rebuilt in PAPER_FIELDS order. The pure builder only copies supplied
+validated metadata, with fresh nested mappings; source hashes remain
+informational and are never compared to a different checkout.
+
+DeliveryError(code) keeps an allowlisted sanitized code/status and defaults
+to one report Finding. Internally aggregated upstream/checker failures carry
+their unchanged safe Finding groups in its `findings` tuple, with exit 2 for
+structural input errors and exit 1 for semantic/produced-structure failures.
+The generic carrier's code stays delivery-failed; CLI prints its specific
+trusted Finding groups through the unchanged _print_findings function.
+Source reads retain B7's existing missing-file/exit-2 classification; output
+staging/move OSError or PermissionError becomes output-write-failed/exit 1.
+Unexpected Exception subclasses map to delivery-failed without retaining
+their text in diagnostics. Cleanup never masks the original failure.
+
+Static stdlib review found that argparse.ArgumentParser construction invokes
+gettext for group/help labels, while add_argument invokes HelpFormatter,
+whose default width calls shutil.get_terminal_size. These can inspect locale
+and COLUMNS/LINES environment variables even on a successful parse. To meet
+B8 and test_no_environment_transport_or_cache, main routes only an exact
+leading deliver token through a private parser for the twelve B10 long
+options. It accepts separated or equals-form values and retains last-value
+semantics for repeated options; unknown/missing arguments produce only the
+invalid-usage Finding. Help is static text from the same twelve-option table,
+without terminal/locale probes. The existing argparse parser also registers
+deliver for root command help. Other command dispatch, argument parsing,
+diagnostics and _validate are unchanged. No new option is introduced.
+
+Crash leftovers retain the approved deterministic ignore rule: never scan,
+adopt or remove old reserved siblings. Track and clean only this invocation's
+paths. Keep both predecessors until the committed-copy installation succeeds;
+on a single injected failure restore both independently. If persistent OS
+denial prevents restoring a backup, preserve that surviving backup rather
+than delete the last predecessor. This is the already documented best-effort
+limit, not a power-loss or concurrent-writer transaction claim.
+
+The sole test-support edit is
+tests/delivery/package_fixtures.py::symlinks_supported: remove dir=REPO from
+TemporaryDirectory so collection uses the default system temp directory and
+creates no probe directory in the repository. No test assertions, fixtures
+outside that function, case inventory or parameter counts were changed.
+The sole .gitignore edit adds data/delivery/ beside the other data/ rules.
+
+### Deviations and TEST ISSUES
+
+No deviation from the approved T003 behavior is identified by static review.
+The dedicated deliver parser is an implementation choice required by the
+no-environment rule; the code evidence is the Python 3.12 stdlib functions
+listed above. The permitted publication module contains only that protocol.
+TEST ISSUES: **none identified by static review**. Tests and fixtures were
+not executed, so their runtime validity and GREEN outcome remain unverified.
+No tests were weakened or changed to accommodate implementation.
+
+### Phase 2 verification and predicted outcomes
+
+| Phase 2 check | Observed result or explicit limit |
+| --- | --- |
+| Direct .venv/Scripts/ruff.exe check . --no-cache | PASS |
+| Direct .venv/Scripts/ruff.exe format --check . | PASS (123 files, including Markdown Python blocks) |
+| Direct .venv/Scripts/mypy.exe src, configured strict | PASS (40 source files) |
+| git --no-pager diff --check | PASS |
+| Static AST syntax/whitespace, validator calls and offline package guard | PASS; no NotImplementedError remains in package/publication code; no test imports or delivery execution |
+| Scope diff | Only package.py, new publish.py, CLI deliver wiring, one .gitignore rule, this addendum and the permitted symlink-probe line |
+| Focused pytest / both whole-suite entry points / fixture execution | NOT RUN; Person 1 runs locally |
+| uv / locked-tool parity, Windows/POSIX moves, symlink privilege | NOT RUN; direct tools do not establish locked-tool or runtime parity |
+| Human verification, CI, T003 completion | NOT RUN / not claimed; checkbox unchanged |
+
+Expected, **not observed**: all **74** Group B cases turn GREEN and all
+**1638** prior cases remain passing. Focused tests/delivery: **784 passed**,
+or **783 passed, 1 skipped** if symlink privilege is unavailable. Either
+whole-suite entry point: **1712 passed, 0 failed**, or **1711 passed,
+1 skipped, 0 failed** on Windows without symlink privilege. These counts
+assume the user-reported prior GREEN baseline and successful fixture execution;
+no pytest collection, observed RED/GREEN, CI or human acceptance is claimed.
+
+Person 1 runs these exact PowerShell commands from the repository root:
+
+```powershell
+$env:PYTHONPATH = 'src'
+uv run --locked python -m pytest tests/delivery -q
+uv run --locked pytest -q
+uv run --locked python -m pytest tests -q
+uv run --locked ruff check . --no-cache
+uv run --locked ruff format --check .
+uv run --locked mypy src
+git --no-pager diff --check
+```
+
+Stop after this Group B Phase 2 scope. No commit/push, completion checkbox,
+EVIDENCE.md or PROJECT_TODO.md changes; T004–T006 are not implemented.

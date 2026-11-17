@@ -30,6 +30,7 @@ from sciscope.chunking.validate import (
     read_validation_json,
     validate_chunks,
 )
+from sciscope.delivery import package as delivery_package
 from sciscope.embedding.config import (
     EmbeddingCacheError,
     EmbeddingConfig,
@@ -56,6 +57,21 @@ from sciscope.embedding.provider import Embedder
 from sciscope.embedding.validate import (
     validate_embedding_set,
     validate_embedding_structure,
+)
+
+_DELIVERY_FIELDS = (
+    "metadata",
+    "acquisition_manifest",
+    "sections",
+    "paragraphs",
+    "parse_report",
+    "chunks",
+    "chunk_report",
+    "vectors",
+    "embedding_manifest",
+    "embedding_report",
+    "output_dir",
+    "committed_manifest",
 )
 
 
@@ -197,6 +213,14 @@ def _parser() -> _Parser:
         type=Path,
         default=Path("data/pilot/embedding_report.json"),
     )
+    deliver = commands.add_parser("deliver")
+    defaults = delivery_package.DeliveryInputs()
+    for name in _DELIVERY_FIELDS:
+        deliver.add_argument(
+            "--" + name.replace("_", "-"),
+            type=Path,
+            default=getattr(defaults, name),
+        )
     return parser
 
 
@@ -319,6 +343,57 @@ def _print_findings(findings: list[Finding]) -> None:
             file=sys.stderr,
         )
     print(f"failures: {sum(counts.values())}", file=sys.stderr)
+
+
+def _deliver(argv: list[str]) -> int:
+    """Run delivery with dedicated parsing and sanitized finding diagnostics."""
+    try:
+        if "--help" in argv[1:] or "-h" in argv[1:]:
+            options = " ".join(
+                "[--" + name.replace("_", "-") + " PATH]"
+                for name in _DELIVERY_FIELDS
+            )
+            print("usage: deliver " + options)
+            return 0
+        summary = delivery_package.run_delivery(_delivery_inputs(argv[1:]))
+    except ConfigError:
+        _print_findings([Finding("invalid-usage", 1, ("report",))])
+        return 2
+    except delivery_package.DeliveryError as error:
+        _print_findings(list(error.findings))
+        return error.exit_code
+    except OSError:
+        _print_findings([Finding("output-write-failed", 1, ("report",))])
+        return 1
+    except Exception:
+        _print_findings([Finding("delivery-failed", 1, ("report",))])
+        return 1
+    print(
+        f"delivered papers: {summary.papers} sections: {summary.sections} "
+        f"chunks: {summary.chunks} vectors: {summary.vectors} "
+        f"files: {summary.files}"
+    )
+    return 0
+
+
+def _delivery_inputs(arguments: list[str]) -> delivery_package.DeliveryInputs:
+    """Parse exact delivery options without argparse's environment probes."""
+    defaults = delivery_package.DeliveryInputs()
+    values = {name: getattr(defaults, name) for name in _DELIVERY_FIELDS}
+    options = {"--" + name.replace("_", "-"): name for name in values}
+    index = 0
+    while index < len(arguments):
+        option, equals, value = arguments[index].partition("=")
+        if option not in options:
+            raise ConfigError("invalid-usage")
+        if not equals:
+            index += 1
+            if index == len(arguments) or arguments[index].startswith("-"):
+                raise ConfigError("invalid-usage")
+            value = arguments[index]
+        values[options[option]] = Path(value)
+        index += 1
+    return delivery_package.DeliveryInputs(**values)
 
 
 def _dry_run(args: argparse.Namespace) -> int:
@@ -487,6 +562,9 @@ def main(
 ) -> int:
     """Run chunk generation with sanitized statuses and numeric output."""
     _configure_console()
+    delivery_argv = sys.argv[1:] if argv is None else argv
+    if delivery_argv and delivery_argv[0] == "deliver":
+        return _deliver(delivery_argv)
     try:
         args = _parser().parse_args(argv)
         if args.command == "validate":
