@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
 from sciscope.chunking.config import (
@@ -80,16 +80,25 @@ def _source_piece(
     return _Piece(paragraph.text[start:end], (span,), hard)
 
 
-def _join_pieces(left: _Piece, right: _Piece) -> _Piece:
+def _join_pieces(
+    left: _Piece,
+    right: _Piece,
+    paragraph_text_by_locator: Mapping[str, str],
+) -> _Piece:
     """Join pieces using their source relationship."""
     previous = left.spans[-1]
     following = right.spans[0]
-    adjacent = (
+    same_paragraph = (
         previous.source_locator == following.source_locator
         and previous.paragraph_index == following.paragraph_index
-        and previous.end == following.start
     )
-    separator = "" if adjacent else "\n\n"
+    separator = (
+        paragraph_text_by_locator[previous.source_locator][
+            previous.end : following.start
+        ]
+        if same_paragraph
+        else "\n\n"
+    )
     return _Piece(
         left.text + separator + right.text,
         left.spans + right.spans,
@@ -179,7 +188,11 @@ def _paragraph_units(
 
 
 def _merge_orphans(
-    pieces: list[_Piece], budget: int, soft_min: int, counter: TokenCounter
+    pieces: list[_Piece],
+    budget: int,
+    soft_min: int,
+    counter: TokenCounter,
+    paragraph_text_by_locator: Mapping[str, str],
 ) -> list[_Piece]:
     """Merge short chunks left to right until a pass changes nothing."""
     while len(pieces) > 1:
@@ -191,10 +204,14 @@ def _merge_orphans(
                 continue
             neighbor = index - 1 if index > 0 else 1
             if neighbor < index:
-                merged = _join_pieces(pieces[neighbor], pieces[index])
+                merged = _join_pieces(
+                    pieces[neighbor], pieces[index], paragraph_text_by_locator
+                )
                 first = neighbor
             else:
-                merged = _join_pieces(pieces[index], pieces[neighbor])
+                merged = _join_pieces(
+                    pieces[index], pieces[neighbor], paragraph_text_by_locator
+                )
                 first = index
             if counter.count(merged.text) <= budget:
                 pieces[first : first + 2] = [merged]
@@ -222,6 +239,9 @@ def chunk_section(
     nonblank = [paragraph for paragraph in paragraphs if paragraph.text.strip()]
     if not nonblank:
         return []
+    paragraph_text_by_locator = {
+        paragraph.source_locator: paragraph.text for paragraph in nonblank
+    }
 
     budget = content_budget(config, counter, section.section_path)
     effective_max = min(config.content_target_max_tokens, budget)
@@ -236,7 +256,7 @@ def chunk_section(
         if current is None:
             current = unit
             continue
-        joined = _join_pieces(current, unit)
+        joined = _join_pieces(current, unit, paragraph_text_by_locator)
         if counter.count(joined.text) <= effective_max:
             current = joined
         else:
@@ -244,7 +264,13 @@ def chunk_section(
             current = unit
     if current is not None:
         packed.append(current)
-    packed = _merge_orphans(packed, budget, config.soft_min_tokens, counter)
+    packed = _merge_orphans(
+        packed,
+        budget,
+        config.soft_min_tokens,
+        counter,
+        paragraph_text_by_locator,
+    )
     heading_path = meaningful_headings(section.section_path)
     return [
         Chunk(

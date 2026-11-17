@@ -40,6 +40,14 @@ Nested-section paragraphs remain included only in their own section. F002 skip c
 
 ## Implementation clarifications
 
+**Group B Phase 2c (2026-11-17):** Person 1 approved verbatim source gaps
+between spans from the same paragraph after reviewing the 17-paper run.
+Single-paragraph chunk text is now a source substring so downstream quote
+checks can use it directly; different paragraphs still join with `"\n\n"`.
+`chunk_id` is unchanged when its ordered spans are unchanged. Keep
+`chunking-v1` because no consumer has used v1 yet; hashes from the earlier
+real run are superseded.
+
 **Group B Phase 2 (2026-11-17):** Loader input precedence is per file in
 sections, paragraphs, parse-report order: unreadable/missing file, invalid
 UTF-8, invalid JSON, then missing field, extra field, and wrong type
@@ -74,6 +82,10 @@ with previous output bytes restored.
   in `paper_count`; the parse-report summary is not cross-checked with papers.
 - `chunks.jsonl` may contain raw U+2028/U+2029/U+0085 inside JSON strings;
   consumers must split on `"\n"` only. Carry this into the F004 handoff.
+- Hard splits cut at the last whitespace in the fitting prefix and can split
+  a named entity. The real run observed this in 2 of 728 chunks, including
+  a 1,250-character semicolon list in 10.1371/journal.pone.0037017.
+  Preferring `;` boundaries is deferred and unnecessary before Golden v0.
 
 **T003/T004 (2026-11-16, Phase 1 contract; behavior pending):** A renewed local
 solution check compared reuse of F002 JSONL plus `locator_digest`, a generic
@@ -153,7 +165,7 @@ Phase 2 also extracts the shared meaningful-headings filter for
 **T001/T002 Phase 2 implementation details (2026-11-16):** A paragraph at or below `effective_max` is one unit. An oversize paragraph becomes sentence-piece units: consecutive sentences within that paragraph form the largest source span whose count fits `effective_max`; an oversize sentence becomes hard-split pieces. All units pass through one greedy loop in source order, and a unit may join an open chunk when the count of the joined text fits `effective_max`. After packing, repeat left-to-right orphan passes until no merge succeeds. A sub-`soft_min_tokens` chunk merges with its previous neighbor, or its next neighbor when first, only when the joined count fits the content budget; merged `hard_split` is the OR of both flags, and final ordinals are 1..n. Sentence spans are trimmed, ordered and non-overlapping, covering every non-whitespace character once. Abbreviations compare the whitespace-delimited period-ending token case-insensitively after leading opening quotes/brackets are stripped; single-uppercase-letter initials remain case-sensitive. Sentence punctuation and starter rules are those in clarification 4. `largest_end_within_limit` finds the maximal fitting offset and raises `ChunkingError` if one code point cannot fit. The hard-split caller takes a fitting remainder whole; otherwise it prefers the last whitespace strictly inside the fitting prefix when that leaves a nonempty piece, then starts after boundary whitespace, or cuts at the maximal offset. `chunk_sections` validates all records before chunking and uses code-like errors without paragraph text for unknown section IDs, duplicate/non-increasing indices and DOI mismatches. T001/T002 functions use no clock, randomness or I/O.
 
 1. **Source contract:** Validate section/paragraph uniqueness and ownership, locator digest against `xml_sha256`, paragraph indices/order and allowed fields. Use F002's exact JSONL ordering for deterministic traversal. Survey found 50 zero-own-paragraph sections (not only 14); 0 empty paragraph records but synthetic tests cover them. Ignore child paragraphs when processing a parent.
-2. **Text and spans:** Span offsets exclude whitespace at split boundaries, so chunk text has no leading or trailing whitespace. Spans of one paragraph are ordered and non-overlapping; the first starts at its first non-whitespace character, the last ends at its last, and every gap is whitespace only. Every non-whitespace character is covered exactly once in source order. Each span stores `source_locator` and [`start`,`end`) Unicode code-point offsets. Join span texts with `""` when the next span is adjacent in the same paragraph, otherwise with `"\n\n"`. `text` is never prefixed; `embedding_text` is separate and versioned.
+2. **Text and spans:** Span offsets exclude whitespace at split boundaries, so chunk text has no leading or trailing whitespace. Spans of one paragraph are ordered and non-overlapping; the first starts at its first non-whitespace character, the last ends at its last, and every gap is whitespace only. Every non-whitespace character is covered exactly once in source order. Each span stores `source_locator` and [`start`,`end`) Unicode code-point offsets. Consecutive spans from the same paragraph join with the exact source substring between their offsets (empty when adjacent); spans from different paragraphs join with `"\n\n"`. A chunk whose spans all belong to one paragraph is a verbatim source substring. `text` is never prefixed; `embedding_text` is separate and versioned.
 3. **Budget and calibration acceptance:** B3 counter version `utf8-bytes-div3-v1`. The absolute 512 model-agnostic ceiling includes section context, separator and passage prefix. The operational cap defaults to 384 estimated tokens on complete input (headroom 128/25%) and is configurable up to 512; keep 200–350 content-token soft target when feasible. Chunker reserves configurable prefix overhead; embedder rebuilds with the same counter and fails before a call if over the configured cap or 512. A heading alone that exhausts budget is an actionable error, never truncated. Record the aggregate estimate for exactly the inputs sent to the live provider and the corresponding aggregate `usage.total_tokens`. **Acceptance:** reported tokens must be ≤ estimated tokens. If reported tokens exceed the estimate, reject this estimator and revisit the cap/estimator before F004. Aggregate success cannot prove each input individually fits; state this limit in evidence. No overlap without new evidence.
 4. **Sentence boundaries:** A stdlib rule set protects approved abbreviations, initials/species abbreviations and decimals. Sentence punctuation (`.`, `?`, `!`) may be followed by closing quotes/brackets; a boundary requires whitespace and then an uppercase letter, digit, opening quote or bracket. Units and terminal `p < 0.05.` can split. The protected abbreviation list is `et al.`, `Fig.`, `Figs.`, `Tab.`, `Eq.`, `Ref.`, `e.g.`, `i.e.`, `vs.`, `cf.`, `ca.`, `approx.`, `no.`, `sp.`, `spp.`, `var.`, `subsp.`, `Dr.`; a single uppercase letter before a period is protected. This conservative rule may miss a real boundary after an abbreviation or initial. Hard split finds the largest prefix within the token limit, preferring the last whitespace within it; flags `hard_split`.
 5. **Identity/versioning:** Canonical SHA256 uses length-delimited UTF-8 fields to avoid ambiguous concatenation. `chunking_version` changes whenever boundary, coverage or policy semantics change; `template_version` changes with heading/separator/prefix construction; `token_counter_id` changes with estimator rules. Text hash and cache key use the exact final input bytes. Generated manifest/report timestamps are excluded from deterministic outputs; `creation_date` is a deterministic embedding-set creation date retained across resume, passed/configured at first run rather than reset on rerun.
@@ -185,6 +197,8 @@ Rate/concurrency defaults remain provisional at 8 inputs, 2,048 estimated tokens
 
 Chunk JSONL consumers must split records on `"\n"` only. Because output uses
 `ensure_ascii=False`, U+2028, U+2029 and U+0085 can occur raw inside strings.
+Single-paragraph chunk text is a verbatim source substring; `"\n\n"` is
+inserted only between different paragraphs.
 
 Person 2 must embed queries with the **same provider, model and dimensions** as the embedding-set manifest, using its `query_prefix` and compatible input construction. `embed_queries` and `embed_passages` share the provider interface/config; never compare vectors from differing sets. Record requested and returned dimensions, observed normalization, `template_version`, `token_counter_id` and `chunking_version`. F004 reconciles flat F002/F003 JSONL with draft `DATA_CONTRACT.json`, including its 384-vector restriction and `embedding_model_revision` field; it should define authoritative version semantics with Person 1/2. Retrieval evaluation and database insertion remain outside F003.
 

@@ -476,6 +476,124 @@ def test_hard_split_uses_whitespace_at_prefix_end() -> None:
     assert [chunk.hard_split for chunk in chunks] == [True, True]
 
 
+def test_hard_split_remainder_merge_keeps_source_gap() -> None:
+    """T002 Phase 2c RED: hard-split pieces retain their source gap."""
+    source = paragraph("ab cdefghijk lm")
+    chunks = chunk_section(
+        section(path=()),
+        [source],
+        small_config(
+            content_target_min_tokens=2,
+            content_target_max_tokens=4,
+            soft_min_tokens=3,
+        ),
+        COUNTER,
+    )
+    merged = next(chunk for chunk in chunks if len(chunk.spans) > 1)
+    assert merged.hard_split
+    assert (
+        merged.text == source.text[merged.spans[0].start : merged.spans[-1].end]
+    )
+    assert "\n\n" not in merged.text
+
+
+def test_same_paragraph_orphan_merge_keeps_single_space() -> None:
+    """T002 Phase 2c RED: an orphan merge retains one source space."""
+    source = paragraph("Amber. Cobalt.")
+    chunks = chunk_section(
+        section(path=()),
+        [source],
+        small_config(
+            content_target_min_tokens=2,
+            content_target_max_tokens=3,
+            soft_min_tokens=4,
+        ),
+        COUNTER,
+    )
+    merged = next(chunk for chunk in chunks if len(chunk.spans) > 1)
+    assert merged.text == "Amber. Cobalt."
+    assert "\n\n" not in merged.text
+
+
+def test_different_paragraph_units_keep_double_newline() -> None:
+    """T002 Phase 2c: separate paragraphs retain the template separator."""
+    sources = [paragraph("velora"), paragraph("torvex", 2)]
+    chunks = chunk_section(section(path=()), sources, small_config(), COUNTER)
+    assert len(chunks) == 1
+    assert chunks[0].text == "velora\n\ntorvex"
+
+
+def test_same_paragraph_multi_whitespace_gap_is_verbatim() -> None:
+    """T002 Phase 2c RED: a multi-character source gap survives merging."""
+    source = paragraph("Amber. \t  Cobalt.")
+    chunks = chunk_section(
+        section(path=()),
+        [source],
+        small_config(
+            content_target_min_tokens=2,
+            content_target_max_tokens=3,
+            soft_min_tokens=4,
+        ),
+        COUNTER,
+    )
+    merged = next(chunk for chunk in chunks if len(chunk.spans) > 1)
+    assert (
+        merged.text == source.text[merged.spans[0].start : merged.spans[-1].end]
+    )
+
+
+def test_synthetic_span_joins_and_coverage_follow_source() -> None:
+    """T002 Phase 2c RED: spans join verbatim and cover every source."""
+    sources = [
+        paragraph("Amber. Cobalt."),
+        paragraph("  velora  torvex\t\tnestrin  ", 2),
+        paragraph("ab cdefghijk lm", 3),
+    ]
+    config = small_config(
+        content_target_min_tokens=2,
+        content_target_max_tokens=4,
+        soft_min_tokens=4,
+    )
+    chunks = chunk_section(section(path=()), sources, config, COUNTER)
+    assert_span_coverage(chunks, sources)
+    by_locator = {source.source_locator: source.text for source in sources}
+    for chunk in chunks:
+        parts = [
+            by_locator[span.source_locator][span.start : span.end]
+            for span in chunk.spans
+        ]
+        expected = parts[0]
+        for previous, following, part in zip(
+            chunk.spans[:-1], chunk.spans[1:], parts[1:], strict=True
+        ):
+            if (
+                previous.source_locator == following.source_locator
+                and previous.paragraph_index == following.paragraph_index
+            ):
+                expected += by_locator[previous.source_locator][
+                    previous.end : following.start
+                ]
+            else:
+                expected += "\n\n"
+            expected += part
+        assert chunk.text == expected
+        assert chunk.content_tokens == COUNTER.count(chunk.text)
+
+
+def test_phase2c_chunk_rerun_is_deterministic() -> None:
+    """T002 Phase 2c RED: verbatim joins remain stable across reruns."""
+    source = paragraph("Amber. Cobalt.")
+    config = small_config(
+        content_target_min_tokens=2,
+        content_target_max_tokens=3,
+        soft_min_tokens=4,
+    )
+    first = chunk_section(section(path=()), [source], config, COUNTER)
+    second = chunk_section(section(path=()), [source], config, COUNTER)
+    assert first == second
+    assert first[0].text == source.text
+
+
 @pytest.mark.parametrize(
     "sources",
     [
