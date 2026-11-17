@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import hashlib
+import inspect
 import math
 import os
+import re
 import shutil
 import tempfile
 from pathlib import Path
@@ -14,6 +16,7 @@ import pytest
 from embed_validate_fixtures import (
     COUNTER,
     TEXT,
+    RecordingEnvironment,
     UnreadableEnvironment,
     ValidationFiles,
     embed_set,
@@ -30,7 +33,9 @@ from embed_validate_fixtures import (
     write_records,
 )
 
+from sciscope.chunking import validate as chunk_validate
 from sciscope.chunking.validate import Finding
+from sciscope.embedding import pipeline, validate
 from sciscope.embedding.cache import EmbeddingCache, cache_key
 from sciscope.embedding.config import (
     PRICE_USD_PER_MILLION_TOKENS,
@@ -39,6 +44,7 @@ from sciscope.embedding.config import (
 )
 from sciscope.embedding.pipeline import DryRunStats, run_dry_run
 from sciscope.embedding.validate import validate_embedding_set
+from sciscope.pipeline import cli
 from sciscope.pipeline.cli import main
 
 
@@ -433,8 +439,9 @@ def test_validate_has_no_environment_transport_or_cache_access(
     monkeypatch.setattr(EmbeddingCache, "get", forbidden_cache)
     monkeypatch.setattr(EmbeddingCache, "__init__", forbidden_cache)
     before = tree_snapshot(tmp_path)
+    recording = RecordingEnvironment()
     with monkeypatch.context() as guard:
-        guard.setattr(os, "environ", UnreadableEnvironment())
+        guard.setattr(os, "environ", recording)
         assert (
             main(
                 files.validate_args(),
@@ -443,6 +450,9 @@ def test_validate_has_no_environment_transport_or_cache_access(
             )
             == 0
         )
+    assert not any(
+        key.upper().startswith("OPENAI") for key in recording.accessed_keys
+    )
     assert tree_snapshot(tmp_path) == before
 
 
@@ -534,8 +544,9 @@ def test_dry_run_exact_cost_cache_and_zero_writes(
     extra = ["--dry-run"]
     if limit is not None:
         extra.extend(["--limit", str(limit)])
+    recording = RecordingEnvironment()
     with monkeypatch.context() as guard:
-        guard.setattr(os, "environ", UnreadableEnvironment())
+        guard.setattr(os, "environ", recording)
         guard.setattr(Path, "write_bytes", forbidden_write)
         guard.setattr(Path, "write_text", forbidden_write)
         guard.setattr(Path, "mkdir", forbidden_write)
@@ -554,6 +565,9 @@ def test_dry_run_exact_cost_cache_and_zero_writes(
         assert run_dry_run(
             files.options(limit), EmbeddingConfig(dimensions=2), COUNTER
         ) == DryRunStats(*values)
+    assert not any(
+        key.upper().startswith("OPENAI") for key in recording.accessed_keys
+    )
     assert tree_snapshot(tmp_path) == before
     if warmth == "cold":
         assert not files.path("cache").exists()
@@ -731,3 +745,20 @@ def test_validation_failure_output_is_deterministic_and_sanitized(
     )
     for forbidden in (TEXT, str(tmp_path), "https://", "jats:"):
         assert forbidden not in output[0].err
+
+
+def test_offline_functions_have_no_environment_access() -> None:
+    """T007-V45: offline function sources exclude environment access seams."""
+    for function in (
+        cli._validate,
+        cli._dry_run,
+        pipeline.run_dry_run,
+        validate.validate_embedding_set,
+        chunk_validate.validate_chunks,
+    ):
+        assert (
+            re.search(
+                r"\benviron\b|os\.environ|getenv", inspect.getsource(function)
+            )
+            is None
+        )

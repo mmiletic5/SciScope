@@ -5,11 +5,12 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import os
 import struct
 from collections.abc import Iterator, Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, overload
 
 from sciscope.chunking.core import ChunkSpan
 from sciscope.chunking.counter import Utf8BytesDiv3Counter
@@ -286,6 +287,39 @@ def tree_snapshot(root: Path) -> dict[str, bytes | None]:
         )
         for path in sorted(root.rglob("*"))
     }
+
+
+class RecordingEnvironment(dict[str, str]):
+    """Copy the process environment and record key accesses without blocking."""
+
+    def __init__(self) -> None:
+        """Copy real values before patching and start an empty access record."""
+        super().__init__(os.environ.copy())
+        self.accessed_keys: list[str] = []
+
+    def __getitem__(self, key: str) -> str:
+        """Record indexed lookup before returning the copied value."""
+        self.accessed_keys.append(key)
+        return super().__getitem__(key)
+
+    @overload
+    def get(self, key: str, default: None = None, /) -> str | None: ...
+
+    @overload
+    def get(self, key: str, default: str, /) -> str: ...
+
+    @overload
+    def get[Default](self, key: str, default: Default, /) -> str | Default: ...
+
+    def get(self, key: str, default: object = None, /) -> object:
+        """Record get explicitly because dict.get bypasses indexed lookup."""
+        self.accessed_keys.append(key)
+        return super().get(key, default)
+
+    def __contains__(self, key: object) -> bool:
+        """Record membership checks before inspecting the copied mapping."""
+        self.accessed_keys.append(str(key))
+        return super().__contains__(key)
 
 
 class UnreadableEnvironment(Mapping[str, str]):

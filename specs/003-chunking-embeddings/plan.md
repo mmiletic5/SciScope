@@ -168,6 +168,7 @@ live probe (not evidence) with norms 0.999657 to 1.000201, deviations near
 3.4e-4, above float32 rounding; do not tighten tolerance toward float32 epsilon.
 (d) Dry-run cost is estimator-based; the user reports pilot usage about 0.64
 of the estimate on five inputs (not evidence, not independently verified).
+chunk-in-empty-section rescans all paragraphs per chunk, O(chunks x paragraphs); revisit around 500 papers in F005.
 
 **Group C Phase 2 (2026-11-17):** Implement T005 before T006 using the
 approved D1–D12 contracts and no new dependency or external verification.
