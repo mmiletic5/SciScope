@@ -77,6 +77,23 @@ def _parser() -> _Parser:
     return parser
 
 
+def _check_output_paths(args: argparse.Namespace) -> None:
+    """Reject output aliases before reading any source file."""
+    inputs = {
+        args.sections.resolve(),
+        args.paragraphs.resolve(),
+        args.parse_report.resolve(),
+    }
+    chunks_path = args.chunks.resolve()
+    report_path = args.report.resolve()
+    if (
+        chunks_path == report_path
+        or chunks_path in inputs
+        or report_path in inputs
+    ):
+        raise ConfigError("output-path-conflict")
+
+
 def main(argv: list[str] | None = None) -> int:
     """Run chunk generation with sanitized statuses and numeric output."""
     _configure_console()
@@ -86,6 +103,7 @@ def main(argv: list[str] | None = None) -> int:
             operational_cap_tokens=args.operational_cap_tokens,
             prefix_reserve_tokens=args.prefix_reserve_tokens,
         )
+        _check_output_paths(args)
         bundle = load_sources(args.sections, args.paragraphs, args.parse_report)
         counter = Utf8BytesDiv3Counter()
         chunks = chunk_sections(

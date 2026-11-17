@@ -54,6 +54,27 @@ absence) and remove staging files. The hard-split boundary scan includes
 whitespace at `fitting_end`; `heading_context` and `chunk_section` share one
 meaningful-headings helper.
 
+**Group B Phase 2b (2026-11-17):** JSONL records split on `"\n"` only:
+U+2028, U+2029 and U+0085 may be raw characters inside JSON strings when
+`ensure_ascii=False` and must not become record boundaries. Drop exactly one
+empty element after a final LF; keep internal blank lines invalid. Resolve
+all five CLI paths after configuration validation and before source loading;
+an output equal to another output or any input raises
+`output-path-conflict` (exit 2) without reading or writing files. Any
+`OSError` while publishing outputs reports `output-write-failed` (exit 1),
+with previous output bytes restored.
+
+**Known limits (not implemented in F003):**
+
+- `chunk_record` rebuilds the section map per chunk, O(chunks x sections);
+  revisit around 500 papers in F005.
+- `final_input_estimated_tokens` uses an empty prefix and ignores
+  `prefix_reserve_tokens`.
+- F002 papers with nonempty errors and no records are accepted and included
+  in `paper_count`; the parse-report summary is not cross-checked with papers.
+- `chunks.jsonl` may contain raw U+2028/U+2029/U+0085 inside JSON strings;
+  consumers must split on `"\n"` only. Carry this into the F004 handoff.
+
 **T003/T004 (2026-11-16, Phase 1 contract; behavior pending):** A renewed local
 solution check compared reuse of F002 JSONL plus `locator_digest`, a generic
 splitter/serializer, and a new dependency. F002 already supplies ordered,
@@ -161,6 +182,9 @@ The 2026-11-15 gate results are appended to `research.md`. Record any newly chec
 Rate/concurrency defaults remain provisional at 8 inputs, 2,048 estimated tokens/request, concurrency 1; the observed limits do not make them unsafe. Do not send a live request from CI or this sandbox. The embedding-model comparison (OpenAI vs E5/other), caption chunks and title-bearing `embedding-text-v2` are **DEFERRED** until Golden v0 (PENDING), with no comparison work in F003.
 
 ## Handoff notes for F004
+
+Chunk JSONL consumers must split records on `"\n"` only. Because output uses
+`ensure_ascii=False`, U+2028, U+2029 and U+0085 can occur raw inside strings.
 
 Person 2 must embed queries with the **same provider, model and dimensions** as the embedding-set manifest, using its `query_prefix` and compatible input construction. `embed_queries` and `embed_passages` share the provider interface/config; never compare vectors from differing sets. Record requested and returned dimensions, observed normalization, `template_version`, `token_counter_id` and `chunking_version`. F004 reconciles flat F002/F003 JSONL with draft `DATA_CONTRACT.json`, including its 384-vector restriction and `embedding_model_revision` field; it should define authoritative version semantics with Person 1/2. Retrieval evaluation and database insertion remain outside F003.
 

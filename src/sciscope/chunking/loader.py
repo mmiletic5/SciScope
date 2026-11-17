@@ -234,7 +234,12 @@ def _read_jsonl(
     data: bytes, fields: tuple[str, ...], kind: str
 ) -> list[dict[str, Any]]:
     """Parse one strict JSONL file and validate each record."""
-    lines = _decode(data).splitlines()
+    decoded = _decode(data)
+    if not decoded:
+        return []
+    lines = decoded.split("\n")
+    if lines[-1] == "":
+        lines.pop()
     rows = [_parse_json(line) for line in lines]
     checked = [_fields(row, fields, report=False) for row in rows]
     for row in checked:

@@ -524,3 +524,122 @@ def test_synthetic_end_to_end_spans_cover_nonblank_paragraphs(
             if not char.isspace()
         ]
         assert covered == expected
+
+
+def test_jsonl_preserves_raw_unicode_line_separators(tmp_path: Path) -> None:
+    """T004 Phase 2b RED: JSON string separators remain paragraph text."""
+    sections, paragraphs, report = source_records()
+    text = "velnix\u2028zorvax\u2029nolvix\u0085tendar"
+    paragraphs[0]["text"] = text
+    bundle = load_sources(
+        *write_sources(tmp_path, sections, paragraphs, report)
+    )
+    assert bundle.paragraphs[0].text == text
+
+
+def test_chunk_cli_preserves_unicode_and_deterministic_bytes(
+    tmp_path: Path,
+) -> None:
+    """T004 Phase 2b RED: raw separators survive chunking and reruns."""
+    sections, paragraphs, report = source_records()
+    paragraphs[0]["text"] = "velnix\u2028zorvax\u2029nolvix\u0085tendar"
+    paths = write_sources(tmp_path, sections, paragraphs, report)
+    args = cli_args(paths, tmp_path)
+    assert main(args) == 0
+    chunks_path = tmp_path / "synthetic-chunks.jsonl"
+    report_path = tmp_path / "synthetic-chunk-report.json"
+    first = (chunks_path.read_bytes(), report_path.read_bytes())
+    records = [
+        json.loads(line)
+        for line in first[0].decode("utf-8").split("\n")
+        if line
+    ]
+    covered = [
+        index
+        for record in records
+        for span in record["spans"]
+        for index in range(span["start"], span["end"])
+        if not paragraphs[0]["text"][index].isspace()
+    ]
+    expected = [
+        index
+        for index, char in enumerate(paragraphs[0]["text"])
+        if not char.isspace()
+    ]
+    assert covered == expected
+    assert main(args) == 0
+    assert first == (chunks_path.read_bytes(), report_path.read_bytes())
+
+
+def test_jsonl_blank_middle_line_is_invalid(tmp_path: Path) -> None:
+    """T004 Phase 2b RED: a blank record between records is invalid JSON."""
+    sections, paragraphs, report = source_records()
+    paths = write_sources(tmp_path, sections, paragraphs, report)
+    raw = paths[1].read_bytes()
+    paths[1].write_bytes(raw + b"\n" + raw)
+    with pytest.raises(SourceInputError) as error:
+        load_sources(*paths)
+    assert error.value.code == "invalid-json"
+
+
+def test_empty_jsonl_file_has_zero_records(tmp_path: Path) -> None:
+    """T004 Phase 2b RED: an empty JSONL input represents no records."""
+    _, _, report = source_records()
+    report["papers"] = []
+    report["summary"] = {"succeeded": 0, "failed": 0}
+    paths = write_sources(tmp_path, [], [], report)
+    bundle = load_sources(*paths)
+    assert bundle.sections == ()
+    assert bundle.paragraphs == ()
+
+
+@pytest.mark.parametrize("line_ending", ["crlf", "no-final-lf"])
+def test_jsonl_accepts_crlf_and_missing_final_lf(
+    tmp_path: Path, line_ending: str
+) -> None:
+    """T004 Phase 2b RED: common line-ending variants still parse."""
+    paths = write_sources(tmp_path, *source_records())
+    for path in paths[:2]:
+        raw = path.read_bytes()
+        if line_ending == "crlf":
+            path.write_bytes(raw.replace(b"\n", b"\r\n"))
+        else:
+            path.write_bytes(raw.removesuffix(b"\n"))
+    bundle = load_sources(*paths)
+    assert len(bundle.sections) == 1
+    assert len(bundle.paragraphs) == 1
+
+
+@pytest.mark.parametrize(
+    "conflict", ["chunks-report", "chunks-sections", "report-parse-report"]
+)
+def test_chunk_cli_rejects_output_path_conflicts(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+    conflict: str,
+) -> None:
+    """T004 Phase 2b RED: conflicting paths fail before source loading."""
+    paths = write_sources(tmp_path, *source_records())
+    original = tuple(path.read_bytes() for path in paths)
+    chunks_path = tmp_path / "synthetic-chunks.jsonl"
+    report_path = tmp_path / "synthetic-chunk-report.json"
+    args = cli_args(paths, tmp_path)
+    if conflict == "chunks-report":
+        args[args.index("--report") + 1] = str(chunks_path)
+    elif conflict == "chunks-sections":
+        args[args.index("--chunks") + 1] = str(paths[0])
+    else:
+        args[args.index("--report") + 1] = str(paths[2])
+
+    def unexpected_load(*_args: object) -> None:
+        raise AssertionError("source files were read")
+
+    monkeypatch.setattr("sciscope.pipeline.cli.load_sources", unexpected_load)
+    assert main(args) == 2
+    assert capsys.readouterr().err == "error: output-path-conflict\n"
+    assert tuple(path.read_bytes() for path in paths) == original
+    if conflict != "chunks-sections":
+        assert not chunks_path.exists()
+    if conflict != "report-parse-report":
+        assert not report_path.exists()
