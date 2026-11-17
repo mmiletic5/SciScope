@@ -906,3 +906,331 @@ git --no-pager diff --check
 
 T001/T002 remain unchecked until T007 human verification; no commit/push.
 Stop after this Group A Phase 2 scope.
+
+## Implementation clarifications — Group B (T003)
+
+Person 1 authorizes **Phase 1 only** on 2026-11-17: package interfaces,
+SYNTHETIC offline behavior tests, and this addendum. No package implementation,
+CLI wiring, ignore-rule change, GREEN claim, checkbox change, commit or push.
+Group A's 1638 passing tests are **user-reported local evidence**, not rerun
+here. EVIDENCE.md and PROJECT_TODO.md remain untouched by explicit run scope.
+The following B1–B10 decisions are recorded verbatim from Person 1's request.
+
+- **B1 Validate what you ship.** `deliver` first COPIES the four F002/F003 payloads (`sections.jsonl`, `chunks.jsonl`, `vectors.f32`, embedding `manifest.json` → `embedding_manifest.json`) as bytes into a staging directory, then runs the existing validators (`load_sources`, `validate_chunks`, `validate_embedding_set`, `validate_embedding_structure`, same orchestration as `_validate` with `allow_partial=False`, default tolerance 0.01) against the STAGED copies, using the original `paragraphs.jsonl` and `parse_report.json` (not delivered). Put that orchestration in a new function in `package.py`; do NOT modify `_validate` or any F003 module. A partial embedding set is refused through the existing code.
+- **B2 Public API in `src/sciscope/delivery/package.py`** (finalize exact names in plan.md): a frozen `DeliveryInputs` dataclass with all paths (defaults = the current pilot paths, same constants the CLI uses); `DeliveryError(code)` with sanitized codes; pure `build_delivery_manifest(...) -> dict[str, object]` (no I/O; takes hashes/sizes/counts/identifiers and the F003 manifest facts); `render_manifest(...) -> bytes` and papers rendering `render_papers(...) -> bytes` (deterministic: UTF-8, no BOM, LF, final LF, `ensure_ascii=False`, `allow_nan=False`, key order as built — papers in `PAPER_FIELDS` order, DOI order; reuse the JSON/JSONL conventions of `chunking/output.py` and `embedding/store.py::render_json`, and record them); `run_delivery(inputs) -> DeliverySummary` doing everything incl. publication.
+- **B3 Manifest contents** exactly the contract's `delivery_manifest`: `schema_version`/`contract_version` "0.3.0", `status` "draft", counts, `files` (five payload descriptors: sha256, bytes, record_count — JSONL line count, vector row count, 1 for the embedding manifest), `source_reports` (sha256, bytes of the three committed reports `data/pilot/{parse,chunk,embedding}_report.json`; no record_count), `processing_versions` (parser `{version: null, source_sha256: sha256 of the bytes of src/sciscope/jats/parser.py}`, taxonomy `{version: "v0", source_sha256: sha256 of classify.py bytes}` — informational only, locator "jats:v1", chunking_version/token_counter_id/template_version taken from the validated data and asserted equal to the code constants), `embedding_set` (from the staged F003 manifest: provider, model, dimensions = returned = requested, `float32-le`, `embedding_manifest.entries`, prefixes, normalization {declared, observed min/max, tolerance 0.01 as the default constant}, chunks_sha256, vectors_sha256, `embedding_model_revision` null). No timestamps, paths, prose or secrets. Run `contract.check_*` over the manifest and every produced paper/section/chunk record and refuse on any structural code.
+- **B4 Reading inputs.** Read `metadata.jsonl` and the acquisition `manifest.jsonl` with a small private LF-only JSONL reader in `package.py` (split on `"\n"` only, never `splitlines()`; reject malformed UTF-8/JSON, duplicate keys, NaN/Infinity, interior blank lines); `reader.py` belongs to T006, do not create it. Section/chunk record counts are LF-delimited line counts of the staged bytes.
+- **B5 Publication is all-or-fail.** Build the complete six-file package in a sibling temporary directory inside the output directory's parent; validate it (re-read the staged files, recompute hashes against the manifest, structure checks); stage the committed manifest copy as a temp file next to `data/pilot/delivery_manifest.json`; then replace the whole package directory and the committed copy, retaining the previous directory/copy until BOTH replacements succeed and restoring both on a caught failure (Windows: a directory rename can fail with PermissionError; treat it as `output-write-failed`). After a caught failure the previous package and copy are intact, no staging/backup directory remains (best effort) and nothing is mixed. Leftover staging/backup from an earlier crash must not be mistaken for a valid package and must be cleaned or ignored deterministically (define and test). No claim of power-loss atomicity.
+- **B6 Alias guards.** Reject (code `output-path-conflict`, exit 2) when the resolved output dir or committed-manifest path equals or overlaps any input path, the embedding cache directory, the staging/backup locations, or each other; also reject an output dir that is a file or a symlink to elsewhere (symlink tests `pytest.mark.skipif` when symlinks cannot be created).
+- **B7 Exit codes and output.** Same as F003: 0 success; 2 usage/config/unreadable or structurally invalid input/`output-path-conflict`; 1 upstream semantic findings, join/paper-build failures, structure findings in the produced records, or `output-write-failed`. Output is sanitized: `error: <code> count: <k> first: <ids>` then `failures: <n>` (reuse the existing `Finding`/printing style; `PaperBuildError` codes print as findings with id `report`); success prints one line with numeric counts only (papers, sections, chunks, vectors, files). Never print paths, values, prose, keys, or exception text.
+- **B8 No environment/network.** `deliver` never reads environment variables for keys, never creates a transport, never touches the embedding cache. Test it the way F003 did (recording environment + static guard + blocked sockets).
+- **B9 Determinism.** Two runs on unchanged inputs produce byte-identical files for all six package files and for the committed copy; the four copied payloads are byte-identical to their sources; sources are never modified.
+- **B10 CLI.** `deliver` is a subcommand of `src/sciscope/pipeline/cli.py` with options `--metadata --acquisition-manifest --sections --paragraphs --parse-report --chunks --chunk-report --vectors --embedding-manifest --embedding-report --output-dir --committed-manifest` (defaults = current pilot paths; output dir `data/delivery/pilot`, committed copy `data/pilot/delivery_manifest.json`). Phase 1 only specifies it in plan.md and tests it through `main([...])`; Phase 2 wires it and adds `data/delivery/` to `.gitignore`.
+
+### Renewed solution-research before the new tests
+
+Problem: replace a nonempty package directory and a second manifest file on
+Windows and POSIX, preserving both previous artifacts after a caught move
+failure. There is no portable two-path filesystem transaction in the current
+stdlib design. No new dependency is proposed; Python target remains 3.12.
+
+| Approach | Verified facts, integration and tradeoff |
+| --- | --- |
+| Direct directory replacement | [Python 3.12 os.replace](https://docs.python.org/3.12/library/os.html#os.replace) documents atomic successful rename, same-filesystem constraints, and failure for nonempty destination directories. [Microsoft MoveFileExW](https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-movefileexw) documents same-drive directory moves and an error when replacement targets an existing directory. This does not provide the required portable replacement of a populated directory. |
+| Sibling staging plus retained backups | Recommended: move old destinations aside, install staged directory and staged copy, restore on caught failure. Uses maintained stdlib os/tempfile/shutil/Path, project Python 3.12, no third-party version/license or dependency addition. More rollback logic; test each forward move on Windows/POSIX. No cross-path or power-loss atomicity claim. |
+| Existing write_outputs per-file rollback | Reuses F003's maintained local stdlib writer and byte rendering conventions; its existing rollback restores individual file bytes. Does not replace a complete directory or exclude mixed package inventories as B5 requires. Reuse its conventions, not its publication algorithm. |
+
+Documentation confirms API limitations; actual Windows lock/permission
+behavior and rollback success remain **NOT RUN** here. No security audit or
+new library compatibility claim. Recommendation follows B5, with the precise
+reserved-name and move protocol below; no unresolved design choice is needed
+for these Phase 1 tests. This brief research is kept here because this run
+permits only plan.md changes among existing artifacts; research.md is untouched.
+
+### Final interfaces and serialization
+
+`src/sciscope/delivery/package.py` contains interface-only stubs. The frozen,
+slotted `DeliveryInputs` fields and defaults are:
+
+| Field | Default |
+| --- | --- |
+| metadata | data/pilot/metadata.jsonl |
+| acquisition_manifest | data/pilot/manifest.jsonl |
+| sections | data/processed/pilot/sections.jsonl |
+| paragraphs | data/processed/pilot/paragraphs.jsonl |
+| parse_report | data/pilot/parse_report.json |
+| chunks | data/processed/pilot/chunks.jsonl |
+| chunk_report | data/pilot/chunk_report.json |
+| vectors | data/embeddings/pilot/vectors.f32 |
+| embedding_manifest | data/embeddings/pilot/manifest.json |
+| embedding_report | data/pilot/embedding_report.json |
+| output_dir | data/delivery/pilot |
+| committed_manifest | data/pilot/delivery_manifest.json |
+| cache_dir | data/embeddings/pilot/cache |
+| parser_source | src/sciscope/jats/parser.py |
+| taxonomy_source | src/sciscope/jats/classify.py |
+
+Every field is a Path. Existing CLIs use literal Path defaults rather than a
+shared constants module: these values match the real F001/F002/F003 defaults.
+Do not change upstream modules to centralize them. cache_dir is only a guard
+input; never stat/read/list/create its contents. parser_source/taxonomy_source
+are informational hash inputs for producer provenance, configurable through
+the Python API for isolated checkout tests, with no new CLI options.
+
+The frozen, slotted `DeliverySummary` contains five integers: papers,
+sections, chunks, vectors, files. `DeliveryError(code: str)` exposes only
+sanitized `code: str` and `exit_code: int`; unknown input becomes
+`delivery-failed`, exit 1. No exception text is retained or printed.
+`DEFAULT_NORM_TOLERANCE = 0.01`. Final function signatures are:
+
+```python
+def build_delivery_manifest(
+    *,
+    counts: Mapping[str, int],
+    files: Mapping[str, Mapping[str, object]],
+    source_reports: Mapping[str, Mapping[str, object]],
+    parser_sha256: str,
+    taxonomy_sha256: str,
+    chunking_version: str,
+    token_counter_id: str,
+    template_version: str,
+    embedding_manifest: Mapping[str, Any],
+) -> dict[str, object]: ...
+
+
+def render_manifest(manifest: Mapping[str, object]) -> bytes: ...
+
+
+def render_papers(papers: Sequence[Mapping[str, object]]) -> bytes: ...
+
+
+def validate_staged_inputs(
+    inputs: DeliveryInputs, staged_dir: Path
+) -> tuple[Finding, ...]: ...
+
+
+def run_delivery(inputs: DeliveryInputs) -> DeliverySummary: ...
+```
+
+The builder receives descriptors and identifiers, never paths, clocks or
+source code to compare. Fresh output mappings preserve the exact manifest
+field order in the existing interface table. The three real identifiers
+come from validated data and must equal CHUNKING_VERSION (chunking-v1),
+Utf8BytesDiv3Counter.counter_id (utf8-bytes-div3-v1), TEMPLATE_VERSION
+(embedding-text-v1). Producer hashes the actual parser/classifier bytes;
+neither builder nor staged upstream validation compares those informational
+hashes with another checkout. T005 still owns the old-package consumer test.
+
+render_manifest follows embedding/store.py::render_json: json.dumps with
+ensure_ascii=False, indent=2, allow_nan=False, no sort_keys, then final LF
+and UTF-8 encoding. render_papers sorts normalized DOI records and constructs
+each dict in PAPER_FIELDS order; json.dumps uses default separators (comma
+space, colon space), ensure_ascii=False, allow_nan=False and no sort_keys,
+one final LF per record. This matches chunking/output.py's JSONL convention
+while explicitly refusing nonfinite numbers. No BOM or newline translation.
+The four copied files are never rendered. Sections/chunks count physical
+LF-delimited records, allowing a single final empty segment only.
+
+validate_staged_inputs uses staged sections/chunks/vectors/embedding manifest
+and original paragraphs/parse report/chunk report/embedding report. It loads
+chunk records and exact digest, calls load_sources and validate_chunks with
+the existing cap 384 and Utf8BytesDiv3Counter, then validate_embedding_set
+with explicit allow_partial=False and norm_tolerance=DEFAULT_NORM_TOLERANCE,
+and validate_embedding_structure with exact fields. Retain _validate's
+handling of semantic findings versus SourceInputError, including structural
+exit 2 precedence. Return a tuple of Finding; SourceInputError and
+SourceConsistencyError retain their established classification for callers.
+Import validator modules and contract as modules so tests can wrap their
+public functions without patching F003 or depending on private bindings.
+
+run_delivery guards aliases before reading inputs or creating output parents;
+copies the four payloads; calls that seam; privately reads strict F001 JSONL;
+builds papers; invokes each Group A checker over all produced records and
+the manifest; re-reads staged artifacts for structure/digest/size/count
+agreement; stages the identical committed copy; publishes. T003 performs
+these checks itself using Group A/F003 APIs. It never imports a future
+delivery/validate.py or reader.py; T005 later wires full consumer validation.
+
+Success stdout is exactly `delivered papers: <n> sections: <n> chunks: <n>
+vectors: <n> files: 6` on **one line**, followed by LF; stderr empty. B7
+supersedes the earlier generic success `failures: 0` wording for deliver.
+All failures use the established Finding aggregation/printing format on
+stderr, stdout empty, including deliver usage errors. Phase 2 must handle
+deliver parsing errors without changing other commands' behavior.
+
+### Publication and alias protocol to implement in Phase 2
+
+Reserve basenames beginning `.sciscope-delivery-stage-` and
+`.sciscope-delivery-backup-` under each destination parent. Current-run stage
+and backup names use unique suffixes, on the same filesystem as their own
+destination. The package stage is a directory; the committed-copy stage is
+a file. Reject either destination or any aliased input that equals or
+overlaps a reserved location; check ancestry in both directions after
+resolution. Refuse file/symlink output directories before resolving away the
+symlink identity. Guard the default cache path as well as the Python API's
+explicit cache_dir, without opening the cache. Reject output/copy ancestry
+and equality, including an output inside an input file path.
+
+**Crash leftovers: ignore deterministically.** Never enumerate/read/adopt
+old reserved siblings as input or as a valid package, never overwrite them
+using a reused name, and never remove another run's old artifacts. Only the
+requested output path is a package. Tests plant invalid stage/backup siblings
+beside both destinations, run twice, and require them unchanged with no new
+leftovers. Cleanup removes only this invocation's known stage/backup paths
+(best effort), never follows a leftover symlink. Ignoring old artifacts does
+not certify the output after a crash: a later deliver rebuilds it; future
+validate-delivery detects corruption. No concurrent-writer or power-loss
+transaction guarantee is claimed.
+
+With both destinations present, the four forward publication moves are
+fixed to os.replace (Path.replace may delegate to it):
+
+1. Move the previous output directory to this run's package backup.
+2. Move the complete staged directory to output_dir.
+3. Move the previous committed manifest to this run's copy backup.
+4. Move the staged committed copy to committed_manifest.
+
+Keep both backups until move 4 succeeds; only then clean them. On a caught
+failure restore every moved previous artifact, remove any newly installed
+artifact that had no predecessor, and clean current-run temporary artifacts.
+An OSError/PermissionError on any forward move becomes output-write-failed.
+Tests inject a single failure so rollback operations can succeed; persistent
+filesystem denial can prevent restoration or cleanup and is not claimed to
+be solvable by Python. For initially absent outputs skip backup moves and
+still roll back a package installed before the copy fails. Parent directories
+may remain empty after a first-publication failure, but no staging/backup
+artifact or partial package may remain.
+
+### Code vocabulary and fixture strategy
+
+Reuse SourceInputError: missing-file, invalid-utf8, invalid-json, wrong-type,
+wrong-field-set and established loader field errors. Reuse
+SourceConsistencyError codes unchanged. Reuse F003 Finding codes, including
+chunk-hash-mismatch, chunk-version-mismatch, chunk-report-mismatch,
+chunks-sha-mismatch, partial-set, vectors-size, vectors-sha-mismatch,
+report-manifest-mismatch, set-version-mismatch, set-dimensions and all other
+existing validator findings; do not translate them to generic delivery codes.
+Reuse invalid-usage, output-path-conflict and output-write-failed with B7
+statuses. All eight PaperBuildError codes stay unchanged, id report, exit 1.
+All contract.check_* codes stay unchanged as produced-record findings,
+exit 1. Safe IDs are report, manifest, vectors or lowercase 64-hex IDs only.
+
+New delivery-specific codes:
+
+| Code | Meaning | Exit |
+| --- | --- | ---: |
+| duplicate-json-key | Duplicate object key in private F001 JSONL parsing | 2 |
+| delivery-integrity-mismatch | Final staged re-read disagrees with payload hash/bytes/count descriptors | 1 |
+| delivery-failed | Sanitized fallback for an unknown DeliveryError code | 1 |
+
+The DeliveryError allowlist covers delivery's publication/alias/integrity
+codes plus its private reader's stable input codes; upstream errors/findings
+remain their existing exception/Finding types. Never pass raw exception
+text to a diagnostic. Distinguish incoming malformed record (exit 2) from a
+Group A structural finding in a produced record (exit 1).
+
+`tests/delivery/package_fixtures.py`, imported as `from package_fixtures
+import ...`, creates everything under tmp_path. It borrows the F003 fixture
+strategy and reuses the existing pure delivery_fixtures factories, without
+imports from tests or new __init__.py files. Two invented DOI-sorted papers
+produce three sections (one with zero own paragraphs), two paragraphs, two
+real chunks and two two-dimensional fake vectors. Write exact F002-shaped
+sources/parse report, load_sources, chunk_sections, write_chunk_files, then
+run_embedding with FakeEmbedder, explicit dimensions=2 and a fixed date.
+No key/live provider/network. F003's config/provider metadata conventions
+are retained; a fake transport does not invent a new manifest provider value.
+
+Metadata order is deliberately reversed; raw EN/en, subjects, empty given
+names and Unicode Δ/U+0085/U+2028/U+2029 survive. The cache is populated only
+by fixture setup. Delivery tests block sockets from setup onward, instrument
+environment reads and forbid cache construction/I/O during deliver. Expected
+paper records come from independent SYNTHETIC factories. Full upstream/tree
+snapshots detect source changes and leftovers. Move-injection tests first
+publish a valid prior package, change metadata, then fail each move; other
+refusal tests use six-file sentinel predecessors to detect any replacement.
+The symlink privilege probe uses a disposable workspace-local directory and
+pytest.mark.skipif, never a platform-name assumption.
+
+### Test inventory and static RED prediction
+
+Counts below are static parameter expansion, **not pytest collection or
+execution**. All new test functions live in test_deliver_package.py; the
+shared fixture module has no test cases. Each new case must remain RED in
+Phase 1 due to a NotImplementedError, missing deliver command/diagnostic
+behavior, missing validator orchestration, or the absent ignore rule. Tests
+never xfail or catch NotImplementedError as success. The symlink case may be
+SKIPPED where privilege is unavailable; state that separately from passes.
+
+| Test group in test_deliver_package.py | Functions | Expanded cases | Expected RED | Expected pass |
+| --- | ---: | ---: | ---: | ---: |
+| Success/exact manifest; byte copies/papers; two-run identity | 3 | 3 | 3 | 0 |
+| Upstream corrupt/hash/partial/truncated/report/version/unreadable/structure | 1 | 8 | 8 | 0 |
+| Missing/duplicate DOI on both sides; license mismatch | 1 | 5 | 5 | 0 |
+| Strict private JSONL reader, two input sides × six defects | 1 | 12 | 12 | 0 |
+| Produced paper/section/chunk/manifest structural findings | 1 | 4 | 4 | 0 |
+| Alias/overlap/file/reserved-name matrix | 1 | 13 | 13 | 0 |
+| Symlink output, privilege-dependent skipif | 1 | 1 | 1 | 0 |
+| Four publication moves × OSError/PermissionError | 1 | 8 | 8 | 0 |
+| First-publication rollback; crash leftovers | 2 | 2 | 2 | 0 |
+| Staged-source race; staged corruption; staged-path validation | 3 | 3 | 3 | 0 |
+| Pure builder/renderers; two nonfinite-renderer cases | 2 | 3 | 3 | 0 |
+| Informational real parser digest / alternate checkout | 1 | 1 | 1 | 0 |
+| Runtime no-env/transport/cache; static offline/validator guard | 2 | 2 | 2 | 0 |
+| Default CLI paths; four-validator orchestration parameters | 2 | 2 | 2 | 0 |
+| Usage diagnostics; publication diagnostics; error sanitization | 3 | 6 | 6 | 0 |
+| Exact data/delivery/ ignore rule | 1 | 1 | 1 | 0 |
+| Total | 26 | 74 | 74 | 0 |
+| package_fixtures.py | 0 | 0 | 0 | 0 |
+
+Arithmetic: 3 + 8 + 5 + 12 + 4 + 13 + 1 + 8 + 2 + 3 + 3 + 1 + 2 + 2 + 6 + 1
+= **74**. Static AST inspection counts literal parameter arrays without
+importing test modules or invoking pytest. The dataclass declarations can be
+imported; all five public behavior functions and DeliveryError initialization
+raise NotImplementedError. Missing deliver dispatch causes CLI success/status
+assertions to fail; even usage cases require the new finding format and fail
+against the existing short usage message. The static guard fails on missing
+validator calls; .gitignore lacks the exact required rule. These are missing
+behavior failures, not collection/import failures by design.
+
+Assuming all user-reported **1638 existing tests remain passing**, predicted
+whole suite: **74 failed, 1638 passed** (1712 cases). If symlink privilege is
+unavailable: **73 failed, 1638 passed, 1 skipped**. Predicted focused delivery
+suite: **74 failed, 710 passed**, or **73 failed, 710 passed, 1 skipped**,
+using Group A's 624 contract + 86 paper cases. No new case is expected to pass
+in Phase 1; no observed RED is claimed.
+
+### Group B verification
+
+| Check | Observed vs NOT RUN |
+| --- | --- |
+| Read-only branch/status inspection | Observed branch 004-data-contract-delivery; initially clean working tree |
+| Official Python/Microsoft filesystem API research | Observed documentation reads before the new tests; runtime OS behavior NOT RUN |
+| Static AST parameter arithmetic and Python syntax parsing | Observed 26 test functions, 74 expanded cases; no test imports or collection |
+| Direct .venv/Scripts/ruff.exe check . --no-cache | PASS |
+| Direct .venv/Scripts/ruff.exe format --check . | PASS (122 files, including plan.md Python blocks) |
+| Direct .venv/Scripts/mypy.exe src | PASS (39 source files, including the new stubs) |
+| git --no-pager diff --check | PASS; new Python files also checked for trailing whitespace by static review |
+| Final scope diff/status | Only plan.md and the three new T003 files; no existing source/test/doc/data changes, no checkbox changes |
+| uv / locked-tool verification | NOT RUN by explicit session constraint; direct tools do not establish locked-tool parity |
+| Focused/full pytest, actual fixture execution, observed RED | NOT RUN; Person 1 runs locally |
+| Existing 1638 regression cases | User-reported GREEN locally before this change; NOT RUN here |
+| Windows/POSIX rollback execution and symlink privilege | NOT RUN; skip outcome unknown |
+| Human verification, CI, GREEN or completion | NOT RUN / not claimed |
+
+Person 1 runs these exact PowerShell commands from the repository root:
+
+```powershell
+$env:PYTHONPATH = 'src'
+uv run --locked python -m pytest tests/delivery -q
+uv run --locked pytest -q
+uv run --locked ruff check . --no-cache
+uv run --locked ruff format --check .
+uv run --locked mypy src
+git --no-pager diff --check
+```
+
+Expected failures are confined to tests/delivery/test_deliver_package.py and
+missing T003 behavior, including the future ignore rule. Existing tests are
+expected to pass unchanged; Person 1 must verify fixture validity and actual
+RED locally. No observed RED/GREEN, CI, human verification or completed task
+is claimed. STOP after Group B Phase 1; no Phase 2 work is authorized here.
