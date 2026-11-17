@@ -460,6 +460,22 @@ def test_chunking_is_deterministic() -> None:
     assert first == second
 
 
+def test_hard_split_uses_whitespace_at_prefix_end() -> None:
+    """T002 carry-over RED: prefix-end whitespace is a split boundary."""
+    chunks = chunk_section(
+        section(path=()),
+        [paragraph("ab cdefghijk lm")],
+        small_config(
+            content_target_min_tokens=2,
+            content_target_max_tokens=4,
+            soft_min_tokens=0,
+        ),
+        COUNTER,
+    )
+    assert [chunk.text for chunk in chunks] == ["ab cdefghijk", "lm"]
+    assert [chunk.hard_split for chunk in chunks] == [True, True]
+
+
 @pytest.mark.parametrize(
     "sources",
     [

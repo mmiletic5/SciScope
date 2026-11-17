@@ -40,6 +40,77 @@ Nested-section paragraphs remain included only in their own section. F002 skip c
 
 ## Implementation clarifications
 
+**T003/T004 (2026-11-16, Phase 1 contract; behavior pending):** A renewed local
+solution check compared reuse of F002 JSONL plus `locator_digest`, a generic
+splitter/serializer, and a new dependency. F002 already supplies ordered,
+digest-bound records; standard-library JSON, SHA256 and file staging fit this
+small integration. No external version, license or compatibility fact was
+reverified because this phase forbids network access. Use no new dependency.
+
+- **Option A policy:** `CHUNKING_VERSION="chunking-v1"` and
+  `CHUNK_KIND_PARAGRAPH="paragraph"`. F002 `skipped_element_kinds` counts
+  outer occurrences: `fig` -> `figure`, `table-wrap` -> `table` (caption and
+  body), `supplementary-material` -> `supplementary_material`,
+  `disp-formula`/`inline-formula` -> `formula`, `list` -> `list`, and
+  `boxed-text` -> `boxed_text`. Any other kind -> `other_omitted`, retaining
+  name and count in per-paper `unlisted_kinds`. Every category is numeric and
+  present with zero when absent. All are `excluded` with a short reason; only
+  figure and table have `follow_up="caption chunks after Golden v0"`.
+  F002 `back_matter_containers` is a presence list: `ref-list` ->
+  `references`, `ack` -> `acknowledgments`, and `app`/`notes`/`fn-group`/
+  `glossary` -> `back_matter_other`, counted once per present container.
+  `paragraphs_with_omitted` counts paragraph records with a nonempty
+  `omitted` list, independent of outer skipped-element counts.
+- **Loader:** Strict UTF-8 JSONL and report JSON validate exact F002 field
+  sets and types as listed in F002's Output records. Preserve file order and
+  require ascending DOI groups. Distinct sanitized consistency codes cover
+  duplicate `(doi, section_id)`, unknown/cross-DOI paragraph section,
+  non-increasing paragraph index, section paragraph-count mismatch,
+  section/paragraph locator digest mismatch (via public `locator_digest`),
+  section `xml_sha256` mismatch with its report, successful-report DOI-set
+  mismatch, and leftover records for a failed report paper. Return ordered
+  sections/paragraphs, per-DOI XML SHA256, omitted kinds by paragraph locator,
+  SHA256 of each of three input files, and parse-report papers. Errors never
+  expose paragraph text or absolute paths.
+- **Chunk ID and record:** Canonical input begins with one 8-byte big-endian
+  unsigned field count (`4 + 3 * span_count`), followed by each field as an
+  8-byte big-endian unsigned byte length and that many UTF-8 bytes. Ordered
+  fields are `chunking_version`, `doi`, `section_id`, decimal `ordinal`, then
+  each span's `source_locator`, decimal `start`, decimal `end`. SHA256 lowercase
+  hex of those bytes is `chunk_id`; text is excluded. Record key order is
+  `chunk_id, doi, xml_sha256, section_id, ordinal, chunk_kind,
+  normalized_type, section_path, text, text_sha256, spans, source_locator,
+  content_tokens, hard_split, omitted, chunking_version, token_counter_id,
+  template_version`. Original F002 `section_path` retains `(untitled)`;
+  `spans` are ordered `{source_locator, paragraph_index, start, end}`;
+  top-level locator is the first span; `omitted` is the sorted distinct union
+  from all contributing paragraphs. `text_sha256` hashes UTF-8 chunk text.
+- **Chunk report:** Stable keys include versions, all `ChunkConfig` values,
+  three input SHA256 values, static policy, DOI-sorted papers, and summary.
+  Each paper has `xml_sha256, section_count, sections_with_chunks,
+  chunk_count, paragraph_count, blank_paragraph_count,
+  paragraphs_with_omitted, hard_split_chunks, excluded_elements,
+  unlisted_kinds, back_matter_excluded`. Summary has totals, counts per
+  `normalized_type`, and min/median/p95/max nearest-rank integer statistics
+  for content tokens and estimated final input tokens from
+  `build_embedding_text` with empty prefix and the same counter, plus below
+  soft-minimum and hard-split counts. No prose, headings, or absolute paths.
+  JSON uses stable key order, `ensure_ascii=False`, UTF-8, LF and final LF;
+  JSONL uses F002 section order then ordinal.
+- **Files and CLI:** Stage both files beside targets; publish with
+  `os.replace` only after both are fully written. Any failure leaves prior
+  output bytes intact and no temporary files. `chunk` defaults to F002 pilot
+  inputs, processed `chunks.jsonl`, `data/pilot/chunk_report.json`, cap 384 and
+  prefix reserve 0. Console uses UTF-8 and numeric counts only. Exit 0 for
+  success; 2 for usage/configuration, unreadable/missing input, malformed
+  JSON or wrong field set/type; 1 for parsed but inconsistent inputs or
+  chunking failure. Failures print `error: <code>` on stderr and write nothing.
+
+**Group A carry-over (2026-11-16):** A RED assertion requires a hard split to
+use whitespace at the fitting prefix end and mark both resulting pieces;
+Phase 2 also extracts the shared meaningful-headings filter for
+`heading_context` and `chunk_section` without changing heading behavior.
+
 **T001/T002 (2026-11-16):** `config.py` fixes the 512 absolute ceiling, `embedding-text-v1`, `" > "` heading join, `"\n\n"` context separator and `"(untitled)"` sentinel without importing F002. Frozen, slotted `ChunkConfig` defaults to operational cap 384, content targets 200–350, soft minimum 50, prefix reserve 0 and minimum content budget 32; it rejects cap outside 1–512, reserve outside [0, cap), invalid targets, negative soft minimum or budget minimum below 1. `heading_context` drops blank/synthetic entries; `build_embedding_text` prepends the exact prefix and adds context plus separator only when context exists. `content_budget` subtracts reserve and the count of context plus separator, rejects a result below the minimum, and never truncates headings. `TokenCounter` exposes `counter_id` and `count`; `utf8-bytes-div3-v1` counts ceil(UTF-8 byte length/3), including zero for empty text. `ChunkingError`, `ConfigError` and `HeadingBudgetError` define the error hierarchy.
 
 **T002 types and behavior (2026-11-16):** Frozen, slotted `SourceSection`, `SourceParagraph`, `ChunkSpan` and `Chunk` carry DOI, section identity, paragraph locator/index, [start,end) Unicode code-point offsets, heading path, ordinal, content count and hard-split flag. Chunking defines its own `SourceSection`/`SourceParagraph` because F002 records lack `doi`. Chunk IDs, versions and JSONL I/O belong to T004. `chunk_sections` groups by section ID and emits section order then ordinal; it rejects unknown sections, duplicate/non-increasing paragraph indices and DOI mismatches. Parent and child sections are independent. Include all section types with nonblank own text, including `other`; empty sections emit nothing. Compute `effective_max = min(content_target_max_tokens, content_budget)`. Greedily pack whole paragraphs while the joined count fits; do not split a fitting paragraph to fill a chunk. Split oversized paragraphs into sentence-aligned pieces, then hard-split an oversized sentence at the largest token-bounded prefix, preferring whitespace, with `hard_split=True` on affected chunks. Merge sub-`soft_min_tokens` orphans left to right into the previous chunk (next if first) only when the merged count fits the content budget; otherwise leave them. Apply clarification 2's whitespace and joining rules; `content_tokens = counter.count(text)`. Functions are deterministic and pure.
