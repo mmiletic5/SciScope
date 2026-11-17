@@ -262,6 +262,10 @@ def valid_records() -> tuple[tuple[str, Record], ...]:
     mixed["language"] = "sYnThEtIc"
     early = paper()
     early.update(publication_date="1500", publication_year=1500)
+    microsecond_paper = paper()
+    microsecond_paper["retrieved_at"] = "2026-11-15T09:26:53.481027+00:00"
+    split_chunk = chunk()
+    split_chunk.update(hard_split=True, omitted=["fig", "table-wrap"])
     implicit = section()
     implicit.update(
         section_id=f"{DOI}#body-p-1",
@@ -303,6 +307,8 @@ def valid_records() -> tuple[tuple[str, Record], ...]:
         ("paper", lower),
         ("paper", mixed),
         ("paper", early),
+        ("paper", microsecond_paper),
+        ("chunk", split_chunk),
         ("section", implicit),
         ("section", abstract),
         ("section", unicode_locator),
@@ -324,11 +330,15 @@ def replace(
     return apply
 
 
-def remove(field: str) -> Callable[[Record], None]:
-    """Build a mutation removing one required top-level field."""
+def remove(field: str | tuple[str | int, ...]) -> Callable[[Record], None]:
+    """Build a mutation removing one required top-level or nested field."""
+    path = (field,) if isinstance(field, str) else field
 
     def apply(record: Record) -> None:
-        del record[field]
+        target: Any = record
+        for key in path[:-1]:
+            target = target[key]
+        del target[path[-1]]
 
     return apply
 
@@ -509,6 +519,217 @@ def _mutations() -> tuple[Mutation, ...]:
                 ("bad-component", good.replace("sec[1]", "9sec[1]")),
             ):
                 add(entity, f"{label}-{name}", path, bad)
+    # Phase 1b: structure-only boundaries verified against the real writers.
+    for name, path, value in (
+        ("depth-zero", ("depth",), 0),
+        ("depth-negative", ("depth",), -1),
+        ("paragraph-count-negative", ("paragraph_count",), -1),
+        ("section-path-empty", ("section_path",), []),
+        ("section-path-empty-element", ("section_path",), [""]),
+        ("original-heading-null", ("original_heading",), None),
+        ("parent-section-id-number", ("parent_section_id",), 1),
+        ("section-id-empty", ("section_id",), ""),
+        ("title-empty", ("title",), ""),
+    ):
+        add("section", name, path, value)
+    for name, path, value in (
+        ("ordinal-zero", ("ordinal",), 0),
+        ("content-tokens-negative", ("content_tokens",), -1),
+        ("content-tokens-zero", ("content_tokens",), 0),
+        ("hard-split-string", ("hard_split",), "true"),
+        ("omitted-object", ("omitted",), {"fig": 1}),
+        ("omitted-object-element", ("omitted",), [{"kind": "fig"}]),
+        ("omitted-integer-element", ("omitted",), [1]),
+        ("spans-empty", ("spans",), []),
+    ):
+        add("chunk", name, path, value)
+    for field in ("chunking_version", "token_counter_id", "template_version"):
+        add("chunk", f"{field}-empty", (field,), "")
+
+    def missing(entity: str, name: str, path: tuple[str | int, ...]) -> None:
+        cases.append(Mutation(name, entity, remove(path), False, False))
+
+    for name in delivery_manifest()["files"]:
+        missing("delivery_manifest", f"files-missing-{name}", ("files", name))
+        for field in ("bytes", "record_count"):
+            add(
+                "delivery_manifest",
+                f"files-{name}-{field}-negative",
+                ("files", name, field),
+                -1,
+            )
+    for name in ("SYNTHETIC-extra.json", "delivery_manifest.json"):
+        add(
+            "delivery_manifest",
+            f"files-extra-{name}",
+            ("files", name),
+            file_descriptor(),
+        )
+    for name in delivery_manifest()["source_reports"]:
+        missing(
+            "delivery_manifest",
+            f"source-reports-missing-{name}",
+            ("source_reports", name),
+        )
+        add(
+            "delivery_manifest",
+            f"source-reports-{name}-bytes-negative",
+            ("source_reports", name, "bytes"),
+            -1,
+        )
+    add(
+        "delivery_manifest",
+        "source-reports-extra",
+        ("source_reports", "SYNTHETIC-extra.json"),
+        source_report_descriptor(),
+    )
+    for field in ("papers", "sections", "chunks"):
+        add(
+            "delivery_manifest",
+            f"counts-{field}-negative",
+            ("counts", field),
+            -1,
+        )
+    add(
+        "delivery_manifest",
+        "processing-locator-other-version",
+        ("processing_versions", "locator"),
+        "jats:v2",
+    )
+    add(
+        "delivery_manifest",
+        "processing-parser-extra-key",
+        ("processing_versions", "parser", "SYNTHETIC-extra"),
+        "SYNTHETIC",
+    )
+    add(
+        "delivery_manifest",
+        "processing-taxonomy-version-empty",
+        ("processing_versions", "taxonomy", "version"),
+        "",
+    )
+    add(
+        "delivery_manifest",
+        "processing-parser-version-null-allowed",
+        ("processing_versions", "parser", "version"),
+        None,
+        True,
+        True,
+    )
+    add(
+        "delivery_manifest",
+        "processing-parser-version-string-allowed",
+        ("processing_versions", "parser", "version"),
+        "SYNTHETIC-parser-v1",
+        True,
+        True,
+    )
+
+    for name, path, value in (
+        ("dtype-other", ("dtype",), "float64-le"),
+        ("row-mapping-other", ("row_mapping",), "chunks.jsonl.lines"),
+        ("normalization-declared-other", ("normalization", "declared"), "none"),
+        ("normalization-tolerance-zero", ("normalization", "tolerance"), 0),
+        (
+            "normalization-tolerance-negative",
+            ("normalization", "tolerance"),
+            -1,
+        ),
+        (
+            "observed-norm-min-string",
+            ("normalization", "observed_norm_min"),
+            "1",
+        ),
+        (
+            "observed-norm-max-string",
+            ("normalization", "observed_norm_max"),
+            "1",
+        ),
+        ("provider-empty", ("provider",), ""),
+        ("model-empty", ("model",), ""),
+        ("model-revision-empty", ("embedding_model_revision",), ""),
+    ):
+        add("embedding_set", name, path, value)
+    for name, field, value in (
+        (
+            "model-revision-string-allowed",
+            "embedding_model_revision",
+            "SYNTHETIC-model-v1",
+        ),
+        ("passage-prefix-empty-allowed", "passage_prefix", ""),
+        ("query-prefix-empty-allowed", "query_prefix", ""),
+    ):
+        add("embedding_set", name, (field,), value, True, True)
+
+    for status in ("complete", "partial"):
+        add(
+            "embedding_manifest",
+            f"status-{status}-allowed",
+            ("status",),
+            status,
+            True,
+            True,
+        )
+    for status in ("draft", "SYNTHETIC-unknown", ""):
+        add(
+            "embedding_manifest",
+            f"status-{status!r}-invalid",
+            ("status",),
+            status,
+        )
+    for field in ("chunk_id", "input_sha256"):
+        missing(
+            "embedding_manifest",
+            f"entry-missing-{field}",
+            ("entries", 0, field),
+        )
+    add(
+        "embedding_manifest",
+        "entry-extra-field",
+        ("entries", 0, "SYNTHETIC-extra"),
+        "SYNTHETIC",
+    )
+    add("embedding_manifest", "usage-array", ("usage",), [])
+    missing(
+        "embedding_manifest",
+        "usage-missing-prompt-tokens",
+        ("usage", "prompt_tokens"),
+    )
+    add(
+        "embedding_manifest",
+        "usage-extra-field",
+        ("usage", "SYNTHETIC-extra"),
+        1,
+    )
+    add(
+        "embedding_manifest",
+        "custom-base-url-string",
+        ("custom_base_url_used",),
+        "false",
+    )
+
+    for name, path, value in (
+        ("publication-date-word", ("publication_date",), "yesterday"),
+        ("publication-date-unpadded-month", ("publication_date",), "2024-1"),
+        ("publication-date-short-year", ("publication_date",), "24"),
+        ("publication-year-zero", ("publication_year",), 0),
+        ("publication-year-negative", ("publication_year",), -1),
+        ("retrieved-at-not-date", ("retrieved_at",), "not-a-date"),
+        ("source-url-empty", ("source_url",), ""),
+        ("subjects-empty-element", ("subjects",), [""]),
+        ("subjects-non-string-element", ("subjects",), [1]),
+    ):
+        add("paper", name, path, value)
+    for name, path, value in (
+        (
+            "publication-date-calendar-deferred-allowed",
+            ("publication_date",),
+            "2024-13",
+        ),
+        ("publication-year-one-allowed", ("publication_year",), 1),
+        ("subjects-empty-array-allowed", ("subjects",), []),
+    ):
+        add("paper", name, path, value, True, True)
     return tuple(cases)
 
 

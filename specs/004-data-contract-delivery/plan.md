@@ -697,21 +697,75 @@ writer field checks, fixture freshness and mutation-tag integrity. No existing
 
 | File | Test functions | Expanded cases (static count) | Expected RED | Expected pass |
 | --- | ---: | ---: | ---: | ---: |
-| `tests/delivery/test_deliver_contract.py` | 14 | 441 | 426 | 15 |
+| `tests/delivery/test_deliver_contract.py` | 14 | 623 | 608 | 15 |
 | `tests/delivery/test_deliver_papers.py` | 9 | 86 | 86 | 0 |
 | `tests/delivery/delivery_fixtures.py` | 0 | 0 | 0 | 0 |
 
-The corpus has ten entity factories, 32 good schema examples (28 for the
-six runtime checkers), and 163 mutations, six of which are DOCUMENTED-C3
+The corpus has ten entity factories, 34 good schema examples (30 for the
+six runtime checkers), and 252 mutations, six of which are DOCUMENTED-C3
 integral-float divergences. Contract case arithmetic: 1 metaschema + 1 layout
-+ 3 constants + 32 good schema + 28 good runtime + 163 schema mutations
-+ 163 runtime mutations + 30 non-object roots + 6 collected-code cases
-+ 3 writer checks + 10 freshness checks + 1 divergence-integrity check = 441.
++ 3 constants + 34 good schema + 30 good runtime + 252 schema mutations
++ 252 runtime mutations + 30 non-object roots + 6 collected-code cases
++ 3 writer checks + 10 freshness checks + 1 divergence-integrity check = 623.
 Expected passes: metaschema (1), writer checks (3), freshness (10), divergence
 integrity (1). Paper arithmetic: 1 success + 5 year precision/boundary
 + 3 builder precision + 17 bad dates + 1 error class + 56 failure cases
 + 1 collect-all + 1 unequal sets + 1 no-I/O = 86. These are statically
 derived counts; pytest collection/execution is NOT RUN.
+
+Phase 1b extends only the existing SYNTHETIC corpus and the T005 semantic
+sentence. The generic tests already exercise every added fixture/mutation;
+`test_deliver_contract.py` and `test_deliver_papers.py` need no changes.
+Whole-suite prediction, **assuming all 928 existing tests still pass**:
+**694 failed, 943 passed** (608 contract RED + 86 builder RED; 15 contract
+passes + 928 existing passes). This is not an observed test outcome.
+
+| Phase 1b addition | New mutations | Reject both | Accept both | New good records |
+| --- | ---: | ---: | ---: | ---: |
+| Section boundaries and field types | 9 | 9 | 0 | 0 |
+| Chunk boundaries, types, omitted/spans and version strings | 11 | 11 | 0 | 1 |
+| Delivery manifest children/descriptors/versions | 32 | 30 | 2 | 0 |
+| Embedding set shape and allowed strings/prefixes | 13 | 10 | 3 | 0 |
+| Embedding manifest status/entries/usage/boolean | 12 | 10 | 2 | 0 |
+| Paper date/provenance/year/subjects | 12 | 9 | 3 | 1 |
+| Total added (163 -> 252 mutations; 32 -> 34 good records) | 89 | 79 | 10 | 2 |
+
+Phase 1b renewed solution-research/static code check: extend the existing
+tagged shared corpus rather than introduce a second validator or dependency.
+The [official schema string reference](https://json-schema.org/understanding-json-schema/reference/string)
+confirms patterns and minLength are explicit constraints: a pattern-shaped
+date does not assert calendar validity. The existing dev dependency and
+stdlib-runtime recommendation remain unchanged. No new package/license or
+runtime implementation. Source verification and minimal-schema decisions:
+
+| Requested constraint group | Verified code / authority | Verdict or deviation |
+| --- | --- | --- |
+| Section depth/count/path/heading/parent/ID/title | `jats/parser.py::visit_section`, implicit body paragraph construction; `jats/cli.py::_section_rows`; `plos_pilot/metadata.py::parse_article` | Top level depth 1, nested +1; own paragraph count >= 0; nonempty path of heading-or-sentinel strings; heading may be empty but not null; parent null or string, generated IDs nonempty; title required by metadata. All nine requested rejects added. |
+| Chunk ordinal/count/span/boolean/version fields | `chunking/core.py::chunk_section`, `_source_piece`, `_paragraph_units`; `chunking/output.py::chunk_record`; `chunking/counter.py::Utf8BytesDiv3Counter.count`; `chunking/validate.py::validate_chunks` | Ordinals start at 1; nonblank pieces have spans; hard_split is boolean. Nonempty text under the actual utf8-bytes-div3-v1 counter has content_tokens >= 1, so both 0 and -1 reject. Equality to recomputed text counts and configurable caps remain semantic; no fixed schema maximum is invented. Empty version strings cannot represent the emitted identifiers. |
+| Omitted element shape | `chunking/core.py::Chunk`; `chunking/output.py::chunk_record`; `chunking/report.py::EXCLUDED_CATEGORIES`; `jats/parser.py::paragraph_text`, `emit_paragraph` | List of raw XML element-name strings, not category/count objects. Good hard_split chunk uses [fig, table-wrap]. Reject object containers and object/integer elements. No closed enum is invented for omitted kinds; report policy handles unlisted names. |
+| Five files, three reports, counts and descriptors | Approved D6/R22/R28/R29 and the existing manifest interface (there is no F004 writer yet) | Missing/extra basenames reject, including a sixth delivery_manifest.json self descriptor. Each of five payload descriptors has nonnegative bytes/record_count; each source-report descriptor has nonnegative bytes and **no record_count field**. Test every existing descriptor count/size field; do not invent source-report record counts. All three entity counts reject negative values. |
+| Processing versions | Existing manifest interface, R22; `jats/locator.py` literal jats:v1 | Locator must be jats:v1, parser object rejects extra keys, taxonomy version cannot be empty. No parser version constant exists in code. Under Phase 1b, allow null or a nonempty informational parser version string, without inventing a fixed version. This refines the pilot's null example; hash remains informational. |
+| Embedding set fields | `embedding/store.py::build_manifest`; `embedding/validate.py::_check_vectors`, validate_embedding_set norm_tolerance contract; `pipeline/cli.py::_norm_tolerance`; D5 amendment and approved set interface | float32-le, L2, positive tolerance (existing CLI also bounds it by 1), numeric observed extrema. Nonempty provider/model; model revision nullable or nonempty string; prefixes may be empty. Row mapping and model-revision field are approved new F004 metadata, not fields emitted by F003. No provider enum or dimension-agreement check is added here. |
+| F003 manifest status and fixed child shapes | `embedding/store.py::build_manifest`; `embedding/pipeline.py::EmbedStats`, run_embedding; `embedding/validate.py::validate_embedding_structure`, validate_embedding_set | Writer emits complete or partial: both structurally accepted; draft/unknown/empty rejected. Delivery-level partial rejection remains T004/T005. Entries have exactly chunk_id/input_sha256; usage exactly prompt_tokens/total_tokens; custom_base_url_used boolean. |
+| Publication date/year and provenance | `plos_pilot/metadata.py::_date`, parse_article; `plos_pilot/download.py::download_selected`; approved C7 | Format-only year/year-month/full-date pattern rejects yesterday, 2024-1 and 24, but **accepts 2024-13 structurally**. Calendar validity is the paper builder's job. Derived positive year permits 1 but not 0/negative; no 1600 minimum. Retrieved-at must have timestamp shape; real writer uses timezone-aware astimezone(UTC).isoformat(), including optional microseconds. Invented good timestamp: 2026-11-15T09:26:53.481027+00:00. Source URL nonempty, no new host whitelist. |
+| Subjects | `plos_pilot/metadata.py::parse_article` initializes [], appends only nonempty _text results, excludes subjects from required-nonempty checks | Empty array ACCEPTED; empty/non-string elements rejected. Order preserved. This follows the code rather than inferring minItems from the selected pilot. |
+
+No requested rejection is silently strengthened into a new semantic check.
+The intentional distinctions above are structural 2024-13 acceptance,
+complete/partial acceptance, empty subjects/prefix acceptance, real omitted
+string shape and report descriptors without record_count. No article prose,
+network calls, keys, implementation or schema edits are introduced. T005 now
+explicitly owns span end > start for every span and agreement of requested/
+returned/set dimensions with the embedding manifest.
+
+| Phase 1b verification (direct local .venv executables) | Observed result |
+| --- | --- |
+| `ruff check . --no-cache` | PASS |
+| `ruff format --check tests/delivery` | PASS (3 files) |
+| `ruff format --check .` | PASS (119 files in the current checkout); supersedes the earlier Phase 1 formatting failure below |
+| `mypy src` | PASS (38 files; source unchanged in Phase 1b) |
+| `git --no-pager diff --check` | PASS |
+| Focused/full pytest, locked-tool run, existing 928 regression tests, human verification | NOT RUN / UNVERIFIED; RED counts above are predictions |
 
 Static/tool review in this run (direct local `.venv/Scripts` executables,
 not `uv run --locked`; no dependency synchronization):
