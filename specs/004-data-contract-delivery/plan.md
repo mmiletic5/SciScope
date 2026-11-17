@@ -2172,3 +2172,164 @@ git --no-pager diff --check
 ```
 
 STOP after Group D Phase 1. No implementation, GREEN, Group E, commit or push.
+
+### Group D, Phase 2
+
+Person 1 authorizes only the T005 library implementation and collector
+vocabulary extension in validate.py, plus this append-only subsection.
+Starting HEAD is bf9cc4e on 004-data-contract-delivery; the working tree was
+clean. The Phase 1 stop above is superseded for this scope. Tests, fixtures,
+T004 bodies, schema, other production modules, checkboxes, evidence and
+backlog stay unchanged. No Group E integration, commit or push is authorized.
+Apply google-python-engineering. No new feature tests or dependency changes
+are introduced; Phase 1's renewed solution-research remains the design basis.
+
+Person 1 reports Claude independently observed all **145 Phase 1 failures
+through NotImplementedError**, with the existing 2196 cases passing where
+symlink privilege allowed them. Person 1 also reports a disposable reference
+implementation passed these 145 cases and 4000 mutations over eight artifacts.
+These are supplied review results, not execution or validation of this
+implementation in this sandbox. They establish no local GREEN claim here.
+
+Implementation decisions R1–R10:
+
+- **R1 Call discipline.** validate_package calls exactly
+  check_package_structure(package_dir, reports, loaded=loaded,
+  load_findings=load_findings), including loaded=None. It never calls
+  load_package itself. check_package_structure and decode_json resolve from
+  this module at call time. All F003/DOI/locator/chunk-ID calls resolve from
+  their module attributes at call time; no imported function bypasses a spy.
+  Each readable report's exact bytes enter decode_json once. Supplied loaded
+  retains identity and package files are never decoded again.
+- **R2 Identity helpers.** Call doi_module.normalize_doi for every evaluable
+  paper, section and chunk, locator.locator_digest for every section/chunk/span
+  locator, and chunk_output.chunk_id once per evaluable chunk. No DOI/locator
+  result cache. ValueError becomes a safe ownership/locator/identity finding.
+- **R3 F003 arguments.** Call
+  embedding_validate.validate_embedding_structure(manifest, report) with
+  exactly two positional arguments and no exact keyword. SourceInputError
+  becomes report-structure/report and prevents the set call. Set delegation
+  uses the original loaded.records["chunks.jsonl"] tuple as its positional
+  argument; exact loaded.raw_files chunks SHA256 and vector bytes; the same
+  embedding manifest object and decoded report; Utf8BytesDiv3Counter();
+  operational_cap_tokens=384, norm_tolerance=0.01, allow_partial=False.
+  Delegate only with evaluable chunks/manifest/report and readable vectors.
+  The F003 set implementation's internal structure call remains unchanged.
+- **R4 Evaluability.** _semantic_data retains only present files without
+  an entity-prefixed finding in the T004 outcome. One bad row disables the
+  whole file's semantics, with no fabricated empty records. Each cross-file
+  rule uses only evaluable dependencies. Report comparisons have individual
+  gates; invalid chunks never suppress an independent parse/paper comparison.
+- **R5 Report structure.** The parse report requires a dict, papers list of
+  dicts with is_json_string DOI/digest and is_json_integer section_count,
+  plus summary succeeded/failed exact integers. Additional parse diagnostics
+  are retained without imposing new requirements. The chunk report calls
+  chunk_validate.validate_chunk_report_structure and separately checks its
+  per-paper fields, including exact-int chunk_count/sections_with_chunks.
+  The embedding report uses R3's structure call when its manifest is
+  evaluable; otherwise its semantic use is disabled. Decode errors retain
+  their fixed report basenames; shape failures use report-structure with the
+  report basename or report for the embedding validator. No exception text
+  is returned.
+- **R6 Exact semantics.** Roots have null parents, depth 1 and [own label]
+  paths; labels preserve nonblank original_heading, otherwise (untitled).
+  Null parent with another depth is parent-invalid as well as a depth
+  mismatch. Children require an earlier same-paper nonself parent and
+  parent.depth+1/parent.path+[label]. An iterative earlier-parent index
+  excludes cycles without recursion. Abstract identity is exactly doi#abstract
+  or its dot descendants, equivalent to normalized_type abstract. Chunk
+  ordinals follow the running per-owner row count starting at 1; later
+  repeated IDs/ordinal keys are duplicates. Check every span, first locator,
+  text hash and the existing ChunkSpan/chunk_id API. Report and embedding
+  agreement follow the V4.12/V4.13 tables above. Taxonomy and paragraph
+  coverage are never reconstructed from unavailable producer inputs.
+- **R7 Merge and flag.** _merge_validation_findings directly merges T004,
+  delivery, then F003 aggregates. Counts use MAX across sources, IDs retain
+  first encounter order up to three, codes sort. It never calls the T004
+  _merge_findings or passes F003 codes through DeliveryFindingCollector.
+  structural preserves StructureOutcome.structural and ORs new structural
+  report/read findings; it is not recomputed from merged T004 codes.
+- **R8 Reading.** Reuse the unchanged _read_reports/_read_regular helpers
+  for final-component lstat/regular-file checks and Path.read_bytes. Missing,
+  unreadable, nonregular and symlinked reports are not evaluable; no resolve
+  or arbitrary path traversal. T004's opaque report reads and this layer's
+  report reads share only the three approved paths; package bytes/parses
+  come exclusively from StructureOutcome.loaded. No new filesystem writes.
+- **R9 Safety.** DeliveryFindingCollector units remain (file,index),
+  (manifest,0) and (report basename,0). Only fixed basenames/tokens and
+  sanitized chunk hex IDs enter delivery diagnostics; record values, DOI,
+  prose, paths and exception payloads never do. Duplicate defects in one
+  record count once per code. Structural gates make nested accesses safe;
+  defensive ValueError/arithmetic/recursion handling at the F003 boundary
+  retains report-structure rather than allowing corrupt input to escape.
+- **R10 Boundary.** Library findings only: no printing, argparse, writes,
+  environment, network, raw XML, paragraphs, cache or local parser/classifier
+  source reads. validate_chunks is never called. Group E remains excluded.
+
+Implementation structure: validate_package orchestrates the single T004 call,
+whole-file gates, three report decodes, public F003 structure validation,
+record/hierarchy/span checks, version/report/embedding comparisons, F003 set
+delegation and the direct MAX merge. New private helpers isolate these
+responsibilities. _SemanticData stores references to original validated
+tuples/mappings and exact loaded bytes; its casts never rewrite data.
+Indexes and counters require memory proportional to the package. All new
+walks are iterative. The existing T004 collector implementation, readers,
+structure checker, _merge_findings and public dataclasses remain unchanged.
+
+The only existing constant changes add the 13 V4 semantic names to
+SEMANTIC_CODES and report-structure to STRUCTURAL_CODES. FINDING_CODES stays
+their union. No additional policy, runtime dependency or schema relaxation.
+Deviations: **none identified by static review**. TEST ISSUES: **none
+identified**; no test or fixture was edited or executed here.
+
+| Phase 2 verification | Observed vs NOT RUN |
+| --- | --- |
+| Branch/HEAD/initial state | Observed 004-data-contract-delivery, bf9cc4e, clean |
+| Phase 1 RED, reference GREEN and 4000-mutation review | User-reported; not reproduced here; reference code not imported or executed |
+| Direct .venv/Scripts/ruff.exe check . --no-cache | PASS; four long new docstrings were shortened before the final check |
+| Direct .venv/Scripts/ruff.exe format --check . | PASS, 127 files; Markdown Python blocks included |
+| Direct .venv/Scripts/mypy.exe src | PASS, 41 source files |
+| git --no-pager diff --check | PASS |
+| Static AST/byte/scope guards | PASS: every existing T004 function/dataclass unchanged; existing constants differ only by the 13 semantic names and report-structure; no remaining stub; all delivery tests/fixtures byte-identical to HEAD; plan append-only; exactly the two authorized files changed, no untracked files |
+| Static API/call/gate/merge review | Preserves exact module seams, tuple/manifest identity, bounded IDs, per-comparison gates and T004 structural flag |
+| uv, pytest collection/execution, observed GREEN, fuzz execution | NOT RUN by explicit sandbox/run constraint; Person 1 runs locally |
+| Real-pilot library smoke and 17/319/728 agreement | NOT RUN; expected structural False and zero findings, never inferred from inspection |
+| CLI/staging integration and dead subparser removal | NOT RUN / excluded Group E |
+| Human acceptance, CI, T005 completion | NOT RUN / not claimed; all checkboxes unchanged |
+
+Expected, **not observed** on Windows without symlink privilege:
+tests/delivery **0 failed, 1411 passed, 2 skipped**; whole suite **0 failed,
+2339 passed, 2 skipped**. These are Phase 1's static 1413/2341 totals with
+the 145 new cases expected GREEN; no counts or tests changed. If both
+existing symlink probes succeed, predictions are 1413 passed focused and
+2341 passed overall. The real-pilot library smoke is expected to print
+structural: False and findings: 0 for 17 papers/319 sections/728 chunks.
+Any actual finding requires stopping and reporting, never loosening a rule.
+
+Person 1 runs these exact PowerShell commands from the repository root:
+
+```powershell
+$env:PYTHONPATH = 'src'
+uv run --locked python -m pytest tests/delivery -q
+uv run --locked pytest -q
+uv run --locked ruff check . --no-cache
+uv run --locked ruff format --check .
+uv run --locked mypy src
+git --no-pager diff --check
+@'
+from pathlib import Path
+from sciscope.delivery import validate
+reports = validate.PackageReports(
+    Path("data/pilot/parse_report.json"),
+    Path("data/pilot/chunk_report.json"),
+    Path("data/pilot/embedding_report.json"),
+)
+outcome = validate.validate_package(Path("data/delivery/pilot"), reports)
+print("structural:", outcome.structural)
+for item in outcome.findings:
+    print(item.code, item.count, item.ids)
+print("findings:", len(outcome.findings))
+'@ | uv run --locked python -X utf8 -
+```
+
+STOP after Group D Phase 2. No Group E, commit or push.
