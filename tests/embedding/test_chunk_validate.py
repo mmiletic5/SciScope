@@ -7,15 +7,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-
-from sciscope.chunking.loader import load_sources
-from sciscope.chunking.validate import (
-    Finding,
-    load_chunk_records,
-    validate_chunks,
-)
-from sciscope.pipeline.cli import main
-from tests.embedding.embed_validate_fixtures import (
+from embed_validate_fixtures import (
     COUNTER,
     TEXT,
     ValidationFiles,
@@ -28,6 +20,14 @@ from tests.embedding.embed_validate_fixtures import (
     write_json,
     write_records,
 )
+
+from sciscope.chunking.loader import load_sources
+from sciscope.chunking.validate import (
+    Finding,
+    load_chunk_records,
+    validate_chunks,
+)
+from sciscope.pipeline.cli import main
 
 
 def _validate(files: ValidationFiles) -> list[Finding]:
