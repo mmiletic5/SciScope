@@ -40,6 +40,135 @@ Nested-section paragraphs remain included only in their own section. F002 skip c
 
 ## Implementation clarifications
 
+**Group D Phase 2 (2026-11-17):** Implemented the six T007 behavior stubs
+without changing tests or Group C behavior. Structural readers precede semantic
+collection; exact manifest/report field checks follow purity inspection, with
+exit 2 taking precedence for extra fields. Findings count distinct failing
+record/paragraph units and retain at most three distinct safe IDs; missing
+coverage without an owning chunk uses `report`. Per-type report counts use
+authoritative F002 section types rather than corrupted chunk metadata. Vector
+byte sizing uses returned dimensions; all complete float32 values are checked
+for finiteness even when a trailing fragment makes the file size invalid, and
+norm observations are checked only for complete finite L2 payloads. Dry-run
+checks all input budgets before cache access and checks cached counter/estimate
+metadata exactly as `run_embedding` does. New reader failures are raised after
+leaving exception handlers so raw paths/bytes are absent from exception context.
+No external facts were reverified;
+full pytest verification remains subject to the existing sandbox temp-path
+restriction and the user's local GREEN/review gate. T007 remains unchecked.
+
+**Group D Phase 1 (2026-11-17):** T007 only: typed additive stubs and
+labeled synthetic offline RED tests, without implementing validation or dry-run
+behavior. Keep T007 unchecked; T008, evidence/backlog synchronization, live
+calls, Golden v0 and captions remain outside this scope. Existing Group C
+behavior and tests are unchanged. The explicit V6/V7 placement authorizes only
+additive `DryRunStats`/`run_dry_run` declarations in `embedding/pipeline.py`;
+`run_embedding` is unchanged despite the general existing-module restriction.
+
+Renewed `$solution-research` and `$google-python-engineering` precede tests.
+**Local-only research:** inspected F002 `load_sources`, public `chunk_id`,
+`CHUNK_RECORD_FIELDS`, `chunk_report`, the B3 counter/template, strict byte/LF
+embedding reader, cache `get`, manifest/report builders, pipeline and CLI.
+Compared reusing the embedding reader, an independent full-record validator,
+and a third-party schema/vector library. The existing reader performs early
+semantic rejection, so use a separate full-record reader preserving exact
+bytes and LF-only splitting, plus independent validation through public source
+and identity contracts. This permits collect-all findings without changing
+Group C. New dependencies are prohibited and unnecessary for this contract.
+Existing repository contracts are the verified local sources; official URLs
+in the prior research remain historical references. **No external fact,
+version, license, compatibility, price, API limit or account observation was
+reverified.** No network is authorized. RED execution is delegated to the user
+because `uv` is prohibited here; pytest temp-directory failures must not be
+worked around. No automated or human acceptance is claimed.
+
+- **V1 -- commands:** `validate` accepts `--chunks-only`, `--allow-partial`,
+  `--norm-tolerance` (default 0.01, finite and in (0, 1], otherwise exit 2
+  `invalid-norm-tolerance`), `--operational-cap-tokens` (384), `--sections`,
+  `--paragraphs`, `--parse-report`, `--chunks`, `--chunk-report`, `--vectors`,
+  `--manifest` and `--report`. Defaults match `chunk`/`embed`, including
+  `data/pilot/chunk_report.json`. Existing `embed` gains `--dry-run`, honoring
+  `--limit`; `--dry-run --live` is exit 2 `dry-run-with-live`. Without either
+  selection `embed` still returns 2 `live-not-selected`.
+- **V2 -- side effects:** validation never reads cache. Dry-run inspects cache
+  read-only and creates no directory, output, temporary file or other file.
+  Neither command reads process environment, needs a key, constructs a
+  transport or logs. CLI alone prints sanitized numeric summaries.
+- **V3 -- statuses/output:** 0 passes, 2 usage/config or structurally unreadable
+  or malformed chunks/manifest/reports (including F002 `SourceInputError`),
+  1 semantic findings (including F002 `SourceConsistencyError`). Collect all
+  semantic failures together; sort distinct codes and print stderr lines
+  `error: <code> count: <k> first: <id1>,<id2>,<id3>` (at most three chunk
+  hex IDs or `manifest`/`vectors`/`report`), then `failures: <total>`.
+  Success stdout is exactly `validated chunks: <N> sections: <S> papers: <P>`
+  for chunks-only, or that prefix plus ` vectors: <V> status: <complete|partial>
+  norm-min: <x> norm-max: <y>` for full validation (norms: nine decimals).
+  Never echo paths, URLs, keys, chunk prose or raw exception messages.
+- **V4 -- chunk validation:** independently check exact record/span field
+  sets/types; use `load_sources` and public `chunk_id`, never `chunk_sections`.
+  Recompute paragraph kind, ID/hash, constant/single-valued versions, source
+  ownership, digest/type/path, first locator, sorted omitted-kind union,
+  content tokens and empty-prefix final cap min(configured cap, 512).
+  Reconstruct text with exact source gaps within a paragraph and `\n\n`
+  between paragraphs, without edge whitespace. Check bounded same-section
+  spans, strictly increasing non-overlap and exact non-whitespace coverage,
+  including `other`, blank paragraphs and sections without own text. Check
+  contiguous section ordinals and F002 section/file order. Recompute report
+  `summary.chunk_count`, `summary.hard_split_chunks`,
+  `summary.chunks_by_normalized_type` and matching per-paper counts.
+  Person 1 approved the otherwise unnamed diagnostics `chunk-kind-mismatch`,
+  `chunk-source-mismatch`, `chunk-omitted-mismatch` and `span-bounds`.
+- **V5 -- embedding validation:** exact manifest/report schemas from public
+  builders; chunk checks participate in the same collection pass. Reject
+  partial unless allowed; allowed partial entries are a nonempty subset.
+  Verify exact chunks-byte SHA256, chunk versions, requested/returned dims,
+  float32-le dtype, sorted unique entries and set/count equality. Rebuild
+  prefixed passage inputs and verify hashes/cap. Verify vector byte size,
+  checksum and finite float32 values; declared L2 rows must meet tolerance,
+  with observed min/max recomputed and rounded to nine places; other
+  declarations fail. Compare all report/manifest shared keys, distinct entry
+  DOI count and reported-usage cost/approximate label. Aggregate usage greater
+  than estimated tokens rejects calibration. Detect cache hit/miss, API-call,
+  retry, rate-limit, base-URL and absolute-path keys/values as `report-impure`;
+  the existing `custom_base_url_used` boolean is allowed. Purity findings are
+  collected even when an injected key also makes a schema structurally invalid
+  (exit 2 takes precedence).
+- **V6 -- dry-run:** load through unchanged `load_chunk_inputs`, rebuild
+  prefixed inputs, enforce both operational/512 and per-request caps before
+  cache access, deduplicate hashes, inspect only `EmbeddingCache.get`.
+  Corruption returns 1 `cache-entry-corrupt` plus `entry: <key>`; overflow
+  returns 2 `input-over-cap`. Print exactly `dry-run chunks: <n> selected: <s>
+  unique-inputs: <u> cache-hits: <h> cache-misses: <m>
+  estimated-input-tokens: <E> estimated-tokens-to-send: <S>
+  approximate-cost-usd: <X.XXXXXX> basis: estimator-based approximate`.
+  E sums unique selected input estimates; S sums only misses; cost is
+  S * PRICE_USD_PER_MILLION_TOKENS / 1_000_000. Team billing is unverified.
+- **V7 -- typed placement:** `chunking/validate.py` owns real frozen
+  `Finding(code: str, count: int, ids: tuple[str, ...])`,
+  `LoadedChunkRecords(records, chunks_sha256)`, and stubs
+  `load_chunk_records(path)` and `validate_chunks(sources, records, counter,
+  *, operational_cap_tokens, chunk_report) -> list[Finding]`. The independent
+  reader avoids Group C early semantic rejection and preserves raw-byte hash.
+  `embedding/validate.py` stubs `validate_embedding_set(records, *,
+  chunks_sha256, manifest, report, vectors, counter, operational_cap_tokens,
+  norm_tolerance, allow_partial) -> list[Finding]`; raw vector bytes permit
+  size/finite checks without cache or transport. `embedding/pipeline.py`
+  adds real `DryRunStats` and stub `run_dry_run(options, config, counter)`.
+  CLI adds argument declarations/routing only; new handler behavior raises
+  `NotImplementedError("T007 ...")`. Retain all existing keyword-only
+  injection seams, unused by validation/dry-run. Every new behavior function
+  remains a typed `NotImplementedError` stub; dataclasses are real.
+
+**Known limits:** (a) Validation proves structure, hashes and exact coverage,
+not sentence-boundary quality; `hard_split` is only type-checked, and its
+stored boolean contributes to recomputed report counts. (b) Calibration is
+aggregate-only and cannot prove per-input fit. (c) Norm tolerance 0.01 remains
+provisional until T008 observations are recorded. The user reports a five-vector
+live probe (not evidence) with norms 0.999657 to 1.000201, deviations near
+3.4e-4, above float32 rounding; do not tighten tolerance toward float32 epsilon.
+(d) Dry-run cost is estimator-based; the user reports pilot usage about 0.64
+of the estimate on five inputs (not evidence, not independently verified).
+
 **Group C Phase 2 (2026-11-17):** Implement T005 before T006 using the
 approved D1–D12 contracts and no new dependency or external verification.
 The Windows ignore-test repair passes bytes to `git check-ignore --stdin`

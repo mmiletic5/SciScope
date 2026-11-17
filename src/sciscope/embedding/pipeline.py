@@ -12,6 +12,7 @@ from sciscope.chunking.counter import TokenCounter
 from sciscope.embedding.cache import CacheEntry, EmbeddingCache, cache_key
 from sciscope.embedding.config import (
     CACHE_FORMAT_VERSION,
+    PRICE_USD_PER_MILLION_TOKENS,
     EmbeddingCacheError,
     EmbeddingConfig,
     EmbeddingConfigError,
@@ -57,6 +58,74 @@ class EmbedStats:
     estimated_input_tokens: int
     provider_input_count: int
     rate_limit_headers: Mapping[str, str]
+
+
+@dataclass(frozen=True, slots=True)
+class DryRunStats:
+    """Read-only preview totals with cost based only on estimated misses."""
+
+    chunk_count: int
+    selected_count: int
+    unique_input_count: int
+    cache_hits: int
+    cache_misses: int
+    estimated_input_tokens: int
+    estimated_tokens_to_send: int
+    approximate_cost_usd: float
+
+
+def run_dry_run(
+    options: EmbedOptions,
+    config: EmbeddingConfig,
+    counter: TokenCounter,
+) -> DryRunStats:
+    """Estimate selected unique inputs and inspect cache without any writes.
+
+    No environment, transport, output publication or cache mutation is allowed.
+    Overflow must be rejected before inspecting cache entries.
+    """
+    if options.limit is not None and (
+        type(options.limit) is not int or options.limit < 1
+    ):
+        raise EmbeddingConfigError("invalid-limit")
+    loaded = load_chunk_inputs(options.chunks, counter)
+    selected = loaded.chunks[: options.limit]
+    unique: dict[str, int] = {}
+    for chunk in selected:
+        text = build_passage_input(config, chunk.section_path, chunk.text)
+        estimate = counter.count(text)
+        if estimate > min(
+            config.operational_cap_tokens, 512, config.max_tokens_per_request
+        ):
+            raise EmbeddingInputError("input-over-cap")
+        digest = hashlib.sha256(text.encode("utf-8")).hexdigest()
+        unique.setdefault(digest, estimate)
+    cache = EmbeddingCache(options.cache_dir)
+    hits = tokens_to_send = 0
+    for digest, estimate in unique.items():
+        entry = cache.get(config.model, config.dimensions, digest)
+        if entry is None:
+            tokens_to_send += estimate
+        else:
+            if (
+                entry.counter_id != counter.counter_id
+                or entry.estimated_tokens != estimate
+            ):
+                raise EmbeddingCacheError(
+                    "cache-entry-corrupt",
+                    cache_key(config.model, config.dimensions, digest),
+                )
+            hits += 1
+    return DryRunStats(
+        len(loaded.chunks),
+        len(selected),
+        len(unique),
+        hits,
+        len(unique) - hits,
+        sum(unique.values()),
+        tokens_to_send,
+        tokens_to_send * PRICE_USD_PER_MILLION_TOKENS / 1_000_000,
+    )
 
 
 def run_embedding(
