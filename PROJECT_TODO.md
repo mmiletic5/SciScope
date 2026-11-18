@@ -80,8 +80,8 @@ Human review and verification remain pending; no checkbox is completed by this d
 - [x] **P2-19** | Owner: Person 1 | Deliverable: embedding shape, value, and version validation | Phase: 2 | Depends on: P2-18
 - [x] **P2-20** | Owner: Person 1 | Deliverable: data contract validation | Phase: 2 | Depends on: P2-06 through P2-19, P1-10
 - [ ] **P2-21** | Owner: Person 1 | Deliverable: XML processing quality tests | Phase: 2 | Depends on: P2-06 through P2-14
-- [ ] **P2-22** | Owner: Person 1 | Deliverable: curated honeybee golden questions and reference answers | Phase: 2 | Priority: High — first development cycle | Depends on: P1-12, P2-04, P2-06, P2-10
-- [ ] **P2-23** | Owner: Person 1 | Deliverable: manually verified evidence references for golden questions | Phase: 2 | Priority: High — first development cycle | Depends on: P2-22
+- [ ] **P2-22** | Owner: Person 1 | Deliverable: curated honeybee golden questions and reference answers | Phase: 2 | Priority: High — first development cycle | Depends on: P1-12, P2-04, P2-06, P2-10 | Note: Golden v0 (21 AI-drafted, human-verified questions) is delivered in this PR; human-written questions remain open for a later version (Person 2). Human approval: reported by Person 1 in chat on 2026-11-18; this task remains unchecked.
+- [ ] **P2-23** | Owner: Person 1 | Deliverable: manually verified evidence references for golden questions | Phase: 2 | Priority: High — first development cycle | Depends on: P2-22 | Note: Golden v0 (21 AI-drafted, human-verified questions) is delivered in this PR; human-written questions remain open for a later version (Person 2). Human approval: reported by Person 1 in chat on 2026-11-18; this task remains unchecked.
 - [ ] **P2-24** | Owner: Person 1 | Deliverable: initial 20-paper PLOS pilot | Phase: 2 | Depends on: P2-01 through P2-20
 - [ ] **P2-25** | Owner: Person 1 | Deliverable: corpus expansion toward approximately 500 relevant papers | Phase: 2 | Depends on: P2-24
 
@@ -90,7 +90,22 @@ who explicitly accepted SC-001..SC-008. T001–T007 and P2-20 are checked.
 Person 2 PR review: NOT PERFORMED by team agreement (not a failure);
 received extracted-package verification: NOT RUN. Docs-only close-out CI result:
 NOT RECORDED; Person 1 waits for green before squash merge.
-P2-24 remains unchecked; no corpus expansion or Golden work was started.
+P2-24 remains unchecked; no corpus expansion or Golden work was started in F004.
+
+Golden v0 small-change evidence (2026-11-18): dataset
+`evals/golden_questions.v0.json` is supplied by Person 1 and preserved unchanged.
+Edited files: `evals/golden_questions.schema.json`, `docs/EVALUATION_PLAN.md`,
+`evals/README.md`, `PROJECT_TODO.md`, and `EVIDENCE.md`.
+Dataset SHA-256:
+`16a47954951c2c7ade6f9ef69dc232c8520d1debb042135cea5733b970180746`.
+Recomputed corpus version: `pilot17-xml-1fff1573b610`; full manifest-derived hash:
+`1fff1573b610c27e2e8016343d2f6429df294db974db4af898c4a0f82ffc26bd`.
+JSON loading, Draft 2020-12 schema/dataset validation, metadata/hash/LF checks,
+three existing schema tests, touched-document Ruff formatting, and
+`git diff --check` passed using local tools. The external `golden_check.py`,
+full locked pytest/Ruff/mypy checks, source review, and `check-quote` reruns were
+NOT RUN by the assistant. See the [evidence entry](EVIDENCE.md#golden-v0-small-change--documentation-data-and-optional-question-type)
+for commands and verification limits. No checkbox changes or evaluation results.
 
 ## Phase 3 — Database & Retrieval (Person 2)
 

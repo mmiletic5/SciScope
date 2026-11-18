@@ -341,3 +341,87 @@ dependency resolution, and CI remain unverified. Human acceptance: NOT PROVIDED.
 - **Team agreement:** Person 1 reports a verbal Discord agreement: Person 2 does not review the PR; she receives the verified archive plus an explanatory handoff and continues independently. Person 2 PR review: NOT PERFORMED by team agreement (not a failure). Person 2's verification of the received extracted package: NOT RUN.
 - **State synchronization:** T007 and P2-20 checked following the supplied acceptance; P2-24 remains unchecked. Earlier session scope and observations above are retained as historical evidence. D-007 remains Proposed; Person 1 decides separately.
 - **Checks handoff:** Person 1 runs `uv run --locked pytest -q`, `uv run --locked ruff check . --no-cache`, `uv run --locked ruff format --check .`, `uv run --locked mypy src`, and `git diff --check`. These commands are NOT RUN by this assistant during this close-out.
+
+### Golden v0 small change — Documentation, data, and optional question type
+
+- **Owner:** Person 1; later human-written question contribution: Person 2.
+- **Date:** 2026-11-18.
+- **Scope and authorization:** Explicit small-change track requested in chat:
+  documentation, the supplied dataset, and one optional schema property. No
+  Spec Kit artifacts, Python changes, new feature tests, or subsequent feature.
+- **Current state:** AUTO_VALIDATED; PR review and acceptance of this change
+  remain pending. P2-22 and P2-23 remain unchecked; no checklist box changed.
+- **Files changed:** `evals/golden_questions.schema.json`,
+  `docs/EVALUATION_PLAN.md`, `evals/README.md`, `PROJECT_TODO.md`, and
+  `EVIDENCE.md`. Dataset `evals/golden_questions.v0.json` was already supplied
+  untracked by Person 1 and remains untracked and byte-identical; no staging,
+  commit, or push. No changes to `src/`, `data/`, or `docs/DATA_CONTRACT.json`.
+- **Research check:** Applied `solution-research` as a brief internal check of
+  the existing schema, schema tests, CI workflow, evaluation documentation, and
+  small-change workflow. Reused the installed `jsonschema` and Draft 2020-12
+  CI approach; no new dependency or external compatibility claim. No external
+  research was needed for the explicitly prescribed optional property.
+  Applied `google-python-engineering` for read-only Python test inspection and
+  validation commands. No Python files were added or edited.
+- **Schema:** Added only optional `question_type` immediately after
+  `question_id`, with the five requested enum values and a short description.
+  Compared against HEAD after removing that property: structurally identical.
+  `required`, `additionalProperties: false`, `$id`, and version fields are
+  unchanged; no applicable repository convention requiring a version bump was
+  found.
+- **Dataset identity:** SHA-256 checked before edits and again after edits:
+  `16a47954951c2c7ade6f9ef69dc232c8520d1debb042135cea5733b970180746`.
+  File bytes were never written. LF-only bytes confirmed; Git attributes
+  resolve to `text: auto`, `eol: lf`.
+- **Recomputed corpus identity:** Read 17 entries from
+  `data/pilot/manifest.jsonl`, sorted the UTF-8 `<doi>\t<xml_sha256>\n` lines,
+  including the final LF, and computed SHA-256:
+  `1fff1573b610c27e2e8016343d2f6429df294db974db4af898c4a0f82ffc26bd`.
+  Derived `corpus_version`: `pilot17-xml-1fff1573b610`. This hashes the source
+  XML identities recorded in the manifest; individual XML files were not
+  rehashed. Parser, chunking, and embeddings do not enter this recipe.
+- **Metadata checks:** `dataset_version: "v0"`; 21 questions (8 factual,
+  4 comparisons, 3 conflicting-evidence, 3 research-gap, 3 insufficient-evidence);
+  33 quotations; 12 distinct papers; every record has reviewer `"Person 1"`,
+  status `"verified"`, date `"2026-11-18"`, and matching source corpus version.
+  These are checks of recorded metadata, not independent scientific review.
+- **Tests created or updated:** NONE; this is the prescribed small change.
+  No RED claim is made. Existing schema tests were run unchanged.
+- **Automated checks (assistant, local installed tools, not locked uv runs):**
+  - PowerShell inline scripts piped to
+    `.venv/Scripts/python.exe -X utf8 -`: PASS — loaded schema and dataset with
+    `json`; `Draft202012Validator.check_schema(schema)`;
+    `Draft202012Validator(schema, format_checker=FormatChecker()).validate(dataset)`;
+    metadata counts, schema comparison against HEAD, hashes, and LF checks.
+  - `.venv/Scripts/python.exe -m pytest tests/test_golden_schema.py -q -p no:cacheprovider`:
+    PASS — 3 passed.
+  - `.venv/Scripts/ruff.exe format --check docs/EVALUATION_PLAN.md evals/README.md PROJECT_TODO.md EVIDENCE.md`:
+    PASS — 4 files already formatted. This is the repository's existing
+    documentation formatting check; no formatter was applied to the dataset.
+  - `git diff --check`: PASS.
+  - `git check-attr text eol -- evals/golden_questions.v0.json`: PASS —
+    `text: auto`, `eol: lf`. Byte checks also confirm LF in all five edited files.
+- **Not run / verification limits:** `golden_check.py ... --final` could not be
+  run because that external helper/path was not supplied and no repository copy
+  was found. The full `uv run --locked pytest -q`,
+  `uv run --locked ruff check . --no-cache`,
+  `uv run --locked ruff format --check .`, and `uv run --locked mypy src`
+  were NOT RUN, left for Person 1's stated local checks; no sandbox rejection
+  of those commands is claimed. Branch CI, independent reading of all cited
+  passages, and fresh `check-quote` verification of the 33 quotations were NOT
+  RUN by the assistant. No live AI calls or evaluation runs were performed.
+- **Known limitations:** All 21 questions are AI-drafted and human-verified;
+  the planned approximately 30% human-written questions remain open for a later
+  version (Person 2). Conflicts are author-versus-prior-literature within one
+  paper. Insufficient-evidence cases rely on lexical search plus reading,
+  support rather than prove absence, and omit tables, captions, formulas, and
+  supplementary material from chunks. All evidence is from body paragraphs,
+  none from abstracts. Coverage of 12 of 17 papers is an indicative regression
+  signal, not a statistical estimate. No evaluation results were produced.
+- **Human approval:** reported by Person 1 in chat on 2026-11-18.
+  Person 1 reports reading and verifying EVERY record and machine-checking all
+  33 quotations verbatim with `check-quote`. These are supplied curation facts;
+  no additional human approval, assistant source verification, PR review, or
+  completed-task decision is inferred.
+- **Outstanding decisions:** None within the requested change. Human-written
+  questions, broader evaluation, and PR review remain outside this scope.

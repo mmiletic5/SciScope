@@ -78,6 +78,17 @@
           "type": "string",
           "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
         },
+        "question_type": {
+          "type": "string",
+          "enum": [
+            "single_paper_factual",
+            "multi_paper_comparison",
+            "conflicting_evidence",
+            "research_gap",
+            "insufficient_evidence"
+          ],
+          "description": "Question category: a fact from one paper, comparison across papers, conflicting findings, a research gap, or insufficient corpus evidence."
+        },
         "question": {
           "type": "string",
           "minLength": 1
