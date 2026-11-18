@@ -78,16 +78,18 @@ Human review and verification remain pending; no checkbox is completed by this d
 - [x] **P2-17** | Owner: Person 1 | Deliverable: embedding provider and model configuration (F003 re-scoped: OpenAI `text-embedding-3-small` pilot; local `multilingual-e5-small` loading not implemented, D-004 open) | Phase: 2 | Depends on: P1-08
 - [x] **P2-18** | Owner: Person 1 | Deliverable: embedding generation pipeline | Phase: 2 | Depends on: P2-15, P2-17
 - [x] **P2-19** | Owner: Person 1 | Deliverable: embedding shape, value, and version validation | Phase: 2 | Depends on: P2-18
-- [ ] **P2-20** | Owner: Person 1 | Deliverable: data contract validation | Phase: 2 | Depends on: P2-06 through P2-19, P1-10
+- [x] **P2-20** | Owner: Person 1 | Deliverable: data contract validation | Phase: 2 | Depends on: P2-06 through P2-19, P1-10
 - [ ] **P2-21** | Owner: Person 1 | Deliverable: XML processing quality tests | Phase: 2 | Depends on: P2-06 through P2-14
 - [ ] **P2-22** | Owner: Person 1 | Deliverable: curated honeybee golden questions and reference answers | Phase: 2 | Priority: High — first development cycle | Depends on: P1-12, P2-04, P2-06, P2-10
 - [ ] **P2-23** | Owner: Person 1 | Deliverable: manually verified evidence references for golden questions | Phase: 2 | Priority: High — first development cycle | Depends on: P2-22
 - [ ] **P2-24** | Owner: Person 1 | Deliverable: initial 20-paper PLOS pilot | Phase: 2 | Depends on: P2-01 through P2-20
 - [ ] **P2-25** | Owner: Person 1 | Deliverable: corpus expansion toward approximately 500 relevant papers | Phase: 2 | Depends on: P2-24
 
-F004 status (2026-11-18): Groups A–F GREEN and T007 evidence/documentation
-synced; T001–T006 checked as instructed. T007 and P2-20 remain open pending
-CI, Person 2 review/received-package acceptance and Person 1 human acceptance.
+F004 status (2026-11-18): DONE. Groups A–F GREEN; branch CI passed per Person 1,
+who explicitly accepted SC-001..SC-008. T001–T007 and P2-20 are checked.
+Person 2 PR review: NOT PERFORMED by team agreement (not a failure);
+received extracted-package verification: NOT RUN. Docs-only close-out CI result:
+NOT RECORDED; Person 1 waits for green before squash merge.
 P2-24 remains unchecked; no corpus expansion or Golden work was started.
 
 ## Phase 3 — Database & Retrieval (Person 2)
