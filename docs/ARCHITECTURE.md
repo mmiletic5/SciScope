@@ -29,8 +29,13 @@ validation. Person 4 owns the UI and end-to-end integration. See
 The source XML must be retained and linked to derived records. A versioned
 [data contract](DATA_CONTRACT.json) describes the proposed handoff from Person 1
 to Person 2. The [data model](DATA_MODEL.md) and
-[chunking proposal](CHUNKING_STRATEGY.md) explain the fields. Neither the schema
-nor these documents are approved implementation contracts yet.
+[chunking strategy](CHUNKING_STRATEGY.md) explain the fields. F004's specification
+and plan were approved for implementation; contract 0.3.0 remains draft until
+Person 2's PR review.
+
+The F004 [delivery guide](DELIVERY_GUIDE.md) covers the implemented offline
+six-file handoff and validation. [DATA_CONTRACT.json](DATA_CONTRACT.json) is
+the single source for its flat record shapes; database import remains pending.
 
 The first provider mode is planned to be deterministic and offline, with no
 API key. Gemini must require explicit selection and configuration; a future

@@ -12,7 +12,7 @@ plan has yet been approved.
 | D-004 | Proposed | `intfloat/multilingual-e5-small`, 384 dimensions, 512-token total input, `passage:`/`query:` prefixes. Validate with source papers. | Person 1, Person 2 |
 | D-005 | Required policy | Fake mode is default; live Gemini requires explicit configuration. Routine CI never calls paid AI. | Person 3 |
 | D-006 | Open | Corpus inclusion/exclusion, PLOS/JATS variation, and licensing policy. | Person 1, TEAM |
-| D-007 | Open | DOI normalization, required metadata, section taxonomy, source locator and version semantics. | Person 1, Person 2 |
+| D-007 | Proposed | Propose F001 DOI normalization, required metadata via papers.jsonl, taxonomy v0, the `jats:v1` locator and processing version semantics in draft contract 0.3.0. Proposed until Person 2 PR approval. | Person 1, Person 2 |
 | D-008 | Open | Chunk boundaries, overlap, table/caption/reference handling, and actual token budgets. | Person 1, Person 2 |
 | D-009 | Open | Filter, retrieval ranking, API and provider interface contracts; error behavior. | Affected owners |
 | D-010 | Open | Golden relevance rubric, negative cases, and metric interpretation. | Person 1, Person 2 |

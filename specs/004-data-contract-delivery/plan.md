@@ -3175,3 +3175,69 @@ Windows file behavior or pytest fixture success. The first Ruff scan during
 the failed temporary-file attempt passed while reporting an inaccessible
 directory warning; final scans follow cleanup. No network or paid AI call.
 Stop after Group F Phase 2; no automatic T007 or further feature work.
+
+## T007 — evidence and docs sync
+
+Person 1 explicitly authorized this docs-only scope on 2026-11-18. No code,
+tests, dependencies, network, data writes, git add/commit/push, F005 or Golden
+work. Historical addenda above retain their original observations and
+predictions; the new F004 EVIDENCE entry distinguishes supplied results from
+this session's static checks. Research check: use the approved flat schema,
+runtime contract and existing delivery readers/writers rather than introduce
+another representation or dependency. External verification was NOT RUN
+under the no-network instruction.
+
+- **E1:** Append one F004 EVIDENCE entry with authorization, scope, research,
+  group RED/GREEN observations, real-package hashes/sizes, determinism,
+  negative controls, archive/extraction validation, reader and source traces,
+  independent AI review and SC-001–SC-008/FR-010 status. Add one correction
+  directly after F001: raw language is 4 EN / 13 en, not EN 17/17.
+- **E2:** Rewrite DATA_MODEL.md to the actual flat paper/section/chunk records,
+  separate vectors and manifests; DATA_CONTRACT.json is the single source,
+  schema_version 0.3.0 remains draft until Person 2 PR review.
+- **E3:** Change only decision row D-007 to Proposed, describing normalization,
+  papers metadata, taxonomy v0, jats:v1 and version semantics. D-004 stays
+  Proposed unchanged; no other decision row changes.
+- **E4:** Add delivery-guide/contract pointers in CHUNKING_STRATEGY.md and
+  ARCHITECTURE.md; correct the architecture's stale implementation-approval
+  claim while retaining pending shared-contract PR approval.
+- **E5:** Shorten DELIVERY_GUIDE.md consumer limits; remove internal producer
+  usage/cache/configuration issues and aggregate calibration detail. Add the
+  source-preserving same-paragraph join versus different-paragraph `"\n\n"`
+  rule, reported verified over all 728 chunks (0 mismatches, 5 same-paragraph
+  joins). Preserve Python examples and existing guide checks.
+- **E6:** Add one F004 PROJECT_TODO status note. P2-20 and P2-24 stay unchecked;
+  no other backlog checkbox changes.
+- **E7:** Check T001–T006 at Person 1's explicit instruction. **T007 stays
+  unticked pending CI + acceptance**; feature completion is not claimed.
+- **E8:** Review the visible untracked data/pilot/delivery_manifest.json
+  read-only: SHA256 998241789FD9675853962BDFDF98B15B0991BC4CDA103413B0ABC470666AF9D2,
+  no article prose, secrets, absolute paths, timestamps or self-hash. Do not
+  create, edit or claim to commit it. Review the exact four-file list from
+  `git diff --name-only 8c51817..HEAD` plus the nine edited documentation files;
+  EVIDENCE records the list and the existing synthetic timestamp/path-pattern
+  exceptions rather than claiming literal absence throughout documentation.
+
+Contradictions corrected: DATA_MODEL's bootstrap proposal/no-real-records
+claim → real 17/319/728 handoff; nested/inline embedding-input/vector shape →
+flat records plus separate manifests/vectors; fixed local e5/384 dimensions →
+actual hosted pilot 1536 with configurable set dimensions; renamed metadata
+and XML-path assumptions → actual subjects/provenance fields and DOI-based
+local XML resolution in the guide; ARCHITECTURE's no implementation approval
+claim → approved F004 spec/plan, contract PR review still pending. F001's
+language error is corrected append-only. CHUNKING_STRATEGY's local-model
+section is already explicitly a proposal; no contradiction fix was needed.
+Guide changes remove internal producer details and add reconstruction
+guidance; they do not alter data or claim new verification.
+
+Verification handoff after documentation edits: Person 1 runs, in order,
+`uv run --locked python -m pytest tests/delivery/test_deliver_reader.py -q`,
+`uv run --locked pytest -q`, `uv run --locked ruff check . --no-cache`,
+`uv run --locked ruff format --check .`, `uv run --locked mypy src`,
+`git diff --check`, then adds the manifest themselves. Those locked checks
+are NOT RUN by this assistant. Static documentation checks are recorded in
+EVIDENCE: direct local Markdown Ruff format check PASS (9 files); static links,
+Python parsing and guide constraints PASS (114 lines / 828 words); unchanged
+guide Python blocks; git diff --check PASS. CI (no PR yet), Person 2's received-package verification/PR review
+and Person 1's explicit acceptance remain pending; final F004 status is
+PENDING (CI, Person 2 review, Person 1 acceptance). Stop after F004.

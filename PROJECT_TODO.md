@@ -85,6 +85,11 @@ Human review and verification remain pending; no checkbox is completed by this d
 - [ ] **P2-24** | Owner: Person 1 | Deliverable: initial 20-paper PLOS pilot | Phase: 2 | Depends on: P2-01 through P2-20
 - [ ] **P2-25** | Owner: Person 1 | Deliverable: corpus expansion toward approximately 500 relevant papers | Phase: 2 | Depends on: P2-24
 
+F004 status (2026-11-18): Groups A–F GREEN and T007 evidence/documentation
+synced; T001–T006 checked as instructed. T007 and P2-20 remain open pending
+CI, Person 2 review/received-package acceptance and Person 1 human acceptance.
+P2-24 remains unchecked; no corpus expansion or Golden work was started.
+
 ## Phase 3 — Database & Retrieval (Person 2)
 
 - [ ] **P3-01** | Owner: Person 2 | Deliverable: PostgreSQL and pgvector local setup | Phase: 3 | Depends on: P1-03, P1-10

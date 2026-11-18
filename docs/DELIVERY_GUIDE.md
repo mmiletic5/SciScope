@@ -103,10 +103,12 @@ subprocess.run(
 )
 ```
 
+To reconstruct chunk text, join consecutive spans of the same paragraph using the source characters between them; join spans from different paragraphs with "\n\n" (`chunking/core.py::_join_pieces`). Person 1 verified this for all 728 pilot chunks: 0 mismatches, including 5 same-paragraph joins.
+
 Citations include `doi`, `title`, authors, `publication_year`, journal, license, `section_path`, `source_locator` and `chunk_id`; display the available heading. `(untitled)` in `section_path` is a sentinel for no heading and is never displayed.
 
 ## Limits and changes
 
-Chunk `omitted` lists XML names. Reports count 223 skipped elements and 33 back-matter exclusions: figures, tables, supplementary material, formulas, lists and references are omitted under the recorded policy. Abstract chunks have no heading context; the pilot has exactly 2 `hard_split` chunks. Inherited limits include O(n²) validator scans, aggregate-only token calibration, no offline proof of vector origin or retrieval quality, cache crash usage double-counting, larger partial-batch totals, invalid empty `OPENAI_BASE_URL`, and the upstream cache-subdirectory output-alias gap. Golden v0 is pending. Propose contract changes by pull request with Person 2 as reviewer.
+Chunk `omitted` lists XML names. Reports count 223 skipped elements and 33 back-matter exclusions: figures, tables, supplementary material, formulas, lists and references are omitted under the recorded policy. Abstract chunks have no heading context; the pilot has exactly 2 `hard_split` chunks. Limits include O(n²) validator scans and no offline proof of vector origin. Retrieval quality is NOT VERIFIED; Golden v0 is pending. Propose contract changes by pull request with Person 2 as reviewer.
 
 Verified 2026-11-17: pgvector [vector type](https://github.com/pgvector/pgvector#vector-type) supports up to 16,000 dimensions; [HNSW](https://github.com/pgvector/pgvector#hnsw) and [IVFFlat](https://github.com/pgvector/pgvector#ivfflat) vector indexes support up to 2,000. The pgvector version on the team database is UNVERIFIED.

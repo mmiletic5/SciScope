@@ -1,0 +1,83 @@
+{
+  "schema_version": "0.3.0",
+  "contract_version": "0.3.0",
+  "status": "draft",
+  "counts": {
+    "papers": 17,
+    "sections": 319,
+    "chunks": 728
+  },
+  "files": {
+    "papers.jsonl": {
+      "sha256": "2e3b1a920bc123325f78d62fa18f2164acac1dad9b20cc8b41f102a4f72fc9a1",
+      "bytes": 23145,
+      "record_count": 17
+    },
+    "sections.jsonl": {
+      "sha256": "b41e3ef3f4930cedcca6607ead5ee96b1df1d7e400011b99d77d7eee01644721",
+      "bytes": 211478,
+      "record_count": 319
+    },
+    "chunks.jsonl": {
+      "sha256": "77dac1d542d8dc4f55c205ae3db2e92a4906091963760aed38f22b9d0005fde1",
+      "bytes": 1264011,
+      "record_count": 728
+    },
+    "vectors.f32": {
+      "sha256": "68fbcee7cda50686c528f32a5078c7b8133d0e1ddce826358d3740a0aa2fa98d",
+      "bytes": 4472832,
+      "record_count": 728
+    },
+    "embedding_manifest.json": {
+      "sha256": "99185d5db2f57726ea2224dfb66b67c413252ad6abb120e58e4c01498561ca60",
+      "bytes": 137860,
+      "record_count": 1
+    }
+  },
+  "processing_versions": {
+    "parser": {
+      "version": null,
+      "source_sha256": "3a69976f74f6e728ab11729fb4645e91c75ecfb3a3a2b6899493b434fd866cb7"
+    },
+    "taxonomy": {
+      "version": "v0",
+      "source_sha256": "1789dc85cbab9ad0ef6f3cd0cef0cc79b492a219b4257c9dfaddf5a5e72d0d14"
+    },
+    "locator": "jats:v1",
+    "chunking_version": "chunking-v1",
+    "token_counter_id": "utf8-bytes-div3-v1",
+    "template_version": "embedding-text-v1"
+  },
+  "source_reports": {
+    "parse_report.json": {
+      "sha256": "3bd0a61310edf49fe00ecf9c31489110197c80e786ad9c5333d7ecdf0a63b426",
+      "bytes": 24651
+    },
+    "chunk_report.json": {
+      "sha256": "475aba74cf677e8cdd7cba44707dccf3124adcca36ff57e0de5fac0dd272fd6b",
+      "bytes": 15305
+    },
+    "embedding_report.json": {
+      "sha256": "b64819fa1487ca21b662e755d6d3e62e401e25d37809688c75e8d2d85180cc2f",
+      "bytes": 856
+    }
+  },
+  "embedding_set": {
+    "provider": "openai",
+    "model": "text-embedding-3-small",
+    "dimensions": 1536,
+    "dtype": "float32-le",
+    "row_mapping": "embedding_manifest.entries",
+    "passage_prefix": "",
+    "query_prefix": "",
+    "normalization": {
+      "declared": "l2",
+      "observed_norm_min": 0.999368748,
+      "observed_norm_max": 1.000662474,
+      "tolerance": 0.01
+    },
+    "chunks_sha256": "77dac1d542d8dc4f55c205ae3db2e92a4906091963760aed38f22b9d0005fde1",
+    "vectors_sha256": "68fbcee7cda50686c528f32a5078c7b8133d0e1ddce826358d3740a0aa2fa98d",
+    "embedding_model_revision": null
+  }
+}
