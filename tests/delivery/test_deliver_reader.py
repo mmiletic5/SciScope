@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import ast
 import importlib
+import inspect
 import json
 import re
 import socket
@@ -497,3 +498,129 @@ def test_guide_forbidden_claims() -> None:
         "installed pgvector",
     ):
         assert forbidden.lower() not in text.lower()
+
+
+@pytest.mark.parametrize(
+    "payload,code",
+    [
+        pytest.param(
+            b"[" * 100000 + b"]" * 100000,
+            "reader-json",
+            id="deep-nesting",
+        ),
+        pytest.param(b'{"x":1e999}', "reader-json", id="overflow"),
+        pytest.param(b"9" * 5000, "reader-json", id="integer-limit"),
+        pytest.param(b'{"x":-1e999}', "reader-json", id="negative-overflow"),
+        pytest.param(b"{}\n \t", "reader-line", id="final-whitespace"),
+    ],
+)
+def test_jsonl_review_errors(tmp_path: Path, payload: bytes, code: str) -> None:
+    """Reject parser limits, numeric overflow and terminal blank records."""
+    path = tmp_path / "SYNTHETIC-review.jsonl"
+    path.write_bytes(payload)
+    with pytest.raises(reader.DeliveryReadError) as caught:
+        list(reader.iter_jsonl(path))
+    assert_error(caught.value, code, path)
+
+
+def test_jsonl_decoding_before_records(tmp_path: Path) -> None:
+    """Decode the whole file before yielding even an earlier valid record."""
+    path = tmp_path / "SYNTHETIC-review.jsonl"
+    path.write_bytes(b'{"i":1}\n\xff')
+    yielded: list[dict[str, object]] = []
+    with pytest.raises(reader.DeliveryReadError) as caught:
+        for record in reader.iter_jsonl(path):
+            yielded.append(record)
+    assert yielded == []
+    assert_error(caught.value, "reader-decoding", path)
+
+
+def test_jsonl_generator(tmp_path: Path) -> None:
+    """Expose a generator rather than an eager object-list iterator."""
+    path = tmp_path / "SYNTHETIC-review.jsonl"
+    path.write_bytes(b"{}\n")
+    iterator = reader.iter_jsonl(path)
+    assert inspect.isgenerator(iterator)
+    assert list(iterator) == [{}]
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        pytest.param(b'{"x":1e999}', id="overflow"),
+        pytest.param(b"[" * 100000 + b"]" * 100000, id="deep-nesting"),
+    ],
+)
+def test_mapping_review_decoding(tmp_path: Path, payload: bytes) -> None:
+    """Use manifest codes for numeric overflow and recursion failures."""
+    source = tmp_path / "SYNTHETIC-review.json"
+    source.write_bytes(payload)
+    path = vectors(tmp_path, (1.0, 2.0))
+    with pytest.raises(reader.DeliveryReadError) as caught:
+        reader.vectors_by_chunk_id(source, path, dimensions=2)
+    assert_error(caught.value, "reader-manifest", source)
+
+
+@pytest.mark.parametrize(
+    "api",
+    [
+        pytest.param("vectors", id="vectors"),
+        pytest.param("mapping", id="mapping"),
+    ],
+)
+def test_embedded_nul_path(tmp_path: Path, api: str) -> None:
+    """Normalize Path.read_bytes ValueError without leaking its context."""
+    path = "SYNTHETIC\0x"
+    with pytest.raises(reader.DeliveryReadError) as caught:
+        if api == "vectors":
+            reader.load_vectors(path, dimensions=2, count=1)
+        else:
+            reader.vectors_by_chunk_id(path, tmp_path / "absent", dimensions=2)
+    assert_error(caught.value, "reader-io", Path(path))
+    assert caught.value.__suppress_context__
+
+
+@pytest.mark.parametrize(
+    "dimensions", [pytest.param(0, id="zero"), pytest.param(True, id="bool")]
+)
+def test_mapping_argument_precedence(tmp_path: Path, dimensions: int) -> None:
+    """Reject dimensions before opening a nonexistent manifest."""
+    source = tmp_path / "SYNTHETIC-missing.json"
+    with pytest.raises(reader.DeliveryReadError) as caught:
+        reader.vectors_by_chunk_id(source, source, dimensions=dimensions)
+    assert_error(caught.value, "reader-argument", source)
+
+
+@pytest.mark.parametrize(
+    "api",
+    [pytest.param(api, id=api) for api in ("jsonl", "vectors", "mapping")],
+)
+def test_string_and_path_parity(tmp_path: Path, api: str) -> None:
+    """Accept both supported path forms consistently for every API."""
+    path = vectors(tmp_path, (1.0, 2.0))
+    source = manifest(tmp_path, {"entries": [{"chunk_id": "SYNTHETIC-a"}]})
+    if api == "jsonl":
+        path.write_bytes(b'{"text":"SYNTHETIC"}\n')
+        assert list(reader.iter_jsonl(str(path))) == list(
+            reader.iter_jsonl(path)
+        )
+    elif api == "vectors":
+        assert reader.load_vectors(str(path), dimensions=2, count=1) == (
+            reader.load_vectors(path, dimensions=2, count=1)
+        )
+    else:
+        assert reader.vectors_by_chunk_id(
+            str(source), str(path), dimensions=2
+        ) == (reader.vectors_by_chunk_id(source, path, dimensions=2))
+
+
+def test_duplicate_before_vector_io(tmp_path: Path) -> None:
+    """Reject duplicate IDs even when the vectors file does not exist."""
+    source = manifest(
+        tmp_path,
+        {"entries": [{"chunk_id": "SYNTHETIC-a"}, {"chunk_id": "SYNTHETIC-a"}]},
+    )
+    path = tmp_path / "SYNTHETIC-missing.f32"
+    with pytest.raises(reader.DeliveryReadError) as caught:
+        reader.vectors_by_chunk_id(source, path, dimensions=2)
+    assert_error(caught.value, "reader-duplicate-id", source)

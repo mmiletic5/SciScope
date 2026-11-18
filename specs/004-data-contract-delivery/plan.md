@@ -3009,3 +3009,169 @@ file until pyproject.toml, then reads once per guide test. No fixed parent
 depth, current-directory assumption, data access or new fixture dependency.
 Evidence/backlog appendices record only this phase and verification limits.
 No automated or human completion is asserted. Stop after Group F Phase 1.
+
+## Group F — Phase 2 (T006)
+
+Person 1 authorizes the reader implementation, new review-gap tests, guide,
+this append-only addendum and restoration of the two tracking files. Starting
+HEAD is 753a521 on 004-data-contract-delivery; the only initial untracked file
+is data/pilot/delivery_manifest.json, which is not modified. No task checkbox,
+dependency, upstream module, existing test behavior, git staging, commit or
+push changes. This authorization supersedes the preceding Phase 1 stop.
+
+Housekeeping: EVIDENCE.md and PROJECT_TODO.md are restored byte-for-byte to
+their git-object contents at 8c51817, removing the Phase 1 entry/note. The
+explicit project-owner decision overrides intermediate-group tracking updates:
+both files next receive feature evidence/status only in T007. The historical
+Phase 1 text above is preserved; it does not authorize new tracking notes.
+
+Person 1 reports observed Windows Phase 1 RED: new file 110 failed, 2 passed;
+tests/delivery 110 failed, 1535 passed, 2 skipped; whole suite 110 failed,
+2463 passed, 2 skipped. These supplied observations match Phase 1's prediction;
+they were not rerun here. The new Phase 2 tests below were **not RED-verified**:
+they are added together with the implementation under explicit authorization.
+
+### Implementation requirements R1–R8
+
+- **R1 Mapping order.** vectors_by_chunk_id checks positive exact-int
+  dimensions (bool rejected) -> reader-argument; reads manifest bytes ->
+  reader-io; strict UTF-8/no BOM and JSON -> reader-manifest; complete shape
+  (object, nonempty entries list, every entry object with str chunk_id) ->
+  reader-manifest; duplicate IDs -> reader-duplicate-id BEFORE vector I/O;
+  reads vectors -> reader-io; checks exact len(entries) * dimensions * 4 ->
+  reader-size; checks finite values -> reader-nonfinite. Return
+  dict(zip(ids, rows, strict=True)), preserving entry order. Shape is checked
+  for all entries before duplicate detection. Ignore manifest dimensions,
+  hashes and extra fields; never read chunks.jsonl.
+- **R2 Vector loading.** load_vectors checks dimensions/count via
+  type(value) is int and value > 0, then read, exact size, then
+  struct.unpack("<" + "f" * n, data), then math.isfinite on every value.
+  Cast the struct result for static typing, without converting values;
+  slice it into a tuple of row tuples of Python floats. No array or
+  memoryview.cast/native-endian decoding. Mapping delegates to this logic.
+- **R3 Generator and whole-file gates.** iter_jsonl is a generator. At first
+  next(), read bytes, reject BOM/invalid UTF-8 as reader-decoding, then reject
+  raw U+000D anywhere as reader-json. Only then text.split("\n"). A final
+  empty segment ends iteration; every other empty or spaces/tabs-only segment,
+  including a whitespace-only FINAL segment, is reader-line. Parse one line
+  when reached; non-object JSON is reader-line. Earlier records can precede
+  later JSON syntax errors, but never a whole-file UTF-8/BOM/CR failure.
+  This explicitly refines Phase 1 F3's general incremental-error wording.
+- **R4 Shared JSON hooks.** Both JSONL and manifest use parse_constant to
+  reject NaN/Infinity/-Infinity and parse_float to reject nonfinite results
+  including positive/negative 1e999 overflow. Catch ValueError (including
+  integer-digit limits) and RecursionError (deep nesting), mapping to
+  reader-json for lines and reader-manifest for manifests. Duplicate keys
+  remain accepted with last value winning. No validation-module imports.
+- **R5 Error construction.** DeliveryReadError.__init__ calls
+  super().__init__(code), then sets self.code. Every translated exception
+  inside an except block is raised as DeliveryReadError(...) from None, so
+  displayed context never exposes paths/content. Messages are exactly codes.
+- **R6 I/O.** A shared private helper uses Path(path).read_bytes() and catches
+  (OSError, ValueError), including embedded-NUL paths, as reader-io from None.
+  Accept str and os.PathLike[str] for all public path parameters.
+- **R7 Standalone imports.** Only __future__, collections, json, math, os,
+  pathlib, struct and typing roots; no sciscope imports, logging, printing,
+  CLI or import-time work. No new dependency; dependencies = [] remains.
+- **R8 Types.** Public APIs retain F1 signatures, strict mypy is clean,
+  no Any in public signatures and no type-ignore comments. Private helpers
+  separate safe reads, UTF-8 decoding and finite JSON parsing.
+
+### Brief renewed solution-research and added tests
+
+Applied solution-research and google-python-engineering before new tests.
+The existing research and local validate decoder, pack_vector layout,
+contract, command defaults and F1–F10 remain the basis. Compared standalone
+stdlib hooks/struct with importing delivery.validate or adding a binary-reader
+dependency: retain stdlib under R4/R7 because the reader's duplicate-key,
+CR and error policies differ and single-file copying is required. No network,
+new package/version/license verification, dependency or security audit.
+R1–R8 settle the implementation choices; no new feature scope is inferred.
+
+All 27 original test definitions/decorators are unchanged. Only inspect is
+added to imports, plus eight new test functions with 17 expanded cases:
+
+| New function / cases | Count |
+| --- | ---: |
+| test_jsonl_review_errors: 100000 nested arrays, positive overflow, 5000-digit integer, negative overflow, whitespace-only final segment | 5 |
+| test_jsonl_decoding_before_records: bad UTF-8 after a valid line yields no records | 1 |
+| test_jsonl_generator: inspect.isgenerator plus valid consumption | 1 |
+| test_mapping_review_decoding: positive overflow and 100000 nesting | 2 |
+| test_embedded_nul_path: load_vectors and mapping, reader-io and suppressed context | 2 |
+| test_mapping_argument_precedence: zero/bool dimensions before missing-manifest I/O | 2 |
+| test_string_and_path_parity: all three public functions | 3 |
+| test_duplicate_before_vector_io: duplicate IDs with a missing vector file | 1 |
+| Total new | 17 |
+
+Counts are static AST parameter expansion, not pytest collection. The
+5000-digit case uses the default Python 3.12 integer-string limit; no test
+changes interpreter limits. No existing test is weakened, deleted, skipped
+or marked xfail. New tests are synthetic/offline and use tmp_path/write_bytes;
+they were not run RED before implementation and are not claimed as observed
+pytest GREEN in this environment.
+
+### Guide facts and sources
+
+docs/DELIVERY_GUIDE.md has 112 lines and 805 whitespace-delimited words;
+both Python blocks parse and are Ruff-formatted. The opening sample reads
+dimensions from delivery_manifest.embedding_set, rather than guessing.
+The source-trace example runs independently through Python stdin, applies
+the XML safety gate, verifies the XML digest, resolves a paragraph, slices
+text[start:end] in Python code points, and invokes show/check-quote via
+subprocess argument lists. No .NET substring/native quote parsing is used.
+It requires matching local F001 acquisition metadata/XML, not delivered
+paragraphs. All checks below are offline; external links were not revisited.
+
+| Guide fact | Repository source inspected |
+| --- | --- |
+| Six files, version 0.3.0/draft, ID mapping, informational source digests, compatible code/schema and matching reports | spec.md FR-001/FR-005/FR-009; D1–D10, R20/R22/R28/R29 and amendments above; delivery/contract.py and package.py |
+| Pilot counts 17/319/728; exactly 2 hard splits, 223 skipped elements, 33 back-matter exclusions; skipped-kind policy | Committed data/pilot/chunk_report.json summary/policy; parse_report.json summary 17 succeeded/0 failed |
+| Provider openai, text-embedding-3-small, 1536 requested/returned dimensions | Committed data/pilot/embedding_report.json; read-only delivery_manifest.embedding_set confirms dimensions and empty query_prefix |
+| Query fields, prefix and dynamic example dimensions | delivery/package.py::build_delivery_manifest; existing data/pilot/delivery_manifest.json read only, never modified |
+| Three report defaults, CLI flags/exit classes, package directory | DeliveryInputs and pipeline/cli.py::_delivery_validation_paths/_validate_delivery |
+| Uninstalled-source PYTHONPATH | pyproject.toml tool.uv.package = false and pytest.pythonpath = src |
+| Archive command, temporary extraction, checksum process | Approved plan/T007; exact archive hash not yet recorded, no invented or placeholder hash |
+| Raw EN/en and case-insensitive comparison | Research artifact, D3/R11 amendment; preserve original language |
+| DOI-to-local-XML filename and digest | plos_pilot/download.py quote(doi, safe="") + .xml; jats/source.py, locator.SourceDocument and parser.paragraph_text |
+| show/check-quote argument names and source lookup | jats/cli.py parser, _show and _check_quote; matching metadata/acquisition defaults required |
+| Citation fields, sentinel, omitted as XML-name list, abstract context and inherited limits | Contract/record table, R02/R24–R26, known limits above and F003 plan; omitted is a list, rather than the request's informal flag label |
+| pgvector 16,000 storage / 2,000 HNSW and IVFFlat index dimensions | research.md and plan official-source verification dated 2026-11-17; cited original URLs, no fresh verification or installed-version claim |
+
+The restored EVIDENCE.md contains no F004 archive SHA256. The guide therefore
+instructs Person 1 to record it under F004 before handoff and compare the
+received archive against that recorded value; it does not falsely assert
+an existing recorded hash. Actual archive execution/extraction/validation
+and the team's pgvector version remain UNVERIFIED, assigned to later work.
+
+### Predicted GREEN
+
+Expected Group F file: **129 passed** = original 112 + added 17 (35 test
+functions). Expected tests/delivery: **1662 passed, 2 skipped** = previously
+1535 passed + 110 previously failing + 17 added. Expected whole suite on
+the supplied Windows baseline: **2590 passed, 2 skipped** = previous
+2463 passed + 110 now passing + 17 added (2592 cases total). The two
+existing symlink skips are unchanged. If both probes succeed, expect 1664
+delivery passes and 2592 whole-suite passes instead. These are predictions,
+not observed pytest results or human acceptance.
+
+### Verification and limitations
+
+| Check | Observed result or explicit limitation |
+| --- | --- |
+| User's Phase 1 RED | Supplied observations above; not rerun here |
+| Local python -m py_compile on reader.py and test_deliver_reader.py | PASS |
+| Direct reader import, in-memory Path.read_bytes smoke, actual embedded-NUL read normalization | PASS: Unicode/order/generator, deferred JSON versus upfront UTF-8, parser limits/overflow, last-wins keys, empty input, float32 rows, ID order, argument/duplicate/size precedence and nonfinite rejection |
+| Initial workspace TemporaryDirectory smoke | BLOCKED by sandbox PermissionError on writing its first file, before reader execution; Python automatic cleanup and a sandbox cleanup attempt also denied; the one directory was subsequently removed using a reviewed nonrecursive native PowerShell removal |
+| Guide static checks | PASS: 112 lines/805 words, two Python blocks parse, opening helper/warning, all 26 keywords, no forbidden substrings, link targets checked offline |
+| Direct .venv/Scripts/ruff.exe check . --no-cache | PASS; repeated after smoke-directory cleanup |
+| Direct .venv/Scripts/ruff.exe format --check . | PASS; 131 files including guide/addendum |
+| Direct .venv/Scripts/mypy.exe src | PASS; 42 source files |
+| git diff --check / static scope guards | PASS; tracking bytes equal 8c51817, original 27 test definitions unchanged; plan append-only |
+| uv/locked tools, focused/full pytest and tmp_path fixtures | NOT RUN under the inherited sandbox limitation; Person 1 runs locally |
+| Real pilot reader/mapping, archive, source trace example execution, database, CI, human verification | NOT RUN / UNVERIFIED; no completion or installed-database claim |
+
+The in-memory smoke substitutes byte reads only; it does not establish real
+Windows file behavior or pytest fixture success. The first Ruff scan during
+the failed temporary-file attempt passed while reporting an inaccessible
+directory warning; final scans follow cleanup. No network or paid AI call.
+Stop after Group F Phase 2; no automatic T007 or further feature work.
