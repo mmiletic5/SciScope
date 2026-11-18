@@ -36,3 +36,7 @@ pilot produced 728 chunks from 319 sections of 17 papers, including 2
 hard-split chunks. Retrieval quality is NOT VERIFIED; Golden v0 is PENDING.
 
 The unimplemented local-model guidance above remains a proposal, not a measured result.
+
+The F004 [delivery guide](DELIVERY_GUIDE.md) describes the implemented pilot
+handoff and source tracing; [DATA_CONTRACT.json](DATA_CONTRACT.json) is the
+single source for flat record shapes and manifest-entry vector ownership.

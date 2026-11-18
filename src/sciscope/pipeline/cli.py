@@ -30,6 +30,8 @@ from sciscope.chunking.validate import (
     read_validation_json,
     validate_chunks,
 )
+from sciscope.delivery import package as delivery_package
+from sciscope.delivery import validate as delivery_validate
 from sciscope.embedding.config import (
     EmbeddingCacheError,
     EmbeddingConfig,
@@ -56,6 +58,21 @@ from sciscope.embedding.provider import Embedder
 from sciscope.embedding.validate import (
     validate_embedding_set,
     validate_embedding_structure,
+)
+
+_DELIVERY_FIELDS = (
+    "metadata",
+    "acquisition_manifest",
+    "sections",
+    "paragraphs",
+    "parse_report",
+    "chunks",
+    "chunk_report",
+    "vectors",
+    "embedding_manifest",
+    "embedding_report",
+    "output_dir",
+    "committed_manifest",
 )
 
 
@@ -321,6 +338,131 @@ def _print_findings(findings: list[Finding]) -> None:
     print(f"failures: {sum(counts.values())}", file=sys.stderr)
 
 
+def _validate_delivery(argv: list[str]) -> int:
+    """Validate a received delivery through the dedicated command route."""
+    if "--help" in argv[1:] or "-h" in argv[1:]:
+        print(
+            "usage: validate-delivery [--package-dir PATH] "
+            "[--parse-report PATH] [--chunk-report PATH] "
+            "[--embedding-report PATH]"
+        )
+        return 0
+    try:
+        package_dir, reports = _delivery_validation_paths(argv[1:])
+    except ConfigError:
+        _print_findings([Finding("invalid-usage", 1, ("report",))])
+        return 2
+    try:
+        outcome = delivery_validate.validate_package(package_dir, reports)
+        if outcome.findings:
+            _print_findings(list(outcome.findings))
+            return 2 if outcome.structural else 1
+        manifest = cast(
+            Mapping[str, Any],
+            outcome.loaded.manifests["delivery_manifest.json"],
+        )
+        counts = manifest["counts"]
+        vectors = manifest["files"]["vectors.f32"]["record_count"]
+        print(
+            f"validated delivery papers: {counts['papers']} "
+            f"sections: {counts['sections']} chunks: {counts['chunks']} "
+            f"vectors: {vectors} files: 6 failures: 0"
+        )
+    except Exception:
+        _print_findings([Finding("delivery-failed", 1, ("report",))])
+        return 1
+    return 0
+
+
+def _delivery_validation_paths(
+    arguments: list[str],
+) -> tuple[Path, delivery_validate.PackageReports]:
+    """Parse exact receiver paths, rejecting duplicate and empty options.
+
+    Raises:
+        ConfigError: If an option is unknown, repeated or lacks a value.
+    """
+    defaults = delivery_package.DeliveryInputs()
+    values = {
+        "--package-dir": defaults.output_dir,
+        "--parse-report": defaults.parse_report,
+        "--chunk-report": defaults.chunk_report,
+        "--embedding-report": defaults.embedding_report,
+    }
+    seen: set[str] = set()
+    index = 0
+    while index < len(arguments):
+        option, equals, value = arguments[index].partition("=")
+        if option not in values or option in seen:
+            raise ConfigError("invalid-usage")
+        if not equals:
+            index += 1
+            if index == len(arguments) or arguments[index].startswith("-"):
+                raise ConfigError("invalid-usage")
+            value = arguments[index]
+        if not value:
+            raise ConfigError("invalid-usage")
+        seen.add(option)
+        values[option] = Path(value)
+        index += 1
+    return values["--package-dir"], delivery_validate.PackageReports(
+        values["--parse-report"],
+        values["--chunk-report"],
+        values["--embedding-report"],
+    )
+
+
+def _deliver(argv: list[str]) -> int:
+    """Run delivery with dedicated parsing and sanitized finding diagnostics."""
+    try:
+        if "--help" in argv[1:] or "-h" in argv[1:]:
+            options = " ".join(
+                "[--" + name.replace("_", "-") + " PATH]"
+                for name in _DELIVERY_FIELDS
+            )
+            print("usage: deliver " + options)
+            return 0
+        summary = delivery_package.run_delivery(_delivery_inputs(argv[1:]))
+    except ConfigError:
+        _print_findings([Finding("invalid-usage", 1, ("report",))])
+        return 2
+    except delivery_package.DeliveryError as error:
+        _print_findings(list(error.findings))
+        return error.exit_code
+    except OSError:
+        _print_findings([Finding("output-write-failed", 1, ("report",))])
+        return 1
+    except Exception:
+        _print_findings([Finding("delivery-failed", 1, ("report",))])
+        return 1
+    print(
+        f"delivered papers: {summary.papers} sections: {summary.sections} "
+        f"chunks: {summary.chunks} vectors: {summary.vectors} "
+        f"files: {summary.files}"
+    )
+    return 0
+
+
+def _delivery_inputs(arguments: list[str]) -> delivery_package.DeliveryInputs:
+    """Parse exact delivery options without argparse's environment probes."""
+    defaults = delivery_package.DeliveryInputs()
+    values = {name: getattr(defaults, name) for name in _DELIVERY_FIELDS}
+    options = {"--" + name.replace("_", "-"): name for name in values}
+    index = 0
+    while index < len(arguments):
+        option, equals, value = arguments[index].partition("=")
+        if option not in options:
+            raise ConfigError("invalid-usage")
+        if not equals:
+            index += 1
+            if index == len(arguments) or arguments[index].startswith("-"):
+                raise ConfigError("invalid-usage")
+            value = arguments[index]
+        values[options[option]] = Path(value)
+        index += 1
+    return delivery_package.DeliveryInputs(**values)
+
+
 def _dry_run(args: argparse.Namespace) -> int:
     """Print a read-only embedding estimate without environment or transport."""
     try:
@@ -487,6 +629,11 @@ def main(
 ) -> int:
     """Run chunk generation with sanitized statuses and numeric output."""
     _configure_console()
+    delivery_argv = sys.argv[1:] if argv is None else argv
+    if delivery_argv and delivery_argv[0] == "validate-delivery":
+        return _validate_delivery(delivery_argv)
+    if delivery_argv and delivery_argv[0] == "deliver":
+        return _deliver(delivery_argv)
     try:
         args = _parser().parse_args(argv)
         if args.command == "validate":

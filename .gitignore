@@ -32,6 +32,7 @@ data/processed/
 data/downloads/
 data/corpora/
 data/embeddings/
+data/delivery/
 *.npy
 *.npz
 *.sqlite

@@ -199,6 +199,8 @@ dependency resolution, and CI remain unverified. Human acceptance: NOT PROVIDED.
 - **Explicit decision:** ACCEPTED — Person 1 explicitly accepted SC-001..SC-004 on 2026-11-15 (statement supplied by Person 1 in chat).
 - **Final status:** DONE
 
+- **F001 correction observed during F004 (2026-11-18):** The committed `data/pilot/metadata.jsonl` is the source: language is 4 `"EN"` and 13 `"en"` (raw xml:lang), not `"EN 17/17"`. The original F001 record above is preserved.
+
 ### F002 — JATS parser, sections, and locators (T001–T008)
 
 - **Owner:** Person 1
@@ -261,3 +263,81 @@ dependency resolution, and CI remain unverified. Human acceptance: NOT PROVIDED.
   - SC-006: see decision.
 - **Explicit decision:** ACCEPTED - Person 1 explicitly accepted SC-001..SC-006 on 2026-11-17 (statement supplied by Person 1 in chat).
 - **Final status:** DONE
+
+### F004 — Data contract refresh and pilot delivery (T001–T007)
+
+- **Owner:** Person 1; shared-contract and received-package reviewer: Person 2.
+- **Feature specification and plan:** `specs/004-data-contract-delivery/{spec.md,plan.md,tasks.md,research.md}`; specification and plan approved by Person 1 on 2026-11-17, including R22, R28, R29, the D5 manifest-entry ID mapping amendment and paper-level abstract exclusion. T007 docs-only synchronization explicitly authorized on 2026-11-18.
+- **Current state:** DONE.
+- **Authorization and scope:** Groups A–F GREEN as supplied by Person 1; this session changes documentation and task state only. No source, tests, data, dependencies, network, live provider calls, staging, commit or push. T001–T006 checked at Person 1's explicit instruction; T007, P2-20 and P2-24 remain unchecked. These task ticks do not constitute feature acceptance. Stop after F004; no F005 or Golden work.
+- **Files changed:** F004 implementation described in plan.md: `docs/DATA_CONTRACT.json`, `src/sciscope/delivery/{__init__,contract,papers,package,publish,validate,reader}.py`, delivery CLI wiring, `tests/delivery/*`, `.gitignore` and feature artifacts. This T007 session edits only `EVIDENCE.md`, `PROJECT_TODO.md`, `docs/{DATA_MODEL,DECISIONS,CHUNKING_STRATEGY,ARCHITECTURE,DELIVERY_GUIDE}.md` and `specs/004-data-contract-delivery/{plan,tasks}.md`. The generated six-file package and ZIP are gitignored; `data/pilot/delivery_manifest.json` is visible but UNTRACKED, left for the user to add/commit.
+- **Research:** Applied `solution-research` for a brief internal check against the approved research/plan, single schema, declarative runtime shapes, reader, writer, validator and `_join_pieces`. Retain the existing flat six-file format, stdlib runtime and manifest-entry ID join; no new design or dependency. Applied `google-python-engineering` to read-only Python/example inspection. No network permitted: external documentation, current versions/licenses and installed pgvector compatibility were NOT VERIFIED in this session; earlier official-source research remains attributed to research.md/plan.md.
+- **Tests created or updated:** NONE in this docs-only session. Groups A–F used the existing synthetic offline delivery tests; no paid AI test calls.
+- **RED/GREEN checks:** The following are reported observations, not pytest reruns by this assistant. Person 1's environment: Windows PowerShell 5.1, Python 3.12, `uv run --locked`; focused command `uv run --locked python -m pytest tests/delivery -q`, whole-suite command `uv run --locked pytest -q`.
+
+  | Group | RED | GREEN (delivery / whole suite unless noted) | Evidence distinction |
+  | --- | --- | --- | --- |
+  | A (T001–T002) | NOT RECORDED | Focused observed count NOT RECORDED / 1638 passed | User-reported local GREEN in Group B addendum; 710 focused is a prediction, not an observed count |
+  | B (T003) | NOT RECORDED | Focused observed count NOT RECORDED / 1711 passed, 1 skipped | Combined A/B user-reported GREEN in Group C addendum; predicted RED not promoted to observation |
+  | C (T004) | Whole suite: 483 failed, 1711 passed, 2 skipped | 1266 / 2194 passed, 2 skipped | Person 1 supplied observation |
+  | D (T005 library) | 145 failed, derived by reviewer; user said only expected tests failed | 1411 / 2339 passed, 2 skipped | Exact user RED count NOT RECORDED; derivation identified explicitly |
+  | E (T005 CLI/staging) | 122 failed (114 NotImplementedError + 8 AssertionError), 1411 / 2339 passed, 2 skipped | 1533 / 2461 passed, 2 skipped | Person 1 supplied observation |
+  | F (T006) | New file: 110 failed, 2 passed; delivery: 1535 passed, whole suite: 2463 passed, each plus 110 failed and 2 skipped | Reader file: 129 passed; delivery: 1662 passed, 2 skipped; whole suite: 2590 passed, 2 skipped | Person 1 supplied observation |
+
+  The two final Windows skips are symlink tests: this account lacks symlink privilege. They were skipped, not passed. Per-group timings and additional observed outputs not supplied above: NOT RECORDED.
+- **Other automated checks / independent AI review:** Person 1 reports Claude on Linux, Python 3.13, at HEAD `3a49cb6`: whole suite 2592 passed; `mypy src` clean (42 files). Throwaway reference implementations for Groups C–F were kept outside the repository and diffed against Codex code. Differential fuzz: reader 5,500 cases; CLI argv 1,500 cases; no differences, exceptions or content leaks. This is independent AI review, NOT human verification and NOT branch CI. Post-documentation pytest, Ruff and mypy: NOT RUN in this session; exact user commands follow in the handoff. Static document/link/format and diff checks are recorded separately below.
+- **Known issues and prior attempts:** Person 1's first body-trace helper reported `text-matches: False` because it joined every span with `"\n\n"`. The helper was corrected to preserve source characters between same-paragraph spans. This was a script error, not a data defect. Omitted content remains 223 skipped elements and 33 back-matter exclusions; abstract chunks lack heading context; exactly 2 hard splits; O(n²) validator scans; no offline proof of vector origin or retrieval-quality claim. Golden v0 is PENDING and out of scope.
+- **Awaiting human confirmation:** No; Person 1 acceptance is recorded below. Person 2 PR review: NOT PERFORMED by team agreement (not a failure). Person 2's verification of the received extracted package: NOT RUN. Branch CI passed per Person 1 on 2026-11-18; the docs-only close-out CI result is NOT RECORDED, and Person 1 waits for it to be green before squash merge. Installed pgvector version is NOT VERIFIED. Live provider calls in F004: none (NOT RUN).
+
+#### Human evidence
+
+- **Verifier:** Person 1, as reported in the task instructions; assistant checks below are separate.
+- **Verification date:** 2026-11-18 unless otherwise stated; exact dates for individual group test runs beyond the supplied record are NOT RECORDED.
+- **Exact manual commands or actions:** Real-pilot `deliver`, `validate-delivery`, six-file hash comparison after rerunning `deliver`, manifest-copy hash comparison, missing-file/truncated-vector negative controls on a copy, guide block 1, local-XML source traces and reconstruction of every chunk. Archive command: `tar -a -c -f data/delivery/pilot-delivery.zip -C data/delivery pilot`; extraction with `tar -x -f` into a fresh temporary directory; then `validate-delivery --package-dir <temp>/pilot` using the three committed parse/chunk/embedding reports. Exact additional argv not supplied: NOT RECORDED.
+- **Observed outcome:**
+  - Real package `data/delivery/pilot/`: `validate-delivery` exit 0, `validated delivery papers: 17 sections: 319 chunks: 728 vectors: 728 files: 6 failures: 0`.
+  - Repeated `deliver` on the same inputs: all six file hashes identical (`identical: True`), exit 0. Package manifest and `data/pilot/delivery_manifest.json` SHA256 identical (`True`); the latter is not yet tracked or claimed committed.
+
+  | Package file | Bytes | SHA256 (Person 1 observation) |
+  | --- | ---: | --- |
+  | chunks.jsonl | 1,264,011 | 77DAC1D542D8DC4F55C205AE3DB2E92A4906091963760AED38F22B9D0005FDE1 |
+  | delivery_manifest.json | 2,518 | 998241789FD9675853962BDFDF98B15B0991BC4CDA103413B0ABC470666AF9D2 |
+  | embedding_manifest.json | 137,860 | 99185D5DB2F57726EA2224DFB66B67C413252AD6ABB120E58E4C01498561CA60 |
+  | papers.jsonl | 23,145 | 2E3B1A920BC123325F78D62FA18F2164ACAC1DAD9B20CC8B41F102A4F72FC9A1 |
+  | sections.jsonl | 211,478 | B41E3EF3F4930CEDCCA6607EAD5EE96B1DF1D7E400011B99D77D7EEE01644721 |
+  | vectors.f32 | 4,472,832 | 68FBCEE7CDA50686C528F32A5078C7B8133D0E1DDCE826358D3740A0AA2FA98D |
+
+  - Text comparison with existing evidence confirms `sections.jsonl` equals the F002 recorded hash; `chunks.jsonl`, `embedding_manifest.json` (F003 name `manifest.json`) and `vectors.f32` equal the F003 recorded hashes. This compares evidence text, not freshly read payload bytes.
+  - Negative controls on a copy: missing `sections.jsonl` → `delivery-missing-file`, exit 2. `vectors.f32` truncated by one byte → exit 1, four failures: `delivery-integrity-mismatch`, `delivery-report-mismatch`, `vectors-sha-mismatch`, `vectors-size`.
+  - Windows PowerShell 5.1 archive creation exit 0; SHA256 `6FA27AFAF334D6A87BE30A04F3D15A9573696C7C03DDCC5205C23D508F239F2C`. Archive bytes are NOT deterministic: this hash identifies this one file, which must be sent. Recreating it changes the hash and requires a new EVIDENCE line. Fresh-temp extraction exit 0 yielded six files with the sizes above. Extracted-package validation with the three committed reports exit 0, same success line (17/319/728/728, files 6, failures 0). Person 2's received extracted-package verification: NOT RUN.
+  - Reader guide block 1: `vectors_by_chunk_id` returned 728 vectors × 1536 dimensions; every chunk ID has a vector. Chunk-file order differs from vector order at 727 of 728 positions; manifest-entry ID ownership is essential.
+  - Abstract trace: chunk `86cf79fc1ec73244ad373940b8d5a48d98e1c4c1d49f66a7ba61a21907170e89`, `10.1371/journal.pone.0000395#abstract`, 1 span. Body trace: chunk `29ec463c4e1d3f4172ce42b0388445be08ca8d98df7a7e683dcc2fff7d77e04f`, `10.1371/journal.pone.0000395#sec-1`, 2 spans. Human-run guide helper used local XML in `data/raw/plos`; XML SHA256 matched. For both chunks, `check-quote` of the first span's slice exited 0; the same slice plus `" ZZZ"` exited 1 (negative control). No source prose is copied here.
+  - All 728 chunk texts reconstructed from spans: 0 mismatches, 5 same-paragraph joins. Rule from `chunking/core.py::_join_pieces`: consecutive spans of the same paragraph retain the source characters between them; spans of different paragraphs join with `"\n\n"`. The initial body helper error and its correction are recorded above.
+
+#### Criterion mapping and documentation review
+
+| Criterion | Status and evidence |
+| --- | --- |
+| SC-001 | PASS — Person 1-run real-package and extracted-package validation, 17 papers / 319 sections / 728 chunks, 0 failures |
+| SC-002 | PASS for reported six-file two-run identity and identical local manifest copy; committing that copy remains the user's action, NOT VERIFIED |
+| SC-003 | PASS, automated synthetic coverage only for the full six-kind/partial-set matrix (Groups B–E GREEN); Person 1 also ran the two real-copy negative controls above |
+| SC-004 | PASS — automated parity coverage GREEN (Groups A/C); branch CI `check_schema` passed per Person 1, reported on 2026-11-18 |
+| SC-005 | PASS — Person 1-run reader 728 × 1536 with every chunk ID mapped; 727 positional mismatches explicitly observed |
+| SC-006 | Static review PASS for no real article prose, actual credentials or actual machine absolute paths in the reviewed file set; existing literal examples described below. Human PR review and eventual committed manifest state NOT VERIFIED |
+| SC-007 | PASS — static review of plan.md R01–R29 and draft 0.3.0 docs, including omitted content, versions, raw language, locators and manifest ID mapping |
+| SC-008 | PASS — branch CI passed per Person 1 on 2026-11-18; Person 2 PR review: NOT PERFORMED by team agreement (not a failure); Person 1 acceptance recorded below |
+| FR-010 | COMPLETE — evidence/docs/task state synchronized; branch CI pass and Person 1 acceptance recorded; Person 2 PR review not performed by team agreement. Person 2 received-package verification remains NOT RUN; docs-only close-out CI result NOT RECORDED, awaited before squash merge |
+
+- **Assistant static review (this session):** Visible untracked manifest reviewed read-only: no article text, secrets, absolute paths, timestamps or self-hash; `Get-FileHash` equals `998241789FD9675853962BDFDF98B15B0991BC4CDA103413B0ABC470666AF9D2`. No package/data files were generated or changed. `git diff --name-only 8c51817..HEAD` at HEAD `3a49cb6` lists exactly `docs/DELIVERY_GUIDE.md`, `specs/004-data-contract-delivery/plan.md`, `src/sciscope/delivery/reader.py`, `tests/delivery/test_deliver_reader.py`; these and all nine documentation files edited here were inspected. They contain documentation, synthetic examples, hashes and identifiers, with no real article prose or actual credentials/machine absolute paths found. A literal Windows-path guard is present in the test/plan, and the historical plan contains an explicitly invented synthetic timestamp; documentation also has dated evidence. Thus literal timestamp/path-pattern absence across every reviewed file is NOT claimed. Timestamp/self-hash prohibition applies to the new manifest; retained paper `retrieved_at` and copied embedding `creation_date` are intentional upstream fields. No committed-state or exhaustive secret-scanner guarantee is claimed.
+- **Documentation checks (assistant, 2026-11-18):** Direct local `.venv/Scripts/ruff.exe format --check` over the nine edited Markdown files → PASS, 9 files already formatted (not a locked-tool result). Static read-only checks → PASS: 18 relative links resolve, 9 Markdown Python blocks parse; guide is 114 lines / 828 words, DATA_MODEL is 72 lines; guide first-block/never-zip rules, required keywords, forbidden substrings and unchanged Python examples checked against the existing guide requirements. Committed metadata case-sensitive counts → 4 EN / 13 en. `git diff --check` → PASS. Source/test/data tracked diff → none; untracked manifest left unchanged. These are documentation checks, not pytest or CI; all six post-edit user commands are listed in plan.md, with locked pytest/Ruff/mypy NOT RUN here.
+- **Explicit decision:** ACCEPTED - Person 1 explicitly accepted SC-001..SC-008 on 2026-11-18 (statement supplied by Person 1 in chat).
+- **Final status:** DONE
+
+#### CI and close-out
+
+- **Source:** Facts supplied by Person 1 in chat on 2026-11-18; no network verification or local rerun by this assistant.
+- **Branch CI:** Pull-request workflow `Bootstrap checks`, job `checks`: PASSED, reported by Person 1 on 2026-11-18. PR number: NOT RECORDED. CI run link/id: NOT RECORDED. Commit covered by the run: NOT RECORDED. The branch tip reviewed by Claude before the PR was `6ada8400c6e0eecfa427c66ee1714fc8aebf1c39`; this is not asserted to be the CI-covered commit. CI duration and per-step timings: NOT RECORDED.
+- **Close-out CI:** This docs-only close-out commit triggers one more CI run on the same PR. Its result is NOT RECORDED here; Person 1 waits for it to be green before squash merge. No commit is created by this assistant.
+- **Team agreement:** Person 1 reports a verbal Discord agreement: Person 2 does not review the PR; she receives the verified archive plus an explanatory handoff and continues independently. Person 2 PR review: NOT PERFORMED by team agreement (not a failure). Person 2's verification of the received extracted package: NOT RUN.
+- **State synchronization:** T007 and P2-20 checked following the supplied acceptance; P2-24 remains unchecked. Earlier session scope and observations above are retained as historical evidence. D-007 remains Proposed; Person 1 decides separately.
+- **Checks handoff:** Person 1 runs `uv run --locked pytest -q`, `uv run --locked ruff check . --no-cache`, `uv run --locked ruff format --check .`, `uv run --locked mypy src`, and `git diff --check`. These commands are NOT RUN by this assistant during this close-out.
