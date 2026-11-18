@@ -1,0 +1,658 @@
+{
+  "dataset_version": "v0",
+  "corpus_version": "pilot17-xml-1fff1573b610",
+  "questions": [
+    {
+      "question_id": "gq-sp-001",
+      "question_type": "single_paper_factual",
+      "question": "In the experiment where forager bees were injected with a virus and then tracked with tags at the hive entrance, on which days after injection did the proportion of foragers coming back differ significantly from sham-injected controls, and how large was the gap on the first of those days?",
+      "query_language": "en",
+      "expected_findings": "Return rates of IAPV-injected foragers differed significantly from PBS-injected controls on day 2 (p<0.01) and day 3 (p<0.05) after injection, but not on days 0, 1 and 4. On day 2 about 58.7% of controls returned versus 2.3% of IAPV-injected foragers; on day 3 it was 46.0% versus 0%.",
+      "relevant_papers": [
+        {
+          "doi": "10.1371/journal.pone.0077354",
+          "sections": [
+            "Results > Impairment of the homing ability of IAPV-infected honey bees"
+          ],
+          "evidence": [
+            {
+              "relevance_label": "3",
+              "quotation": "However, significant differences were found at 2 (p<0.01) and 3 (p<0.05) days post-injection between the two groups.",
+              "source_locator": "jats:v1:9e988203d350fdc5555b2d2b42409081743b75f179f269213784be971a11db54:/article[1]/body[1]/sec[3]/sec[4]/p[1]"
+            }
+          ]
+        }
+      ],
+      "reviewer": "Person 1",
+      "verification_status": "verified",
+      "verified_date": "2026-11-18",
+      "source_corpus_version": "pilot17-xml-1fff1573b610",
+      "notes": "The numbers in the reference answer are in the same paragraph as the quoted sentence."
+    },
+    {
+      "question_id": "gq-sp-002",
+      "question_type": "single_paper_factual",
+      "question": "Did younger and older worker pupae respond in the same direction, in terms of immune gene expression, when they were parasitized by Varroa mites?",
+      "query_language": "en",
+      "expected_findings": "In white-eyed pupae most immune-related genes were downregulated (13 downregulated in all cases, only four upregulated in at least one treatment). In brown-eyed pupae the Varroa-infested group showed the opposite pattern: the majority of genes were upregulated and only PPOact and spaetzle were downregulated.",
+      "relevant_papers": [
+        {
+          "doi": "10.1371/journal.pone.0187079",
+          "sections": [
+            "Results > Immune-related gene expression in white-eyed pupae",
+            "Results > Immune-related gene expression in brown-eyed pupae"
+          ],
+          "evidence": [
+            {
+              "relevance_label": "3",
+              "quotation": "In white-eyed pupae, only four genes were upregulated in at least one treatment, while 13 immune-related genes were downregulated in all cases.",
+              "source_locator": "jats:v1:1e69893e18efb3cde0fc7b9fec8d301cff0c24e4d9394c998829404333dbb327:/article[1]/body[1]/sec[3]/sec[1]/p[1]"
+            },
+            {
+              "relevance_label": "3",
+              "quotation": "The majority of genes tested were upregulated and only two genes, PPOact and spaetzle, were downregulated",
+              "source_locator": "jats:v1:1e69893e18efb3cde0fc7b9fec8d301cff0c24e4d9394c998829404333dbb327:/article[1]/body[1]/sec[3]/sec[2]/p[1]"
+            }
+          ]
+        }
+      ],
+      "reviewer": "Person 1",
+      "verification_status": "verified",
+      "verified_date": "2026-11-18",
+      "source_corpus_version": "pilot17-xml-1fff1573b610"
+    },
+    {
+      "question_id": "gq-sp-003",
+      "question_type": "single_paper_factual",
+      "question": "Among colony size, bee subspecies and apiary location, which of these significantly explained how much weight hives lost during one winter?",
+      "query_language": "en",
+      "expected_findings": "Only colony size class: larger colonies lost more weight than smaller ones (F3,9 = 15.236, p<0.005). Subspecies and locality showed no significant effect (p>0.05). Average daily loss was 0.039±0.013 kg/day across all 32 colonies.",
+      "relevant_papers": [
+        {
+          "doi": "10.1371/journal.pone.0258398",
+          "sections": [
+            "Results > Changes in colony weight (total weight loss and daily weight loss rate)"
+          ],
+          "evidence": [
+            {
+              "relevance_label": "3",
+              "quotation": "We could also observe that smaller colonies did not experience as much weight loss as larger colonies (Fig 3), where the effect of size class was significant (F3,9 = 15.236, p<0.005).",
+              "source_locator": "jats:v1:1774a31c914d3782bf83c7cae167ad94291d308957ff84cd16fd17add9531ba7:/article[1]/body[1]/sec[3]/sec[2]/p[2]"
+            },
+            {
+              "relevance_label": "3",
+              "quotation": "The other factors (Subspecies and Locality) showed no effects (p>0.05)",
+              "source_locator": "jats:v1:1774a31c914d3782bf83c7cae167ad94291d308957ff84cd16fd17add9531ba7:/article[1]/body[1]/sec[3]/sec[2]/p[2]"
+            }
+          ]
+        }
+      ],
+      "reviewer": "Person 1",
+      "verification_status": "verified",
+      "verified_date": "2026-11-18",
+      "source_corpus_version": "pilot17-xml-1fff1573b610"
+    },
+    {
+      "question_id": "gq-sp-004",
+      "question_type": "single_paper_factual",
+      "question": "In the free-flying bee experiment with delayed nectar rewards, how many bees in each reward-schedule group kept coming back for the whole experiment, and what did the authors conclude from the groups with longer delays?",
+      "query_language": "en",
+      "expected_findings": "All ten bees on the continuous-reinforcement control schedule, eight bees on the 15-second fixed interval and five on the 30-second fixed interval completed the experiment. No bee on the 60-second or 120-second fixed interval kept responding for 20 FI sessions, which the authors read as bees being unable to tolerate fixed intervals longer than one minute.",
+      "relevant_papers": [
+        {
+          "doi": "10.1371/journal.pone.0101262",
+          "sections": [
+            "Results"
+          ],
+          "evidence": [
+            {
+              "relevance_label": "3",
+              "quotation": "No 0-60-X and 0-120-X subjects maintained responding for 20 FI sessions; this drop-out effect indicates our subjects could not tolerate FI schedules longer than one minute.",
+              "source_locator": "jats:v1:3cf480b5a2c6f6106ae88519af73d75c43000bae79bed05f8c32ef026c8ee358:/article[1]/body[1]/sec[3]/p[2]"
+            }
+          ]
+        }
+      ],
+      "reviewer": "Person 1",
+      "verification_status": "verified",
+      "verified_date": "2026-11-18",
+      "source_corpus_version": "pilot17-xml-1fff1573b610"
+    },
+    {
+      "question_id": "gq-sp-005",
+      "question_type": "single_paper_factual",
+      "question": "Did mixing a multivitamin supplement into the sugar syrup improve weight or survival of caged workers, and which dietary factor did?",
+      "query_language": "en",
+      "expected_findings": "No multivitamin dosage independently improved dry body weight or longevity. Ad libitum access to pollen consistently increased body weight (in both seasons) and lifespan.",
+      "relevant_papers": [
+        {
+          "doi": "10.1371/journal.pone.0328626",
+          "sections": [
+            "Discussion",
+            "Results > Dry body weight"
+          ],
+          "evidence": [
+            {
+              "relevance_label": "3",
+              "quotation": "On the other hand, none of the multivitamin dosages proposed here independently improved dry body weight and longevity",
+              "source_locator": "jats:v1:bda31c1415b23c162353e67e5996a2a12e5828a326b05246b709c0cd4349508e:/article[1]/body[1]/sec[4]/p[1]"
+            },
+            {
+              "relevance_label": "3",
+              "quotation": "regardless of season, experimental workers given ad libitum access to pollen consistently had significantly higher body weights",
+              "source_locator": "jats:v1:bda31c1415b23c162353e67e5996a2a12e5828a326b05246b709c0cd4349508e:/article[1]/body[1]/sec[3]/sec[2]/p[2]"
+            }
+          ]
+        }
+      ],
+      "reviewer": "Person 1",
+      "verification_status": "verified",
+      "verified_date": "2026-11-18",
+      "source_corpus_version": "pilot17-xml-1fff1573b610"
+    },
+    {
+      "question_id": "gq-sp-006",
+      "question_type": "single_paper_factual",
+      "question": "How did the reproductive quality of drones reared on wax containing a miticide mixture compare with drones reared on clean wax, and how did an agrochemical mixture compare?",
+      "query_language": "en",
+      "expected_findings": "Drones reared on wax with the fluvalinate+coumaphos miticide mixture had sperm viability of 80.0% ± 2.87% versus 96.9% ± 0.64% in controls (significantly lower, P<0.0001). The chlorothalonil+chlorpyrifos mixture gave 93.2% ± 1.16%, a small but statistically significant reduction relative to controls (P = 0.009).",
+      "relevant_papers": [
+        {
+          "doi": "10.1371/journal.pone.0208630",
+          "sections": [
+            "Results"
+          ],
+          "evidence": [
+            {
+              "relevance_label": "3",
+              "quotation": "had an average sperm viability of 80.0% ± 2.87%, which was significantly lower than the viability of 96.9% ± 0.64% in the control group",
+              "source_locator": "jats:v1:842682f3050e68688c6a48aa1d75706c4c9d8016cc08e33219618a1b625f7dfa:/article[1]/body[1]/sec[3]/p[2]"
+            },
+            {
+              "relevance_label": "3",
+              "quotation": "it was nevertheless significantly lower than the sperm viability of drones in the control group",
+              "source_locator": "jats:v1:842682f3050e68688c6a48aa1d75706c4c9d8016cc08e33219618a1b625f7dfa:/article[1]/body[1]/sec[3]/p[2]"
+            }
+          ]
+        }
+      ],
+      "reviewer": "Person 1",
+      "verification_status": "verified",
+      "verified_date": "2026-11-18",
+      "source_corpus_version": "pilot17-xml-1fff1573b610"
+    },
+    {
+      "question_id": "gq-sp-007",
+      "question_type": "single_paper_factual",
+      "question": "If larvae receive the same food but grow in cells of different size, does cell size alone change which caste they develop into?",
+      "query_language": "en",
+      "expected_findings": "Partly. With identical diet, 100% of larvae in worker cells became workers versus 81% in queen cells; the other 19% were intercastes and no queens were produced, although Dnmt3 activity, Dnmt3 expression and methylation of dynactin p62 were lower in queen-cell larvae. The authors judge the cell-size effect to be weaker than the dietary effect.",
+      "relevant_papers": [
+        {
+          "doi": "10.1371/journal.pone.0018808",
+          "sections": [
+            "Results > Effect of cell-size on caste differentiation"
+          ],
+          "evidence": [
+            {
+              "relevance_label": "3",
+              "quotation": "The proportion of workers was also significantly higher for larvae reared inside worker cells than those reared in queen cells (100% vs. 81%, Fig. 3G).",
+              "source_locator": "jats:v1:3ddf70db9d382b9c9d728169b866f8144b1995274a3d533fd6eaf6943ff25cb2:/article[1]/body[1]/sec[2]/sec[2]/p[1]"
+            },
+            {
+              "relevance_label": "3",
+              "quotation": "The 19% non-workers in Fig. 3G were all intercastes and no queens were produced",
+              "source_locator": "jats:v1:3ddf70db9d382b9c9d728169b866f8144b1995274a3d533fd6eaf6943ff25cb2:/article[1]/body[1]/sec[2]/sec[2]/p[1]"
+            }
+          ]
+        }
+      ],
+      "reviewer": "Person 1",
+      "verification_status": "verified",
+      "verified_date": "2026-11-18",
+      "source_corpus_version": "pilot17-xml-1fff1573b610"
+    },
+    {
+      "question_id": "gq-sp-008",
+      "question_type": "single_paper_factual",
+      "question": "How many genes were expressed at significantly different levels in the sperm-storage organ of mated versus unmated queens, and in which direction did most of them change?",
+      "query_language": "en",
+      "expected_findings": "212 genes differed significantly (FDR < 0.05): 129 were up-regulated and 83 down-regulated in the spermathecae of mated queens compared with virgin queens.",
+      "relevant_papers": [
+        {
+          "doi": "10.1371/journal.pone.0244648",
+          "sections": [
+            "3. Results > 3.2. RNA sequencing of three honey bee tissues"
+          ],
+          "evidence": [
+            {
+              "relevance_label": "3",
+              "quotation": "the expression levels of 212 genes were significantly different between mated and virgin queen spermatheca (FDR < 0.05)",
+              "source_locator": "jats:v1:d64d5f37876fd834c67ec2c60d783704ea58e99f56b508dca1e3bdcf2055310b:/article[1]/body[1]/sec[3]/sec[2]/p[4]"
+            }
+          ]
+        }
+      ],
+      "reviewer": "Person 1",
+      "verification_status": "verified",
+      "verified_date": "2026-11-18",
+      "source_corpus_version": "pilot17-xml-1fff1573b610"
+    },
+    {
+      "question_id": "gq-cmp-001",
+      "question_type": "multi_paper_comparison",
+      "question": "How does sensitivity to sugar water change in foragers exposed to a toxic mineral versus foragers infected with a virus?",
+      "query_language": "en",
+      "expected_findings": "In the selenium study, bees fed selenate responded less overall to sucrose (fewer bees responded at any concentration than controls). In the IAPV study, infected foragers were more responsive to low sucrose concentrations than sham-injected foragers, with no difference at high concentrations. The two stressors therefore shift sucrose responsiveness in opposite directions (lower overall vs higher at low concentrations), under different protocols and measures.",
+      "relevant_papers": [
+        {
+          "doi": "10.1371/journal.pone.0034137",
+          "sections": [
+            "Discussion"
+          ],
+          "evidence": [
+            {
+              "relevance_label": "3",
+              "quotation": "However, selenate did significantly reduce the overall responsiveness of the foragers to sucrose as fewer bees fed selenate responded to any sucrose concentration compared to bees fed 1 M sucrose alone.",
+              "source_locator": "jats:v1:e6aac202738af24dc526a73cf465dd9dc41daf8395feda03491c0c59f2da6096:/article[1]/body[1]/sec[3]/p[3]"
+            }
+          ]
+        },
+        {
+          "doi": "10.1371/journal.pone.0077354",
+          "sections": [
+            "Results > Responsiveness of IAPV-infected honey bees to sucrose"
+          ],
+          "evidence": [
+            {
+              "relevance_label": "3",
+              "quotation": "These honey bees were found to be more responsive to low sucrose concentrations than that of the sham-injected group of honey bees, and they showed no difference in responsiveness to the high sucrose water",
+              "source_locator": "jats:v1:9e988203d350fdc5555b2d2b42409081743b75f179f269213784be971a11db54:/article[1]/body[1]/sec[3]/sec[1]/p[1]"
+            }
+          ]
+        }
+      ],
+      "reviewer": "Person 1",
+      "verification_status": "verified",
+      "verified_date": "2026-11-18",
+      "source_corpus_version": "pilot17-xml-1fff1573b610",
+      "notes": "Not a claimed contradiction: different stressors, protocols and response measures."
+    },
+    {
+      "question_id": "gq-cmp-002",
+      "question_type": "multi_paper_comparison",
+      "question": "Which bee virus do the studies that measured viral loads in Varroa-infested bees single out as linked to mite parasitism?",
+      "query_language": "en",
+      "expected_findings": "Deformed wing virus (DWV). In the low/high mite-growth colony comparison, DWV was much more common than the other viruses in mite-infested brood of both colony types. In the neonicotinoid-and-Varroa pupae study, DWV RNA loads correlated with Varroa infestation in pupae.",
+      "relevant_papers": [
+        {
+          "doi": "10.1371/journal.pone.0118885",
+          "sections": [
+            "Results > Viruses in mites and bees from HMP and LMP colonies"
+          ],
+          "evidence": [
+            {
+              "relevance_label": "3",
+              "quotation": "DWV was much more common than the other viruses for brood from both the mite infested LMP and HMP colonies.",
+              "source_locator": "jats:v1:f31ec1eb2e500b66dead584af51eeb0b94a2e7526225aa4aaf8cdb4582191252:/article[1]/body[1]/sec[3]/sec[2]/p[3]"
+            }
+          ]
+        },
+        {
+          "doi": "10.1371/journal.pone.0187079",
+          "sections": [
+            "Discussion"
+          ],
+          "evidence": [
+            {
+              "relevance_label": "3",
+              "quotation": "We demonstrated that DWV RNA loads correlate with Varroa infestation in honey bee pupae (S1 Fig).",
+              "source_locator": "jats:v1:1e69893e18efb3cde0fc7b9fec8d301cff0c24e4d9394c998829404333dbb327:/article[1]/body[1]/sec[4]/p[5]"
+            }
+          ]
+        }
+      ],
+      "reviewer": "Person 1",
+      "verification_status": "verified",
+      "verified_date": "2026-11-18",
+      "source_corpus_version": "pilot17-xml-1fff1573b610",
+      "notes": "Both papers single out DWV; neither ranks viruses by strength of association across studies, so the question asks which virus is highlighted."
+    },
+    {
+      "question_id": "gq-cmp-003",
+      "question_type": "multi_paper_comparison",
+      "question": "What lasting effects on developing bees are reported when they are exposed to pesticides during the larval stage?",
+      "query_language": "en",
+      "expected_findings": "Two kinds of effects are reported. For worker pupae, larval ingestion of thiamethoxam alone down-regulated immune-related genes in white-eyed pupae (minimal effect in brown-eyed pupae). For drones, rearing in wax contaminated with miticides (and, to a lesser extent, agrochemicals) lowered adult sperm viability (e.g. 80.0% versus 96.9% in controls for a fluvalinate+coumaphos mixture).",
+      "relevant_papers": [
+        {
+          "doi": "10.1371/journal.pone.0187079",
+          "sections": [
+            "Discussion"
+          ],
+          "evidence": [
+            {
+              "relevance_label": "3",
+              "quotation": "Thiamethoxam alone at concentrations within the range detected in hives had down-regulatory effects on immune-related genes in white-eyed pupae while in brown-eyed pupae its effect is minimal.",
+              "source_locator": "jats:v1:1e69893e18efb3cde0fc7b9fec8d301cff0c24e4d9394c998829404333dbb327:/article[1]/body[1]/sec[4]/p[7]"
+            }
+          ]
+        },
+        {
+          "doi": "10.1371/journal.pone.0208630",
+          "sections": [
+            "Discussion"
+          ],
+          "evidence": [
+            {
+              "relevance_label": "3",
+              "quotation": "impair drone reproductive quality",
+              "source_locator": "jats:v1:842682f3050e68688c6a48aa1d75706c4c9d8016cc08e33219618a1b625f7dfa:/article[1]/body[1]/sec[4]/p[1]"
+            }
+          ]
+        }
+      ],
+      "reviewer": "Person 1",
+      "verification_status": "verified",
+      "verified_date": "2026-11-18",
+      "source_corpus_version": "pilot17-xml-1fff1573b610",
+      "notes": "Exposure routes differ (protein cakes fed to nurses vs contaminated wax), as do endpoints (immune gene expression vs sperm viability)."
+    },
+    {
+      "question_id": "gq-cmp-004",
+      "question_type": "multi_paper_comparison",
+      "question": "What differences between drones and worker bees have been documented, either in how their brood environment is regulated or in their gut bacterial communities?",
+      "query_language": "en",
+      "expected_findings": "Brood environment: humidity regulation showed higher variance in drone brood than in worker brood across all stages, i.e. drone brood humidity is less tightly regulated (temperature variance was lower in drone eggs and larvae but higher in pupae). Gut microbiome: male hindgut bacterial communities differed significantly from those of workers (nurses and foragers) but not from queens.",
+      "relevant_papers": [
+        {
+          "doi": "10.1371/journal.pone.0148740",
+          "sections": [
+            "Discussion"
+          ],
+          "evidence": [
+            {
+              "relevance_label": "3",
+              "quotation": "RH regulation showed higher variance in drone than workers across all brood stages",
+              "source_locator": "jats:v1:ab694796b5f8516b7e51f0bf084fc0b2fbbee6b7dff85696c8cb8d547bc3111f:/article[1]/body[1]/sec[4]/p[1]"
+            }
+          ]
+        },
+        {
+          "doi": "10.1371/journal.pone.0123911",
+          "sections": [
+            "Results > Microbiomes differ between castes"
+          ],
+          "evidence": [
+            {
+              "relevance_label": "3",
+              "quotation": "Pairwise comparisons revealed that male hindgut bacterial communities were significantly different from workers (nurses and foragers), but not queens",
+              "source_locator": "jats:v1:7dae0f946c665e49964d608afa001051d76f86137e33cd667ca0cbc98ad517b0:/article[1]/body[1]/sec[3]/sec[2]/p[2]"
+            }
+          ]
+        }
+      ],
+      "reviewer": "Person 1",
+      "verification_status": "verified",
+      "verified_date": "2026-11-18",
+      "source_corpus_version": "pilot17-xml-1fff1573b610"
+    },
+    {
+      "question_id": "gq-conf-001",
+      "question_type": "conflicting_evidence",
+      "question": "Is the literature consistent on whether Varroa parasitism suppresses or boosts immune gene expression in developing worker bees?",
+      "query_language": "en",
+      "expected_findings": "No. The authors report mixed prior literature (studies of downregulation and of upregulation) and their own data show both directions depending on pupal stage: little evidence of reduced immune gene expression in Varroa-infested brown-eyed pupae, contrary to earlier studies, but downregulation of most tested genes in white-eyed pupae.",
+      "relevant_papers": [
+        {
+          "doi": "10.1371/journal.pone.0187079",
+          "sections": [
+            "Discussion"
+          ],
+          "evidence": [
+            {
+              "relevance_label": "3",
+              "quotation": "Contrary to earlier studies [19, 20, 23] our data show little evidence for reduced expression of immune-related genes in Varroa infested brown-eyed pupae.",
+              "source_locator": "jats:v1:1e69893e18efb3cde0fc7b9fec8d301cff0c24e4d9394c998829404333dbb327:/article[1]/body[1]/sec[4]/p[2]"
+            },
+            {
+              "relevance_label": "3",
+              "quotation": "Some of our results support studies reporting downregulation [18–22] other upregulation [9, 16, 25] of immune-related genes.",
+              "source_locator": "jats:v1:1e69893e18efb3cde0fc7b9fec8d301cff0c24e4d9394c998829404333dbb327:/article[1]/body[1]/sec[4]/p[6]"
+            }
+          ]
+        }
+      ],
+      "reviewer": "Person 1",
+      "verification_status": "verified",
+      "verified_date": "2026-11-18",
+      "source_corpus_version": "pilot17-xml-1fff1573b610",
+      "notes": "Conflict is described by the authors within one paper (citing outside literature), not between two corpus papers; accepted as conflicting_evidence by the reviewer for v0."
+    },
+    {
+      "question_id": "gq-conf-002",
+      "question_type": "conflicting_evidence",
+      "question": "Does the way ambient temperature affected winter food use in overwintering hives match what earlier laboratory work on bee metabolism predicts?",
+      "query_language": "en",
+      "expected_findings": "Not entirely. All models in the field study showed that higher temperature (within -7 to +13 °C) increased weight loss, whereas earlier laboratory research indicated that metabolism should decrease with rising temperature in that range and only increase above about 10 °C. The authors attribute the difference to experimental setup (constant lab temperatures for days versus natural cumulative conditions) or to other effects not modelled.",
+      "relevant_papers": [
+        {
+          "doi": "10.1371/journal.pone.0258398",
+          "sections": [
+            "Discussion > Environmental factors"
+          ],
+          "evidence": [
+            {
+              "relevance_label": "3",
+              "quotation": "All models gave the same general result that increasing temperature, within the temperature range of the experiment, increased the honey bees´ weight loss.",
+              "source_locator": "jats:v1:1774a31c914d3782bf83c7cae167ad94291d308957ff84cd16fd17add9531ba7:/article[1]/body[1]/sec[4]/sec[4]/p[1]"
+            },
+            {
+              "relevance_label": "3",
+              "quotation": "Earlier research of bees’ metabolism under different temperature regimes has shown that in the temperature range of our experiment (-7 to +13°C) the metabolism should decrease as temperature increases",
+              "source_locator": "jats:v1:1774a31c914d3782bf83c7cae167ad94291d308957ff84cd16fd17add9531ba7:/article[1]/body[1]/sec[4]/sec[4]/p[1]"
+            }
+          ]
+        }
+      ],
+      "reviewer": "Person 1",
+      "verification_status": "verified",
+      "verified_date": "2026-11-18",
+      "source_corpus_version": "pilot17-xml-1fff1573b610",
+      "notes": "Conflict is between this field study and earlier laboratory work cited by the authors (not in the corpus); accepted as conflicting_evidence by the reviewer for v0."
+    },
+    {
+      "question_id": "gq-conf-003",
+      "question_type": "conflicting_evidence",
+      "question": "Do measurements of brood-nest temperature across egg, larval and pupal stages agree with older reports?",
+      "query_language": "en",
+      "expected_findings": "Not with one older report. This study found brood temperature highest in eggs, then larvae, then pupae (a general trend, fully resolved only in some colonies), which the authors say is inconsistent with an earlier finding that pupae were warmer than eggs or larvae. They suggest a more sensitive modern measuring device as a possible reason and note that only three colonies were used.",
+      "relevant_papers": [
+        {
+          "doi": "10.1371/journal.pone.0148740",
+          "sections": [
+            "Discussion > Pupae required the lowest temperature in both worker and drone brood",
+            "Results > Experiment I. Differences of T and RH in drone and worker brood across three developmental stages > Experiment 1: Temperature"
+          ],
+          "evidence": [
+            {
+              "relevance_label": "3",
+              "quotation": "This is not consistent with previous finding that pupae showing higher temperatures than either eggs or larvae [24].",
+              "source_locator": "jats:v1:ab694796b5f8516b7e51f0bf084fc0b2fbbee6b7dff85696c8cb8d547bc3111f:/article[1]/body[1]/sec[4]/sec[1]/p[1]"
+            },
+            {
+              "relevance_label": "2",
+              "quotation": "the general trend is for both drones and workers to show brood temperature as eggs > larvae > pupae, but this was resolved only in colony 1 (both drone and worker) and colony 2 (worker only)",
+              "source_locator": "jats:v1:ab694796b5f8516b7e51f0bf084fc0b2fbbee6b7dff85696c8cb8d547bc3111f:/article[1]/body[1]/sec[3]/sec[1]/sec[1]/p[1]"
+            }
+          ]
+        }
+      ],
+      "reviewer": "Person 1",
+      "verification_status": "verified",
+      "verified_date": "2026-11-18",
+      "source_corpus_version": "pilot17-xml-1fff1573b610",
+      "notes": "Conflict is between this paper and an older study the authors cite (not in the corpus); accepted as conflicting_evidence by the reviewer for v0."
+    },
+    {
+      "question_id": "gq-gap-001",
+      "question_type": "research_gap",
+      "question": "What do the authors say their comparison of virus levels in colonies selected for low and high mite growth cannot settle, and what would they do next?",
+      "query_language": "en",
+      "expected_findings": "The design cannot separate whether lower virus levels reflect greater resistance to the viruses or different levels of inapparent infection from earlier transmission under high or low mite pressure. Future work: real-time RT-PCR and bidirectional selective breeding for mite population growth over several generations to confirm genetic links between mite resistance and virus resistance.",
+      "relevant_papers": [
+        {
+          "doi": "10.1371/journal.pone.0118885",
+          "sections": [
+            "Discussion > Viruses in mites and bees from HMP and LMP colonies"
+          ],
+          "evidence": [
+            {
+              "relevance_label": "3",
+              "quotation": "the experimental design and analyses of data of this study, cannot separate whether the effect is due to greater resistance to the viruses or to different levels of inapparent infections resulting from previous transmission related to high or low mite populations.",
+              "source_locator": "jats:v1:f31ec1eb2e500b66dead584af51eeb0b94a2e7526225aa4aaf8cdb4582191252:/article[1]/body[1]/sec[4]/sec[2]/p[6]"
+            }
+          ]
+        }
+      ],
+      "reviewer": "Person 1",
+      "verification_status": "verified",
+      "verified_date": "2026-11-18",
+      "source_corpus_version": "pilot17-xml-1fff1573b610"
+    },
+    {
+      "question_id": "gq-gap-002",
+      "question_type": "research_gap",
+      "question": "Has anyone examined how heavily colonies are infested with mites relates to how much weight they lose while overwintering?",
+      "query_language": "en",
+      "expected_findings": "According to the authors, to their knowledge no previous study analyzed the effect of Varroa intensity on winter weight loss (weight loss due to mite infection had been described by one earlier study). In their own data they found no correlation between weight loss and Varroa mite numbers.",
+      "relevant_papers": [
+        {
+          "doi": "10.1371/journal.pone.0258398",
+          "sections": [
+            "Discussion > Varroa infestation"
+          ],
+          "evidence": [
+            {
+              "relevance_label": "3",
+              "quotation": "but to our knowledge no study has analyzed the effect of Varroa intensity on winter weight loss.",
+              "source_locator": "jats:v1:1774a31c914d3782bf83c7cae167ad94291d308957ff84cd16fd17add9531ba7:/article[1]/body[1]/sec[4]/sec[2]/p[1]"
+            },
+            {
+              "relevance_label": "3",
+              "quotation": "In our study, we could not find any correlation between weight loss and number of Varroa mites.",
+              "source_locator": "jats:v1:1774a31c914d3782bf83c7cae167ad94291d308957ff84cd16fd17add9531ba7:/article[1]/body[1]/sec[4]/sec[2]/p[1]"
+            }
+          ]
+        }
+      ],
+      "reviewer": "Person 1",
+      "verification_status": "verified",
+      "verified_date": "2026-11-18",
+      "source_corpus_version": "pilot17-xml-1fff1573b610"
+    },
+    {
+      "question_id": "gq-gap-003",
+      "question_type": "research_gap",
+      "question": "Which environmental influences on drone fertility does the paper describe as poorly understood, and where should they be tested?",
+      "query_language": "en",
+      "expected_findings": "The effects of environmental factors including pesticide exposure, nutrition and temperature on drone fertility remain poorly understood; the authors say they should be tested during drone development under field conditions rather than in the laboratory.",
+      "relevant_papers": [
+        {
+          "doi": "10.1371/journal.pone.0208630",
+          "sections": [
+            "Discussion"
+          ],
+          "evidence": [
+            {
+              "relevance_label": "3",
+              "quotation": "remain poorly understood and should be further tested during drone development in field conditions rather than in laboratory settings",
+              "source_locator": "jats:v1:842682f3050e68688c6a48aa1d75706c4c9d8016cc08e33219618a1b625f7dfa:/article[1]/body[1]/sec[4]/p[4]"
+            }
+          ]
+        }
+      ],
+      "reviewer": "Person 1",
+      "verification_status": "verified",
+      "verified_date": "2026-11-18",
+      "source_corpus_version": "pilot17-xml-1fff1573b610"
+    },
+    {
+      "question_id": "gq-ins-001",
+      "question_type": "insufficient_evidence",
+      "question": "Does exposure to a glyphosate-based herbicide change the composition of the bee gut microbiota?",
+      "query_language": "en",
+      "expected_findings": "The corpus lacks sufficient evidence: no paper examines herbicide exposure in relation to the gut microbiota. The only microbiome paper describes caste-specific hindgut communities in unexposed bees.",
+      "relevant_papers": [
+        {
+          "doi": "10.1371/journal.pone.0123911",
+          "sections": [
+            "Discussion"
+          ],
+          "evidence": [
+            {
+              "relevance_label": "1",
+              "quotation": "These results suggest that the community composition of gut bacteria among workers in social bees is stable.",
+              "source_locator": "jats:v1:7dae0f946c665e49964d608afa001051d76f86137e33cd667ca0cbc98ad517b0:/article[1]/body[1]/sec[4]/p[3]"
+            }
+          ]
+        }
+      ],
+      "reviewer": "Person 1",
+      "verification_status": "verified",
+      "verified_date": "2026-11-18",
+      "source_corpus_version": "pilot17-xml-1fff1573b610",
+      "expected_insufficient_evidence": true,
+      "notes": "Claude's lexical check (2026-11-18): regex 'glyphosate' gives 0 matches in all 728 chunks of the 17 papers. Chunks exclude tables, captions and formulas, so a term search is supporting evidence only, not proof of absence. Near-miss paper listed with label 1 (related background, not an answer)."
+    },
+    {
+      "question_id": "gq-ins-002",
+      "question_type": "insufficient_evidence",
+      "question": "What dose of a neonicotinoid insecticide kills half of the larvae in a honey bee colony?",
+      "query_language": "en",
+      "expected_findings": "The corpus lacks sufficient evidence: no paper reports a median lethal dose for larvae. The thiamethoxam paper measures immune gene expression in pupae after larval ingestion at hive-relevant concentrations and only mentions larval toxicity by citing earlier work.",
+      "relevant_papers": [
+        {
+          "doi": "10.1371/journal.pone.0187079",
+          "sections": [
+            "Introduction"
+          ],
+          "evidence": [
+            {
+              "relevance_label": "1",
+              "quotation": "Recent studies demonstrated that even the lowest exposure dose of thiamethoxam elicits sub-lethal deleterious effects in adult honey bees [14] and toxicity of thiamethoxam on honey bee larvae [15].",
+              "source_locator": "jats:v1:1e69893e18efb3cde0fc7b9fec8d301cff0c24e4d9394c998829404333dbb327:/article[1]/body[1]/sec[1]/p[3]"
+            }
+          ]
+        }
+      ],
+      "reviewer": "Person 1",
+      "verification_status": "verified",
+      "verified_date": "2026-11-18",
+      "source_corpus_version": "pilot17-xml-1fff1573b610",
+      "expected_insufficient_evidence": true,
+      "notes": "Claude's lexical check (2026-11-18): regex 'LD50|LD ?50|median lethal' gives 0 matches in all 728 chunks of the 17 papers. Chunks exclude tables, captions and formulas, so a term search is supporting evidence only, not proof of absence. Near-miss paper listed with label 1."
+    },
+    {
+      "question_id": "gq-ins-003",
+      "question_type": "insufficient_evidence",
+      "question": "Do Africanized honey bees carry lower levels of Varroa-associated viruses than European honey bees?",
+      "query_language": "en",
+      "expected_findings": "The corpus lacks sufficient evidence: no paper studies Africanized bees. Virus levels are compared only between two European-origin colonies selected for low versus high mite population growth.",
+      "relevant_papers": [],
+      "reviewer": "Person 1",
+      "verification_status": "verified",
+      "verified_date": "2026-11-18",
+      "source_corpus_version": "pilot17-xml-1fff1573b610",
+      "expected_insufficient_evidence": true,
+      "notes": "Claude's lexical check (2026-11-18): regex 'scutellata|Africanized|African' gives 0 matches in all 728 chunks of the 17 papers. Chunks exclude tables, captions and formulas, so a term search is supporting evidence only, not proof of absence. No near-miss listed."
+    }
+  ],
+  "change_history": [
+    {
+      "date": "2026-11-18",
+      "reviewer": "Person 1",
+      "reason": "Initial Golden v0 (21 questions). Candidates were drafted by an AI assistant (Claude) from the 17 pilot papers, never from the evaluated system. Every quotation passed check-quote against the local PLOS XML (33 of 33). The human reviewer read each cited passage and accepted all 21 records without edits. corpus_version is pilot17-xml- plus the first 12 hex characters of the SHA-256 over the sorted lines '<doi>\\t<xml_sha256>\\n' of the 17 source XML files (data/pilot/manifest.jsonl)."
+    }
+  ]
+}

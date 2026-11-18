@@ -2,19 +2,25 @@
 
 ## Purpose and scope
 
-Establish a reproducible, manually grounded evaluation set and evaluation
-approach for the shared SciScope RAG system. The bootstrap defines the record
-format and process only. It does not contain scientific questions, answers,
-papers, DOIs, quotations, or measured results. Create the real dataset only in
-the approved Person 1 feature after inspecting source articles.
+Establish a reproducible, human-verified evaluation set and evaluation approach
+for the shared SciScope RAG system. Golden v0 is present; its provenance and
+limitations are recorded under Dataset status. No evaluation results were
+produced by this change.
 
 ## Golden dataset creation
 
-Start by selecting approximately 10–20 real PLOS honeybee papers. Prepare an
-initial 5–10 manually verified questions and expand toward 20–30 when practical.
-Do not invent scientific findings, articles, DOI values, or reference answers.
-Derive each reference answer from inspected source text, not solely from model
-knowledge.
+Candidate records are drafted by AI from inspected source text, never by the
+evaluated RAG system. AI-drafted candidates must have
+`verification_status: "unverified"` until a named human reviews them. EVERY
+record must be verified by a human who reads the cited source passage and
+checks the question, reference answer, locators, and relevance labels. Only
+`verified` records enter a released dataset.
+
+Questions must be paraphrased, not copied from the text. Quotations must be
+verbatim and machine-checked with `check-quote`. Do not invent scientific
+findings, articles, DOI values, quotations, or reference answers. Derive each
+reference answer from inspected source text, not solely from model knowledge.
+Ground truth is never produced or revised by the evaluated system.
 
 Each record must capture a stable question ID, question text, query language,
 expected key findings or reference answer, relevant paper DOI(s), section names
@@ -24,16 +30,48 @@ negative or insufficient-evidence result is optional. Prefer DOI, section, and
 source text locators as ground truth; generated chunk IDs can change when
 chunking rules change.
 
-Use `evals/golden_questions.schema.json` as the format contract. Store no
-unverified or invented scientific records. Version both the dataset and source
+Use `evals/golden_questions.schema.json` as the format contract. Keep unverified
+candidates separate from released datasets. Version both the dataset and source
 corpus. Document changes to answers or relevance labels with the reason,
 reviewer, and date when known; retain prior versions or a change history.
+
+The optional `question_type` field classifies a record as:
+
+- `single_paper_factual`: a factual question answered by one paper.
+- `multi_paper_comparison`: a comparison supported by several papers.
+- `conflicting_evidence`: a question about conflicting findings or claims.
+- `research_gap`: a question about a source-supported gap or open issue.
+- `insufficient_evidence`: a question the corpus cannot adequately answer.
+
+Evidence relevance labels are stored as strings using this rubric:
+
+| Label | Meaning |
+| --- | --- |
+| `3` | The paragraph directly gives the answer. |
+| `2` | The paragraph provides an important part of the answer. |
+| `1` | Related background. |
+| `0` | Deliberate distractor. |
+
+Labels >= 2 count as relevant.
+
+### Source corpus version
+
+Compute `corpus_version` as `"pilot17-xml-"` plus the first 12 hexadecimal
+characters of SHA-256 over the UTF-8 lines `<doi>\t<xml_sha256>\n` for the 17
+source XMLs from `data/pilot/manifest.jsonl`, sorted by line. Here `\t` is a
+literal tab and `\n` is LF, including the final LF. This identifier depends only
+on source XML, not on the parser, chunking, or embeddings.
+
+Recomputed on 2026-11-18: `pilot17-xml-1fff1573b610`.
+Full SHA-256:
+`1fff1573b610c27e2e8016343d2f6429df294db974db4af898c4a0f82ffc26bd`.
 
 ## Responsibilities
 
 - **Person 1 — Data Processing & Embedding:** select representative papers;
-  inspect source articles; prepare and verify questions, answers, locators, and
-  relevance labels; maintain dataset and corpus versions.
+  inspect source articles; oversee AI drafting and human verification of every
+  record, including questions, answers, locators, and relevance labels; maintain
+  dataset and corpus versions.
 - **Person 2 — Database & Retrieval:** evaluate retrieval against the approved
   dataset; compare semantic, lexical, and hybrid search; assess filtering and
   ranking; report retrieval metrics.
@@ -83,7 +121,41 @@ ground truth.
   results. Preserve raw run configuration and dataset versions so comparisons
   can be reproduced.
 
-## Bootstrap status
+## Dataset status
 
-The dataset has not been populated. No scientific articles were inspected and no
-evaluation results were produced as part of this planning document.
+Golden v0 exists at `evals/golden_questions.v0.json`, with `dataset_version`
+`"v0"` and `corpus_version` `"pilot17-xml-1fff1573b610"`. It contains 21 questions
+over 12 of the 17 pilot PLOS ONE papers:
+
+| Question type | Count |
+| --- | ---: |
+| `single_paper_factual` | 8 |
+| `multi_paper_comparison` | 4 |
+| `conflicting_evidence` | 3 |
+| `research_gap` | 3 |
+| `insufficient_evidence` | 3 |
+
+All 21 records were AI-drafted from the pilot papers, never from the evaluated
+RAG system, then read and verified by Person 1. The records name reviewer
+`"Person 1"`, `verification_status: "verified"`, and
+`verified_date: "2026-11-18"`. All 33 evidence quotations were machine-checked
+verbatim with `check-quote`. Human verification and these quotation checks are
+reported by Person 1 in chat on 2026-11-18; they were not repeated by the
+assistant during this documentation change.
+
+Known limitations:
+
+- All 21 questions are AI-drafted and human-verified. The previously planned
+  approximately 30% human-written questions are deferred to a later version
+  (Person 2).
+- `conflicting_evidence` records concern author-versus-prior-literature
+  conflicts inside one paper, not conflicts across several corpus papers.
+- `insufficient_evidence` records rest on lexical search plus reading. They are
+  supporting evidence only, not proof of absence. Chunks omit tables, captions,
+  formulas, and supplementary material.
+- All evidence comes from body paragraphs; none comes from abstracts.
+- 21 questions over 12 of the 17 pilot papers provide an indicative regression
+  signal, not a statistical estimate.
+
+No evaluation results were produced. Dataset availability and curation checks
+do not establish retrieval or answer-generation performance.
