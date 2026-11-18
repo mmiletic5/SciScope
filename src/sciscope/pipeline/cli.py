@@ -31,6 +31,7 @@ from sciscope.chunking.validate import (
     validate_chunks,
 )
 from sciscope.delivery import package as delivery_package
+from sciscope.delivery import validate as delivery_validate
 from sciscope.embedding.config import (
     EmbeddingCacheError,
     EmbeddingConfig,
@@ -213,14 +214,6 @@ def _parser() -> _Parser:
         type=Path,
         default=Path("data/pilot/embedding_report.json"),
     )
-    deliver = commands.add_parser("deliver")
-    defaults = delivery_package.DeliveryInputs()
-    for name in _DELIVERY_FIELDS:
-        deliver.add_argument(
-            "--" + name.replace("_", "-"),
-            type=Path,
-            default=getattr(defaults, name),
-        )
     return parser
 
 
@@ -347,7 +340,76 @@ def _print_findings(findings: list[Finding]) -> None:
 
 def _validate_delivery(argv: list[str]) -> int:
     """Validate a received delivery through the dedicated command route."""
-    raise NotImplementedError
+    if "--help" in argv[1:] or "-h" in argv[1:]:
+        print(
+            "usage: validate-delivery [--package-dir PATH] "
+            "[--parse-report PATH] [--chunk-report PATH] "
+            "[--embedding-report PATH]"
+        )
+        return 0
+    try:
+        package_dir, reports = _delivery_validation_paths(argv[1:])
+    except ConfigError:
+        _print_findings([Finding("invalid-usage", 1, ("report",))])
+        return 2
+    try:
+        outcome = delivery_validate.validate_package(package_dir, reports)
+        if outcome.findings:
+            _print_findings(list(outcome.findings))
+            return 2 if outcome.structural else 1
+        manifest = cast(
+            Mapping[str, Any],
+            outcome.loaded.manifests["delivery_manifest.json"],
+        )
+        counts = manifest["counts"]
+        vectors = manifest["files"]["vectors.f32"]["record_count"]
+        print(
+            f"validated delivery papers: {counts['papers']} "
+            f"sections: {counts['sections']} chunks: {counts['chunks']} "
+            f"vectors: {vectors} files: 6 failures: 0"
+        )
+    except Exception:
+        _print_findings([Finding("delivery-failed", 1, ("report",))])
+        return 1
+    return 0
+
+
+def _delivery_validation_paths(
+    arguments: list[str],
+) -> tuple[Path, delivery_validate.PackageReports]:
+    """Parse exact receiver paths, rejecting duplicate and empty options.
+
+    Raises:
+        ConfigError: If an option is unknown, repeated or lacks a value.
+    """
+    defaults = delivery_package.DeliveryInputs()
+    values = {
+        "--package-dir": defaults.output_dir,
+        "--parse-report": defaults.parse_report,
+        "--chunk-report": defaults.chunk_report,
+        "--embedding-report": defaults.embedding_report,
+    }
+    seen: set[str] = set()
+    index = 0
+    while index < len(arguments):
+        option, equals, value = arguments[index].partition("=")
+        if option not in values or option in seen:
+            raise ConfigError("invalid-usage")
+        if not equals:
+            index += 1
+            if index == len(arguments) or arguments[index].startswith("-"):
+                raise ConfigError("invalid-usage")
+            value = arguments[index]
+        if not value:
+            raise ConfigError("invalid-usage")
+        seen.add(option)
+        values[option] = Path(value)
+        index += 1
+    return values["--package-dir"], delivery_validate.PackageReports(
+        values["--parse-report"],
+        values["--chunk-report"],
+        values["--embedding-report"],
+    )
 
 
 def _deliver(argv: list[str]) -> int:

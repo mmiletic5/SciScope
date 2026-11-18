@@ -17,7 +17,7 @@ from sciscope.chunking.config import TEMPLATE_VERSION
 from sciscope.chunking.counter import Utf8BytesDiv3Counter
 from sciscope.chunking.report import CHUNKING_VERSION
 from sciscope.chunking.validate import Finding
-from sciscope.delivery import contract, publish
+from sciscope.delivery import contract, publish, validate
 from sciscope.delivery.papers import PaperBuildError, build_papers
 from sciscope.embedding import validate as embedding_validate
 from sciscope.embedding.store import render_json
@@ -254,6 +254,16 @@ def run_delivery(inputs: DeliveryInputs) -> DeliverySummary:
             encoded = render_manifest(manifest)
             (staged / "delivery_manifest.json").write_bytes(encoded)
             _check_integrity(inputs, staged, manifest, encoded)
+            outcome = validate.validate_package(
+                staged,
+                validate.PackageReports(
+                    inputs.parse_report,
+                    inputs.chunk_report,
+                    inputs.embedding_report,
+                ),
+            )
+            if outcome.findings:
+                _refuse(outcome.findings, 2 if outcome.structural else 1)
             publish._publish(
                 staged, encoded, inputs.output_dir, inputs.committed_manifest
             )

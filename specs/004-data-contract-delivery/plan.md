@@ -2675,3 +2675,172 @@ with the exact RED-kind split above. Person 1 must report the observed
 results before any Phase 2 behavior. Stop after Group E Phase 1; do not
 implement the command body, staging hook, dead-subparser removal, T006 or
 T007. No commit/push, EVIDENCE.md/PROJECT_TODO.md edit or checkbox change.
+
+### Group E, Phase 2
+
+Person 1 authorizes only the Group E implementation in cli.py/package.py
+and this append-only subsection. Starting HEAD is dabcc22 on
+004-data-contract-delivery, with a clean working tree. This authorization
+supersedes the Phase 1 stop for this scope. All tests/fixtures, other source,
+schema, data, ignore rules, evidence, backlog and checkboxes stay unchanged.
+No commit/push or T006/T007 work is authorized. Apply
+google-python-engineering; the Phase 1 solution-research remains the design
+basis, with no new feature test, dependency or requirement added.
+
+Person 1 reports observed RED exactly matching the Phase 1 prediction:
+122 failures (114 NotImplementedError and 8 AssertionError), with the
+existing 2341 cases passing where symlink privilege permits. Person 1 also
+reports Claude independently confirmed that split and that a throwaway
+reference implementation passed all 122 new cases and the whole 2463-case
+suite, with mypy src clean. These are supplied results for Phase 1 and a
+different implementation, not observed GREEN for this implementation.
+
+Implementation decisions R1–R6:
+
+- **R1 Staging wiring.** package imports validate alongside contract and
+  publish. run_delivery calls validate.validate_package immediately after
+  _check_integrity and before publish._publish, passing the staged directory
+  and validate.PackageReports(inputs.parse_report, inputs.chunk_report,
+  inputs.embedding_report) as two positional arguments. The module attribute
+  is resolved at call time. Any findings enter the existing
+  _refuse(outcome.findings, 2 if outcome.structural else 1). No producer
+  call, file or publication step is moved or added otherwise. Event order
+  remains produced, produced, integrity, validate, publish. The existing
+  staging context cleans refusals before either output is replaced, with
+  publication/rollback unchanged. validate does not import package, so the
+  added dependency is acyclic. Successful rendering and bytes are unchanged.
+- **R2 Dedicated receiver parser.** _validate_delivery(argv: list[str]) -> int
+  handles help before defaults, parsing or validation. A new private helper
+  _delivery_validation_paths(arguments: list[str]) -> tuple[Path,
+  delivery_validate.PackageReports] accepts only the four exact long options
+  with separated or equals values. Defaults come from DeliveryInputs; a
+  single override preserves all remaining defaults. A seen-option set rejects
+  repeats across every spelling mix. Unknown/abbreviated/positional tokens,
+  missing values, a following token starting with a hyphen instead of a
+  separated value, and empty values raise ConfigError("invalid-usage").
+  The parser's ConfigError maps to exactly one invalid-usage/report finding
+  and status 2. No argparse or _delivery_inputs reuse occurs. Help anywhere
+  in the remaining tokens prints the exact four-option usage line and
+  returns 0, including when other tokens would be invalid.
+- **R3 Validation/output.** cli imports validate as delivery_validate and
+  calls delivery_validate.validate_package exactly once through its module
+  attribute. Findings go to _print_findings(list(outcome.findings)) once;
+  status 2 takes precedence when outcome.structural, otherwise status 1.
+  No stdout is emitted on findings. Success counts come only from
+  outcome.loaded.manifests["delivery_manifest.json"], using counts papers,
+  sections, chunks and files["vectors.f32"]["record_count"]. A typing cast
+  documents the already validated mapping without reparsing or opening it.
+  The exact one-line numeric success summary includes files: 6 failures: 0.
+- **R4 Exception policy.** The validator call and success-line construction/
+  printing share an Exception handler that emits only delivery-failed with
+  id report, failures: 1 and status 1. This includes OSError,
+  PermissionError, missing success fields and ConfigError raised by the
+  validator itself. Parsing has its own ConfigError handler, so an unexpected
+  validator exception cannot be misclassified as invalid usage. No exception
+  message, value, DOI or path is printed. Producer exception policies remain
+  unchanged; output-write-failed is not used for receiver exceptions.
+- **R5 Routing/cleanup.** The Phase 1 validate-delivery route remains before
+  deliver and _parser, including argv=None/sys.argv support. Only the unused
+  deliver argparse registration block is removed from _parser. No import
+  became unused: delivery_package and Path are still needed by the dedicated
+  commands. _DELIVERY_FIELDS, _deliver, _delivery_inputs, main and all
+  chunk/embed/validate behavior remain unchanged. The internal parser now
+  rejects deliver through its existing sanitized ConfigError path; dedicated
+  deliver execution/help remain intact.
+- **R6 Access boundaries.** The receiver command and its private parser only
+  construct Path/report inputs and consume the returned validated outcome.
+  All package/report reads occur inside validate_package; no direct file
+  opens, writes, environment/cache/source/paragraph/XML access, network or
+  transport construction is added. Producer provenance reads remain the
+  existing run_delivery behavior. No new code vocabulary or data format.
+
+Deviations: **none identified by static review**. TEST ISSUES: **none
+identified**; no test/fixture was edited or executed. The added private
+parser helper keeps parsing separate from validation and exception handling;
+it changes no public signature. Static comparison checks the protected CLI
+definitions, existing package helpers and tests against HEAD. The original
+plan remains an unchanged prefix. Static evidence cannot establish runtime
+GREEN, Windows cleanup, filesystem determinism or real-pilot validity.
+
+| Verification | Observed result or explicit NOT RUN |
+| --- | --- |
+| Initial branch/HEAD/status | Observed 004-data-contract-delivery, dabcc22, clean |
+| Direct .venv/Scripts/ruff.exe check . --no-cache | PASS |
+| Direct .venv/Scripts/ruff.exe format --check . | PASS, including Markdown Python blocks |
+| Direct .venv/Scripts/mypy.exe src | PASS, 41 source files |
+| git --no-pager diff --check | PASS |
+| Static scope/protected definitions/test bytes/append-only plan review | PASS; only cli.py, package.py and this appended subsection changed |
+| uv / locked-tool parity | NOT RUN under the explicit sandbox/run restriction |
+| Focused/full pytest, all 122 Group E cases and prior regression cases | NOT RUN; Person 1 runs locally |
+| Supplied RED/reference GREEN | User-reported results above; not verification of this implementation |
+| Real pilot, redelivery/hash comparison, copied negative controls | NOT RUN; exact local commands below |
+| Human verification, CI, checkbox completion | NOT RUN / not claimed |
+
+Expected, not observed: all 122 Group E cases turn GREEN with existing tests
+unchanged. On Windows without symlink privilege, tests/delivery should show
+**0 failed, 1533 passed, 2 skipped**, and the whole suite should show
+**0 failed, 2461 passed, 2 skipped**. With both existing symlink probes
+successful, expect 1535 focused and 2463 whole-suite passes. No observed
+GREEN or completion claim follows from these predictions.
+
+Person 1 runs these exact PowerShell commands from the repository root:
+
+```powershell
+$env:PYTHONPATH = 'src'
+uv run --locked python -m pytest tests/delivery -q
+uv run --locked pytest -q
+uv run --locked ruff check . --no-cache
+uv run --locked ruff format --check .
+uv run --locked mypy src
+git --no-pager diff --check
+```
+
+Real-pilot verification is assigned to Person 1. Negative controls operate
+on a copy, never the real package. Commands below are recorded as supplied,
+not executed here:
+
+```powershell
+$env:PYTHONPATH = 'src'
+# 1. validate the real package (expect the success line and exit 0)
+uv run --locked python -m sciscope.pipeline.cli validate-delivery
+"exit: $LASTEXITCODE"
+# 2. re-deliver with the new staging validation and compare hashes before/after
+$before = Get-FileHash -Algorithm SHA256 data\delivery\pilot\* | ForEach-Object { "$($_.Hash) $(Split-Path $_.Path -Leaf)" }
+uv run --locked python -m sciscope.pipeline.cli deliver
+"exit: $LASTEXITCODE"
+$after = Get-FileHash -Algorithm SHA256 data\delivery\pilot\* | ForEach-Object { "$($_.Hash) $(Split-Path $_.Path -Leaf)" }
+"identical: $(($before -join '|') -eq ($after -join '|'))"
+# 3. negative control A on a copy: remove a file (expect exit 2, delivery-missing-file)
+$copy = Join-Path $env:TEMP 'sciscope_pilot_copy'
+Remove-Item -Recurse -Force $copy -ErrorAction SilentlyContinue
+Copy-Item -Recurse data\delivery\pilot $copy
+Remove-Item (Join-Path $copy 'sections.jsonl')
+uv run --locked python -m sciscope.pipeline.cli validate-delivery --package-dir $copy
+"exit: $LASTEXITCODE"
+# 4. negative control B on a fresh copy: truncate vectors by one byte (expect exit 1, vectors-size among the codes)
+Remove-Item -Recurse -Force $copy
+Copy-Item -Recurse data\delivery\pilot $copy
+$env:SCISCOPE_COPY_VECTORS = Join-Path $copy 'vectors.f32'
+@'
+import os
+path = os.environ["SCISCOPE_COPY_VECTORS"]
+with open(path, "r+b") as handle:
+    handle.truncate(os.path.getsize(path) - 1)
+'@ | uv run --locked python -X utf8 -
+uv run --locked python -m sciscope.pipeline.cli validate-delivery --package-dir $copy
+"exit: $LASTEXITCODE"
+# 5. cleanup
+Remove-Item -Recurse -Force $copy
+Remove-Item Env:SCISCOPE_COPY_VECTORS
+```
+
+| Real-pilot step | Expected output/status; all NOT RUN here |
+| --- | --- |
+| 1 | validated delivery papers: 17 sections: 319 chunks: 728 vectors: 728 files: 6 failures: 0; exit 0 |
+| 2 | delivered papers: 17 sections: 319 chunks: 728 vectors: 728 files: 6; exit 0; identical: True |
+| 3 | exit 2; error: delivery-missing-file count: 1 first: sections.jsonl among the findings |
+| 4 | exit 1; vectors-size among the findings |
+
+STOP after Group E Phase 2. Tests and real-pilot observations await Person 1;
+T006/T007 remain unauthorized. No commit/push, checkbox, evidence or backlog
+change is made.
