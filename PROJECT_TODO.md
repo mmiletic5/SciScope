@@ -186,3 +186,9 @@ Human review and verification remain pending; no checkbox is completed by this d
 - [ ] **P9-06** | Owner: TEAM | Deliverable: verified demo scenarios | Phase: 9 | Depends on: P6-02, P7-07, P9-04
 - [ ] **P9-07** | Owner: TEAM | Deliverable: project presentation | Phase: 9 | Depends on: P9-06
 - [ ] **P9-08** | Owner: TEAM | Deliverable: final human acceptance | Phase: 9 | Depends on: P9-01 through P9-07
+
+F004 progress note (2026-11-18): Group F Phase 1 / T006 reader stubs and
+synthetic RED tests are prepared; plan.md records F1–F10 and static predictions.
+Reader implementation and DELIVERY_GUIDE.md await Phase 2. Pytest/locked-tool
+checks and human verification are NOT RUN; T006, P2-20 and P2-24 remain open.
+No task checkbox is changed by this status-only note.

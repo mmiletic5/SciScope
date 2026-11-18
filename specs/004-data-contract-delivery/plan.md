@@ -2844,3 +2844,168 @@ Remove-Item Env:SCISCOPE_COPY_VECTORS
 STOP after Group E Phase 2. Tests and real-pilot observations await Person 1;
 T006/T007 remain unauthorized. No commit/push, checkbox, evidence or backlog
 change is made.
+
+## Group F — Phase 1 (T006)
+
+Person 1 authorizes only reader interface stubs, synthetic RED tests and this
+append-only addendum, superseding the preceding T006 stop. Starting branch:
+004-data-contract-delivery; HEAD 8c51817. The untracked
+data/pilot/delivery_manifest.json is left untouched. No reader implementation,
+guide creation, dependency change, task checkbox, staging, commit or push.
+The repository AGENTS instructions additionally require status-only updates
+to EVIDENCE.md and PROJECT_TODO.md; neither records completion or acceptance.
+
+### Implementation clarifications F1–F10 (binding, condensed)
+
+- **F1 Public API.** reader.py exposes exactly DeliveryReadError(ValueError)
+  with code: str and str(error) exactly the code, never paths/content/values;
+  iter_jsonl(path: str | os.PathLike[str]) -> Iterator[dict[str, object]];
+  load_vectors(path: str | os.PathLike[str], *, dimensions: int, count: int)
+  -> tuple[tuple[float, ...], ...]; vectors_by_chunk_id(manifest_path:
+  str | os.PathLike[str], vectors_path: str | os.PathLike[str], *, dimensions:
+  int) -> dict[str, tuple[float, ...]]. Strict-mypy annotations. All bodies,
+  including the error constructor, raise NotImplementedError in Phase 1.
+  iter_jsonl is a plain function raising on call; Phase 2 may open lazily in
+  a generator. Tests consume with list inside raises blocks and do not
+  require eager versus lazy opening.
+- **F2 Complete error vocabulary.** reader-io: any OSError/missing path;
+  reader-decoding: JSONL invalid UTF-8/leading BOM; reader-json: invalid JSON,
+  NaN/Infinity/-Infinity constants or raw U+000D anywhere; reader-line:
+  interior blank/whitespace-only line or non-object JSON value;
+  reader-argument: dimensions/count not positive int, including bool;
+  reader-size: bytes != count * dimensions * 4; reader-nonfinite: decoded
+  float32 NaN/positive or negative infinity; reader-manifest: undecodable
+  manifest, non-object root, missing/non-list entries, non-object entry or
+  missing/non-str chunk_id (also empty entries under F5);
+  reader-duplicate-id: repeated entry chunk_id. Tests assert code and exact
+  safe str(error), with explicit filename/path/SYNTHETIC exclusion.
+- **F3 JSONL.** Read bytes, strict UTF-8, split ONLY on the character LF
+  ("\n"), never splitlines() or argumentless split(). One final empty segment
+  is allowed, empty file yields zero records, final nonempty unterminated
+  line is accepted. Every other empty/whitespace-only segment is reader-line.
+  Raw U+0085/U+2028/U+2029 inside strings survive unchanged. Duplicate keys
+  are accepted, last wins; validate-delivery owns duplicate-key validation.
+  Preserve record order. Errors arise when the offending line is reached;
+  earlier records may already have been yielded. This deliberate incremental
+  behavior is tested without asserting when the file itself is opened.
+- **F4 Vectors.** Validate arguments first, then I/O, exact size BEFORE
+  decoding, then finiteness. Use struct with explicit little-endian "<"
+  float32 layout, never array or memoryview.cast/native-endian decoding.
+  Return count tuples of dimensions Python floats, float32 widened exactly;
+  every decoded value must be finite.
+- **F5 Mapping.** Strict UTF-8 JSON manifest, F2 shape, count = len(entries);
+  empty entries is reader-manifest. Reuse load_vectors loading logic with
+  that count: row/dimension disagreement is reader-size. Dict insertion
+  order equals entries order; row i belongs to entries[i]["chunk_id"]. NEVER
+  consult chunks.jsonl. Caller supplies dimensions; ignore manifest dimensions
+  and extra keys, do not verify hashes (validate-delivery owns that).
+- **F6 Standalone module.** No import-time side effects, logging, printing,
+  CLI or delivery.validate/contract dependency. Single-file copying by
+  Person 2 must work with stdlib only. AST tests allow every import root only
+  from {__future__, collections, json, math, os, pathlib, struct, typing}
+  and reject relative imports. Reloading must print nothing.
+- **F7 Future guide.** Phase 2 writes docs/DELIVERY_GUIDE.md: <=140 lines,
+  <=1100 words. First fence after title and at most one intro sentence is
+  python, imports vectors_by_chunk_id from sciscope.delivery.reader, and
+  contains the exact string vectors_by_chunk_id(. Within the first 25 lines
+  one sentence contains "never zip", "chunks.jsonl", "position" ignoring
+  case. Every python fence ast.parses; every relative Markdown link target
+  exists in the repository. Independent case-insensitive substring checks,
+  keyword as param ID: papers.jsonl, sections.jsonl, chunks.jsonl, vectors.f32,
+  embedding_manifest.json, delivery_manifest.json, schema_version,
+  validate-delivery, sha256, tar, query_prefix, EN, case-insensitive,
+  data/raw/plos, xml_sha256, show, check-quote, source_locator, section_path,
+  (untitled), omitted, hard_split, report, pull request, 16,000, 2,000.
+  Forbid OPENAI_API_KEY=, sk-, any C:\ path, tested with pgvector,
+  works with pgvector, installed pgvector. Guide tests are RED while absent.
+- **F8 Hygiene.** Unique test_deliver_reader.py, no from tests imports,
+  short explicit pytest.param IDs for large values, no network, tmp_path,
+  synthetic data only; never read data directories. No fixture module needed.
+- **F9 Windows.** Target Python 3.12/PowerShell; write_bytes for synthetic
+  files, portable paths, no symlinks or platform-specific assumptions.
+- **F10 Types/style.** Strict mypy applies to src only; tests are reasonably
+  typed. Module/tests must pass ruff check . --no-cache and
+  ruff format --check . under configured 80-column formatting.
+
+F5 supersedes the earlier proposed reader paragraph's instruction to compare
+against manifest dimensions: this reader deliberately ignores that field.
+Manifest BOM/UTF-8/JSON failures use reader-manifest; JSONL decoding codes
+remain reader-decoding/reader-json. Manifest filesystem failures use reader-io.
+
+### Renewed offline solution-research before tests
+
+Applied solution-research and google-python-engineering. Inspected the four
+F004 artifacts, contract/schema, validate.decode_json and LF-only loader,
+embedding.store.pack_vector, jats show/check-quote, and neighboring command
+tests/fixtures. Verified repository facts: six-file flat inventory; manifest
+entries contain chunk_id/input_sha256; pack_vector uses explicit struct
+little-endian float32; validate rejects BOM explicitly. Its duplicate-key
+rejection and CR-whitespace acceptance differ from this reader's F3 policy.
+
+Compared (A) a standalone stdlib reader, (B) importing delivery.validate's
+decoder, and (C) adding an array/library reader. Recommend A under F4/F6:
+explicit byte order and the requested independent error contract, portable
+single-file handoff with no new dependency/license obligation. B conflicts
+with standalone copying and the distinct duplicate-key/CR policies; C adds
+unapproved dependencies or native-endian risk. No new package version,
+performance, security audit or installed-database compatibility claim.
+No network was used as explicitly requested. External documentation/version/
+license updates were not reverified; prior research.md remains historical
+evidence. Runtime reader behavior and pytest outcomes remain unverified.
+
+### Test inventory and Predicted RED
+
+All 27 test functions are in tests/delivery/test_deliver_reader.py, with
+112 expanded cases. Static source/AST counting only; no pytest collection,
+test-module import, fixture execution or observed RED. Parameter products
+are exact, including 5 argument values x 2 fields, 3 nonfinite values x
+4 positions, 2 I/O kinds x 3 APIs, and 26 separate guide keywords.
+
+| Area | Expanded cases | NotImplementedError | AssertionError | Pass |
+| --- | ---: | ---: | ---: | ---: |
+| JSONL order/endings, empty, strings/3 MiB, errors, incremental failure, duplicate keys | 27 | 27 | 0 | 0 |
+| Vector values/types/endian, sizes, arguments, nonfinite positions, precedence | 28 | 28 | 0 | 0 |
+| Mapping order/chunks absent, shapes/duplicate IDs, decoding, sizes | 16 | 16 | 0 | 0 |
+| Missing/directory I/O across three APIs | 6 | 6 | 0 | 0 |
+| Standalone AST imports and quiet import | 2 | 0 | 0 | 2 |
+| Guide existence, size, first block, warning, Python blocks, links, forbidden strings | 7 | 0 | 7 | 0 |
+| Guide topics | 26 | 0 | 26 | 0 |
+| Total | 112 | 77 | 33 | 2 |
+
+Each reader case reaches an unconditional stub. Guide cases all fail the
+helper's clear is_file assertion, hence AssertionError rather than a missing
+file read exception. The two standalone checks legitimately pass now; no
+behavior is implemented to turn a reader case GREEN. No xfail/skip is added.
+
+Predicted new-file line: **110 failed, 2 passed** = 77 NotImplementedError
++ 33 AssertionError. Assuming the supplied Windows baseline remains unchanged,
+the exact whole-suite prediction is **110 failed, 2463 passed, 2 skipped**
+(2575 total); focused tests/delivery: **110 failed, 1535 passed, 2 skipped**.
+The requested literal `N failed, 2461 passed, 2 skipped` conflicts with the
+two required passing standalone checks: baseline 2461 + 2 = 2463 passes.
+For N = 110 that requested line omits two tests; it is not the prediction.
+No parametrization count is uncertain. The two skips are the existing
+Windows symlink tests, conditional on the stated baseline; both runnable
+would instead give **110 failed, 2465 passed** overall.
+
+### Verification and scope boundaries
+
+| Check | Observed result or explicit NOT RUN |
+| --- | --- |
+| Local .venv/Scripts/python.exe --version | Python 3.12.16 |
+| Local python -m py_compile on both new Python files | PASS |
+| Direct .venv/Scripts/ruff.exe check . --no-cache | PASS |
+| Direct .venv/Scripts/ruff.exe format --check . | PASS (130 files, including this addendum) |
+| Direct .venv/Scripts/mypy.exe src | PASS (42 source files) |
+| git diff --check | PASS after documentation updates |
+| Static source/AST review | 27 functions, 112 cases; assertions directly or via assert_error; stdlib-only stubs, no generator body, unused imports or dependencies |
+| uv / locked-tool parity, focused/full pytest, tmp_path execution, observed RED | NOT RUN under the explicit run constraint; Person 1 runs locally |
+| Real pilot, guide, reader implementation, CI, human verification, completion | NOT RUN / not claimed; guide absent, task boxes untouched |
+
+The reader tests use only disposable files and invented content. Module code
+uses no logging/printing/CLI, internal delivery imports, validation logic or
+file access. The guide helper discovers root by walking parents of the test
+file until pyproject.toml, then reads once per guide test. No fixed parent
+depth, current-directory assumption, data access or new fixture dependency.
+Evidence/backlog appendices record only this phase and verification limits.
+No automated or human completion is asserted. Stop after Group F Phase 1.
