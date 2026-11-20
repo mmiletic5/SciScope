@@ -658,8 +658,8 @@ def test_cli_publish_failure_keeps_previous_outputs(
     assert list(files.root.rglob("*.tmp")) == []
 
 
-def test_embedding_ignore_and_zero_dependency_contract() -> None:
-    """T006-P20: ignore large artifacts and keep the small report visible."""
+def test_embedding_ignores_and_approved_database_dependencies_only() -> None:
+    """T006-P20: preserve artifact ignores and approved dependencies."""
     root = Path(__file__).resolve().parents[2]
     ignored = subprocess.run(
         ["git", "check-ignore", "--stdin"],
@@ -681,7 +681,16 @@ def test_embedding_ignore_and_zero_dependency_contract() -> None:
     ]
     with (root / "pyproject.toml").open("rb") as file:
         project = tomllib.load(file)
-    assert project["project"]["dependencies"] == []
+    dependency_names = {
+        dependency.split(">=", maxsplit=1)[0]
+        for dependency in project["project"]["dependencies"]
+    }
+    assert {
+        "alembic",
+        "pgvector",
+        "psycopg[binary]",
+        "sqlalchemy",
+    }.issubset(dependency_names)
 
 
 def test_direct_pipeline_overflow_never_constructs_embedder(
