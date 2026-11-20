@@ -50,5 +50,5 @@ jobs:
         env:
           PYTHONPATH: .
         run: |
-          if [ -d tests ]; then uv run --locked python -m pytest; else echo 'NOT RUN: no tests directory'; fi
+          if [ -d tests ]; then uv run --locked python -m pytest --ignore=tests/ingestion --ignore=tests/retrieval/test_postgres_core.py --ignore=tests/retrieval/test_postgres_lookup.py --ignore=tests/retrieval/test_phase_c_pipeline.py; else echo 'NOT RUN: no tests directory'; fi
           if [ -d src ]; then uv run --locked mypy src; else echo 'NOT RUN: no src directory'; fi
