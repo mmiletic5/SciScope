@@ -47,6 +47,8 @@ jobs:
               print(f"PASS: {path}")
           PY
       - name: Python checks when feature code exists
+        env:
+          PYTHONPATH: .
         run: |
-          if [ -d tests ]; then uv run --locked pytest; else echo 'NOT RUN: no tests directory'; fi
+          if [ -d tests ]; then uv run --locked python -m pytest; else echo 'NOT RUN: no tests directory'; fi
           if [ -d src ]; then uv run --locked mypy src; else echo 'NOT RUN: no src directory'; fi
