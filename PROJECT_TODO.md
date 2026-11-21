@@ -149,6 +149,15 @@ for commands and verification limits. No checkbox changes or evaluation results.
 - [ ] **P4-20** | Owner: Person 3 | Deliverable: explicit provider and retrieval failure handling | Phase: 4 | Depends on: P4-09, P4-10, P4-16
 - [ ] **P4-21** | Owner: Person 3 | Deliverable: approved feature acceptance criteria covered by RED/GREEN behavior tests and recorded verification | Phase: 4 | Priority: High — first development cycle | Depends on: P4-03 through P4-07
 
+Feature 011 — Fake-only Backend Question API — T001–T008 was accepted at
+feature level by Mateja Miletic (Person 3, Backend & AI) on 2026-11-22 within
+the approved fake-only, deterministic, offline scope. See
+[`EVIDENCE.md`](EVIDENCE.md#feature-011--fake-only-backend-question-api) and
+[`specs/011-fake-backend-api/tasks.md`](specs/011-fake-backend-api/tasks.md).
+The Phase 4 backlog items above remain unchecked because their deliverables
+include broader work or dependencies outside Feature 011, including real
+provider/retrieval integration, scientific validation, and production behavior.
+
 ## Phase 5 — Frontend (Person 4)
 
 - [ ] **P5-01** | Owner: Person 4 | Deliverable: React and TypeScript application setup | Phase: 5 | Depends on: P0-05
