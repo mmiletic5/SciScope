@@ -187,7 +187,44 @@ rerun for this record.
 | `uv run --locked ruff format --check src/sciscope/api/http_models.py tests/backend/test_http_models.py` | First reached attempt FAILed, exit `1`: two test function signatures would be reformatted. The indicated layouts were applied; final rerun PASSed, exit `0`, with two files already formatted. |
 | `uv run --locked mypy src/sciscope/api/http_models.py` | PASS, exit `0`; no issues in one source file. |
 | `uv run --locked pytest tests/backend/ -v` | PASS, exit `0`; 23 tests passed in 0.58s, including the T002 app-factory test and 22 T003 HTTP-model tests. |
+| `uv run --locked pytest tests/backend/ -v` | PASS, exit `0`; 23 tests passed in 0.41s during the manual-evidence documentation review. |
 | `git diff --check` | PASS, exit `0`. |
+
+### User-executed manual verification
+
+The following results were supplied by the user and were not independently
+rerun for this record.
+
+1. **Valid request**
+
+   **Command:**
+
+   ```sh
+   PYTHONPATH=src uv run --locked python -c "from sciscope.api.http_models import QuestionRequest; q = QuestionRequest(workflow='research_question', question='  What is RAG?  '); print('Workflow:', q.workflow); print('Question:', q.question)"
+   ```
+
+   **Observed result:** `Workflow: research_question`; `Question: What is RAG?`;
+   PASS.
+
+2. **Blank question rejection**
+
+   **Command:**
+
+   ```sh
+   PYTHONPATH=src uv run --locked python -c "from pydantic import ValidationError; from sciscope.api.http_models import QuestionRequest; exec(\"try:\n QuestionRequest(workflow='research_question', question='   ')\n print('FAIL: blank question accepted')\nexcept ValidationError:\n print('PASS: blank question rejected')\")"
+   ```
+
+   **Observed result:** `PASS: blank question rejected`; PASS.
+
+3. **Unsupported field rejection**
+
+   **Command:**
+
+   ```sh
+   PYTHONPATH=src uv run --locked python -c "from pydantic import ValidationError; from sciscope.api.http_models import QuestionRequest; exec(\"try:\n QuestionRequest.model_validate({'workflow':'research_question','question':'What is RAG?','provider':'gemini'})\n print('FAIL: unsupported provider accepted')\nexcept ValidationError:\n print('PASS: unsupported provider rejected')\")"
+   ```
+
+   **Observed result:** `PASS: unsupported provider rejected`; PASS.
 
 ### Negative and isolation checks
 
@@ -208,10 +245,10 @@ rerun for this record.
   Cross-record citation membership, duplicate checks, and state-specific
   output validation remain T006.
 
-- **Human review/acceptance:** ACCEPTED based on the submitted implementation,
-  tests, central log, and reported verification. This is task-level acceptance
-  only; it does not establish production readiness or final feature-level
-  acceptance.
+- **Human review/acceptance:** ACCEPTED based on the submitted source files,
+  automated tests, and user-executed manual checks. This is task-level
+  acceptance only; it does not establish production readiness or final
+  feature-level acceptance.
 - **Evidence status:** Implementation checks and task-level human review
   recorded; final feature-level human acceptance remains pending.
 
