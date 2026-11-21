@@ -355,7 +355,7 @@ invalid IDs and malformed JSON text were not reflected; and no FastAPI
 
 ## T005 — Add typed protocols and deterministic independent fakes
 
-- **Implementation commit:** PENDING
+- **Implementation commit:** `706c2681faac006f792e5467eea8fcf2ec55e155`
 - **Task objective:** Define plain immutable retrieval/provider contracts and
   deterministic, independently injectable fake dependencies with synthetic
   evidence, provenance, metadata, success states, and controlled failures.
@@ -450,14 +450,106 @@ rerun for this record. All checks used `PYTHONPATH=src uv run --locked python`.
 ## T006 — Validate evidence, citations, and corpus provenance fail-closed
 
 - **Implementation commit:** PENDING
-- **Changed files:** PENDING
-- **RED command, expected failure, actual outcome:** NOT RUN
-- **GREEN command and actual outcome:** NOT RUN
-- **Additional verification commands/results:** NOT RUN
-- **Negative and isolation checks:** NOT RUN
-- **Warnings and unresolved issues:** PENDING
-- **Human review/acceptance:** PENDING
-- **Evidence status:** PENDING
+- **Task objective:** Validate synthetic retrieval/provider output before it
+  crosses the HTTP boundary and produce a deterministic fail-closed signal for
+  malformed evidence, citation, provenance, metadata, or state values.
+- **Changed files:**
+  - `src/sciscope/question_service/validation.py`
+  - `tests/backend/test_response_validation.py`
+  - `docs/person3/FEATURE_011_TEST_LOG.md`
+
+### RED result
+
+- **Command:** `uv run --locked pytest tests/backend/test_response_validation.py`
+- **Actual outcome:** Exit `2`; zero tests collected; one collection error.
+- **Failure reason:** `ModuleNotFoundError: No module named
+  'sciscope.question_service.validation'` during test-module import. This was
+  the expected missing-validator failure.
+
+### GREEN result
+
+- **Command:** `uv run --locked pytest tests/backend/test_response_validation.py`
+- **Initial outcome:** PASS, exit `0`; 16 tests collected and 16 passed.
+- **Final outcome:** PASS, exit `0`; 17 tests collected and 17 passed after
+  adding the symmetric false-`is_test_data` metadata case.
+
+### Contract review
+
+- **Claim-ID uniqueness decision:** No approved Feature 011 requirement makes
+  `claim_id` unique across claims. The public HTTP `Claim` model requires only
+  a nonempty `claim_id` (`src/sciscope/api/http_models.py`), while
+  `spec.md` FR-008 requires unique evidence `chunk_id` values and FR-010
+  requires unique citation IDs within one claim. The T006 task likewise names
+  unique evidence/citations and duplicate citation/chunk-ID rejection.
+- **Result:** No claim-ID uniqueness test or validation change was added; doing
+  so would expand the approved T006 contract.
+
+### Additional verification
+
+| Command | Actual outcome |
+| --- | --- |
+| `uv run --locked pytest tests/backend/ -v` | Initial PASS, exit `0`; 52 tests passed in 0.67s. Final PASS, exit `0`; 53 tests passed in 0.53s. |
+| `uv run --locked mypy src/sciscope/question_service/validation.py` | PASS, exit `0`; no issues in one source file. |
+| `uv run --locked ruff check src/sciscope/question_service/validation.py tests/backend/test_response_validation.py` | Initial FAIL, exit `1`; eight line-length findings. After correction and formatting, it FAILed once more with one test-docstring line-length finding. Final rerun PASSed, exit `0`. |
+| `uv run --locked ruff format --check src/sciscope/question_service/validation.py tests/backend/test_response_validation.py` | Initial FAIL, exit `1`; `test_response_validation.py` would be reformatted. `uv run --locked ruff format tests/backend/test_response_validation.py` reformatted one file; final rerun PASSed, exit `0`, with two files already formatted. |
+| `git diff --check` | PASS, exit `0`; no whitespace errors. |
+| Final-review `uv run --locked pytest tests/backend/test_response_validation.py -v` | PASS, exit `0`; 17 tests passed in 0.05s. |
+| Final-review `uv run --locked pytest tests/backend/ -v` | PASS, exit `0`; 53 tests passed in 0.52s. |
+| Final-review mypy, Ruff check, and Ruff format check on T006 source/test paths | PASS, exit `0`; no type issues, all lint checks passed, and two files were already formatted. |
+
+### User-executed manual verification
+
+The following results were supplied by the user and were not independently
+rerun for this record. All checks used `PYTHONPATH=src uv run --locked python`.
+
+1. **Valid evidence and citation** — The user retrieved deterministic
+   synthetic evidence and generated a fake provider answer.
+   `validate_answered_outcome()` completed without raising an exception.
+   Observed evidence ID: `synthetic-chunk-001`; cited ID:
+   `('synthetic-chunk-001',)`. **PASS:** valid evidence and citation accepted.
+2. **Unknown citation rejection** — The user replaced the original provider
+   claim with a claim referencing `nonexistent-chunk`.
+   `validate_answered_outcome()` raised the expected
+   `ResponseContractFailure`. Observed failure code:
+   `response_contract_failure`. **PASS:** nonexistent citation rejected.
+3. **State-specific validation** — The user verified that empty retrieval was
+   accepted by `validate_no_results_outcome()`, nonempty retrieval with a
+   provider insufficient-evidence outcome was accepted by
+   `validate_insufficient_evidence_outcome()`, and an answered provider
+   outcome with empty retrieval was rejected by
+   `validate_answered_outcome()`. Observed results: **PASS:** empty retrieval
+   accepted as no_results; **PASS:** insufficient evidence accepted;
+   **PASS:** answer without evidence rejected.
+
+### Negative and isolation checks
+
+- Valid answered output preserves the original fixture evidence, citation ID,
+  and corpus value; validation returns no substituted or invented data.
+- Tests reject missing, unknown, and duplicate citation IDs; duplicate evidence
+  IDs; blank evidence identity/source fields; blank corpus provenance fields;
+  and false mock metadata.
+- Tests reject answered output with a blank or absent answer or zero claims,
+  no-results output with evidence, and insufficient-evidence output that has
+  an answer or claims. All invalid combinations raise only
+  `ResponseContractFailure` with code `response_contract_failure`.
+- The pure validator imports only `question_service.contracts`; it performs no
+  HTTP, network, database, embedding, provider, Gemini, or private retrieval
+  operation.
+
+### Warnings and unresolved issues
+
+- Initial Ruff and format failures above were corrected and retained in this
+  record.
+- T006 validates response-local identity and shape only. It does not assess
+  citation entailment or scientific answer quality, and it does not map the
+  controlled failure to HTTP; those concerns remain in later approved tasks.
+
+- **Human review/acceptance:** ACCEPTED at task level based on the reviewed
+  implementation, approved contract requirements, 17 passing focused tests,
+  53 passing backend tests, and three successful user-executed manual
+  verification scripts. Final Feature 011 acceptance remains PENDING.
+- **Evidence status:** Automated checks recorded; feature-level human
+  acceptance and final `EVIDENCE.md` update remain pending.
 
 ## T007 — Orchestrate the three valid question outcomes
 
