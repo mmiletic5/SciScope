@@ -4,25 +4,31 @@
 
 **Created**: 2026-11-21
 
-**Status**: Draft — pending human and cross-owner review
+**Status**: Approved for Feature 011 implementation scope; T001 authorized
 **Input**: Person 3 Phase 1E request for the first fake-only backend API
 feature.
 
 ## Status and authority
 
-This is a draft feature specification. It neither approves a shared HTTP or
-retrieval contract nor authorizes dependency changes, tests, or implementation.
-The feature must still pass the repository sequence of research, specification,
-plan, tasks, explicit approval, RED tests, and implementation
+Person 3 approved this specification at repository revision
+`4309b22becef529940f86068329b01a6a5e862f9` on 2026-11-21 under the Backend & AI
+technical authority delegated by the TEAM. The TEAM's prior agreement on the
+relevant shared Phase 1 architecture decisions is reported by the user; no
+individual votes or dates for that earlier agreement are asserted. This
+approval covers Feature 011's fake-only HTTP contract and implementation scope.
+It does not adopt `retrieval.v1` or `retrieval.v2`, authorize real retrieval or
+provider integration, or complete broader Phase 1 backlog items.
+
+The feature follows the repository sequence of research, specification, plan,
+tasks, explicit approval, RED tests, and implementation
 ([`AGENTS.md`](../../AGENTS.md); [constitution, Delivery Gates](../../.specify/memory/constitution.md);
 [`docs/DEVELOPMENT_WORKFLOW.md`, Stages A–F](../../docs/DEVELOPMENT_WORKFLOW.md)).
 
-The source research for this feature is
-[`research.md`](research.md). Its FastAPI/Pydantic version, compatibility, and
-license observations are **NOT VERIFIED** because no external verification was
-performed. The draft interface below is therefore a **PROPOSED Person 3 API
-contract**, not an approved replacement for the proposed `retrieval.v1` or the
-Person 2-owned `retrieval.v2` boundary.
+The source research for this feature is [`research.md`](research.md). The
+dependency constraints below are approved; lock resolution remains part of
+T001. The HTTP interface below is approved for Feature 011 only and is not a
+replacement for the proposed `retrieval.v1` or the Person 2-owned
+`retrieval.v2` boundary.
 
 ## Clarifications
 
@@ -33,7 +39,7 @@ Person 2-owned `retrieval.v2` boundary.
   echoed as trusted metadata, and its sanitized error envelope instead carries
   a newly generated, valid opaque ID.
 - Framework-generated request-validation errors are transformed into this
-  draft API's versioned, sanitized `422` envelope. They do not expose raw
+  API's versioned, sanitized `422` envelope. They do not expose raw
   input, exception details, stack traces, or framework-internal structures.
 - An `answered` output fails closed with `response_contract_failure` when its
   answer or any required evidence, citation, source-metadata, or corpus-
@@ -186,12 +192,13 @@ exception text, secrets, prompt, or evidence passage in the error envelope.
   metadata field, and every corpus-provenance field must be nonempty strings.
   A missing, non-string, blank, duplicate, or non-member value is invalid.
 
-## Proposed HTTP Contract
+## Approved Feature 011 HTTP Contract
 
-All fields and paths in this section are **DRAFT PROPOSALS** until Person 3,
-Person 4, and the normal shared-contract approval gate accept them. No existing
-approved HTTP contract defines these names: P1-11 (versioned API contracts) and
-P1-14 (human approval of shared architecture/contracts) are unchecked
+Person 3 approved the fields and paths in this section without amendments on
+2026-11-21 under delegated Backend & AI technical authority. The TEAM's
+previously reached agreement satisfies the P1-11/P1-14 gates for this limited
+fake-only feature scope. The corresponding broader Phase 1 backlog tasks remain
+unchecked pending reconciliation of their full deliverables and prerequisites
 ([`PROJECT_TODO.md`, Phase 1](../../PROJECT_TODO.md)).
 
 ### Endpoint
@@ -212,7 +219,7 @@ the `research_question` workflow and has no public metadata-filter field.
 }
 ```
 
-| Field | Required | Draft validation policy |
+| Field | Required | Validation policy |
 | --- | --- | --- |
 | `workflow` | yes | Exact literal `research_question`. |
 | `question` | yes | JSON string whose trimmed length is 1–2,000 Unicode characters. The original string is never included in an error envelope or unsafe log. |
@@ -220,7 +227,7 @@ the `research_question` workflow and has no public metadata-filter field.
 
 The request is a closed object: unsupported fields, including filters, are a
 validation error. The request body does not carry an API-version field because
-the proposed path selects the version.
+the path selects the version.
 
 ### Answered success response
 
@@ -294,7 +301,7 @@ as an answered response.
 }
 ```
 
-| Condition | Draft HTTP status | Draft error code | `retryable` |
+| Condition | HTTP status | Error code | `retryable` |
 | --- | --- | --- | --- |
 | Request validation failure | 422 | `invalid_request` | `false` |
 | Fake retrieval unavailable | 503 | `retrieval_unavailable` | `true` |
@@ -327,7 +334,7 @@ in-process test client must still surface the unexpected exception to tests.
 - **FR-002**: The operation MUST accept a closed request object containing
   `workflow`, `question`, and optionally `request_id`; it MUST reject public
   metadata filters and unknown fields for this feature.
-- **FR-003**: The operation MUST apply the proposed strict question and
+- **FR-003**: The operation MUST apply the approved strict question and
   request-ID validation rules before it calls retrieval or answer generation.
   Framework-generated validation errors MUST be transformed into the same
   versioned, sanitized `422` error envelope.
@@ -336,7 +343,7 @@ in-process test client must still surface the unexpected exception to tests.
   An invalid supplied ID MUST receive `422`, MUST NOT be echoed as trusted
   metadata, and its error envelope MUST carry a newly generated valid opaque
   ID.
-- **FR-005**: The operation MUST return the proposed versioned success shape
+- **FR-005**: The operation MUST return the approved versioned success shape
   for `answered`, `no_results`, and `insufficient_evidence` states. An
   `answered` state MUST contain at least one claim.
 - **FR-006**: The feature MUST obtain retrieval and answer-generation behavior
@@ -369,7 +376,7 @@ in-process test client must still surface the unexpected exception to tests.
   dependency returns no evidence. It MUST return `insufficient_evidence` only
   when its configured fake policy selects that state from returned evidence.
   Neither status MUST assert that the literature lacks evidence.
-- **FR-012**: The feature MUST return the proposed sanitized error envelope and
+- **FR-012**: The feature MUST return the approved sanitized error envelope and
   HTTP mapping for validation, unavailable dependency, timeout, and output
   contract failures, including framework-generated request-validation errors.
   Unexpected internal exceptions MUST return HTTP `500` with code
@@ -437,7 +444,8 @@ in-process test client must still surface the unexpected exception to tests.
 
 ### Included
 
-- A draft contract for one non-streaming question endpoint and one workflow.
+- The approved contract for one non-streaming question endpoint and one
+  workflow.
 - Strict input, response, citation-membership, provenance, and error behavior.
 - Independently injectable deterministic fake retrieval and fake answer
   generation behavior, assessed only through offline acceptance checks.
@@ -478,17 +486,17 @@ in-process test client must still surface the unexpected exception to tests.
 This specification scopes future work only. It does **not** mark any task
 complete.
 
-| Backlog item | Relationship to this draft |
+| Backlog item | Relationship to Feature 011 |
 | --- | --- |
-| P1-11 | Supplies the still-unapproved shared versioned API contract decision this draft proposes. |
-| P1-14 | Requires human approval of the shared architecture and contract before implementation. |
+| P1-11 | Its gate is satisfied for Feature 011's fake-only HTTP contract; the broader Phase 1 task remains unchecked pending reconciliation of all module API contracts. |
+| P1-14 | Its gate is satisfied for this feature scope by the recorded TEAM decision and Person 3 approval; the broader task remains unchecked because P1-01–P1-13 completion is not established. |
 | P4-01 | Future FastAPI application skeleton; only its first endpoint boundary is specified here. |
-| P4-02 | Future request, success, and error API contracts; this draft proposes their first version. |
-| P4-03 | Future approved Spec Kit artifacts and acceptance criteria; this is only the draft specification artifact. |
+| P4-02 | Future implementation of the approved request, success, and error API contract. |
+| P4-03 | Approved Feature 011 Spec Kit artifacts and acceptance criteria; implementation remains pending. |
 | P4-04–P4-08 | Future deterministic fake provider, fake behavior tests, marker fixture, integration, and offline tests. |
-| P4-13–P4-15 | Future structured validation, citation validation, and insufficient-evidence behavior constrained by this draft. |
-| P4-17 | Future input validation constrained by this draft. |
-| P4-20 | Future provider/retrieval failure behavior constrained by this draft. |
+| P4-13–P4-15 | Future structured validation, citation validation, and insufficient-evidence behavior constrained by this approved feature. |
+| P4-17 | Future input validation constrained by this approved feature. |
+| P4-20 | Future provider/retrieval failure behavior constrained by this approved feature. |
 | P4-09–P4-12, P4-16, P4-18–P4-19 | Remain outside this fake-only first feature because they concern real retrieval, Gemini, timeout/streaming, security operationalization, or real provider/token work. |
 | P5-05 | Person 4's future fake-API frontend integration depends on an approved P4-02 contract. |
 
@@ -497,14 +505,14 @@ The underlying task IDs and dependencies remain unchecked in
 
 ## Assumptions and Approval Gates
 
-### Draft assumptions
+### Assumptions
 
 - This feature is a development-only, fake-only contract slice. Its `is_mock`
   and `is_test_data` metadata is always `true`; it cannot be used to imply a
   real corpus or provider result.
-- A future implementation may use FastAPI and Pydantic after a separately
-  approved dependency plan. Neither package is a currently declared direct
-  application dependency (`research.md`, “Dependency options”).
+- The approved implementation will use FastAPI and Pydantic under the
+  constraints recorded in [plan.md](plan.md#approval-record). T001 will verify
+  the resolved lock graph before implementation tasks proceed.
 - The existing synchronous database/retrieval layer informs the later design,
   but this feature calls only fakes and creates no database lifecycle
   requirement (`research.md`, “Application lifecycle and sync route model”).
@@ -518,18 +526,19 @@ The underlying task IDs and dependencies remain unchecked in
    connected. The fake protocol here must not become a de facto shared
    retrieval contract. ([`docs/person2/RETRIEVAL_V2_PERSON3_HANDOFF.md`,
    “Selection and compatibility”](../../docs/person2/RETRIEVAL_V2_PERSON3_HANDOFF.md))
-2. **HTTP contract adoption (Persons 3 and 4, then P1-11/P1-14 human gate):**
-   Approve, revise, or reject the proposed path, field names, validation limits,
-   status names, HTTP status mapping, and error envelope before frontend work
-   or implementation begins.
+2. **Feature 011 HTTP contract adoption:** Resolved for this feature by Person
+   3's approval under delegated Backend & AI technical authority and the
+   user-reported TEAM agreement. This does not approve an HTTP/retrieval
+   contract for real retrieval or other features.
 3. **Corpus identity compatibility (Person 2 owner/reviewer):** Confirm that
    future facade results can provide the separately preserved delivery digest,
    source-contract version, corpus version, DOI, locator, and exact passage
    needed by this API. The currently proposed `retrieval.v1` DTO is not itself
    an approval ([`docs/contracts/retrieval-v1.md`, status and contract sections](../../docs/contracts/retrieval-v1.md)).
-4. **Dependency and framework decision (Person 3 plus human plan approval):**
-   Verify official FastAPI/Pydantic Python 3.12 compatibility, licenses, and
-   versions before adding direct dependencies or choosing an HTTP test client.
+4. **Dependency resolution (T001):** Resolve and verify the approved
+   FastAPI/Pydantic/HTTPX constraints and test-client compatibility before
+   implementation tasks proceed. If resolution fails, obtain approval for
+   revised constraints.
 5. **Real integration and retrieval strategy (Person 2 and Person 3):** Keep
    real retrieval disabled. A later approved comparison must choose any
    retrieval version/mode and a compatible query embedder; no selection is
@@ -545,5 +554,5 @@ Likewise, the current `retrieval.v1` document labels itself proposed and says
 it does not approve P1-09, P1-11, or P1-14
 ([`docs/contracts/retrieval-v1.md`, “Status”](../../docs/contracts/retrieval-v1.md)).
 
-No implementation, test, plan, task list, dependency change, shared-contract
-edit, approval, or backlog completion is created by this specification.
+This approval does not claim implementation, tests, dependency resolution,
+automated or human implementation verification, or broader backlog completion.

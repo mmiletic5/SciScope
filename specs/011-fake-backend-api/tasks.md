@@ -2,15 +2,15 @@
 
 **Feature branch**: `011-fake-backend-api`
 
-**Status**: Draft task proposal — no task is approved, started, or complete.
+**Status**: Feature approval recorded — T001 is authorized but not started; no task is complete.
 
 ## Preconditions and execution rule
 
-All tasks require explicit human approval of [spec.md](spec.md) and
-[plan.md](plan.md), the Person 3/Person 4 HTTP contract, P1-11/P1-14, and the
-exact dependency constraints. Until then, do not create source/test files,
-install packages, run tests, connect to a database, call a provider, start a
-server, or commit. All eight tasks exclude `retrieval.v2`, live Gemini/query
+Feature approval, the HTTP contract, feature-scoped P1-11/P1-14 disposition,
+and exact dependency constraints are recorded in [plan.md](plan.md#approval-record).
+Person 3 authorized T001 after that record is committed. T001 remains unstarted;
+later tasks remain subject to the dependency order below. All eight tasks exclude
+`retrieval.v2`, live Gemini/query
 embedding, real retrieval/database, private `_RetrievalCore`, streaming, auth,
 rate limiting, deployment, and scientific-answer evaluation.
 
@@ -25,9 +25,9 @@ increment must observe its RED test before its minimal GREEN implementation.
 
 ## Phase 1 — Environment preparation
 
-### T001 — Approve and establish the FastAPI test environment
+### T001 — Establish the approved FastAPI test environment
 
-- [ ] T001 Approve exact FastAPI/Pydantic/HTTPX constraints and prepare `pyproject.toml`, `uv.lock`, and `tests/backend/__init__.py` for backend behavior tests.
+- [ ] T001 Apply the approved FastAPI/Pydantic/HTTPX constraints and prepare `pyproject.toml`, `uv.lock`, and `tests/backend/__init__.py` for backend behavior tests.
 
   - **Owner**: Person 3.
   - **Goal and scope**: After dependency approval, add explicit FastAPI and
@@ -36,14 +36,15 @@ increment must observe its RED test before its minimal GREEN implementation.
     provider SDK, database configuration, or unrelated package.
   - **Requirements**: Enables FR-001–FR-007, FR-012, FR-015; NFR-001/NFR-004;
     SC-001/SC-005.
-  - **Dependencies**: Specification/plan/shared-contract/dependency approval;
-    no earlier Feature 011 task.
+  - **Dependencies**: Approved specification, plan, feature-scoped shared
+    contract disposition, and dependency constraints recorded in plan.md; no
+    earlier Feature 011 task.
   - **Proposed source/test paths**: `pyproject.toml`, `uv.lock`,
     `tests/backend/__init__.py`.
   - **RED-first behavior test**: None. This is environment preparation, so a
     FastAPI RED test must not be required before approved test dependencies are
     installed.
-  - **Baseline verification**: After approval, run `uv lock --check` and
+  - **Baseline verification**: During T001, run `uv lock --check` and
     `uv run python -c "import fastapi, httpx, pydantic"`.
   - **Expected initial failure/reason**: No executable HTTP RED test: FastAPI
     and explicit HTTPX are absent from declared dependencies.
@@ -309,6 +310,8 @@ increment must observe its RED test before its minimal GREEN implementation.
 | US2 — empty vs insufficient evidence | T007 | Separate state assertions, including empty-result provenance. |
 | US3 — safe failure behavior | T008 | Sanitized 422/500/503/504 and unexpected-defect observability. |
 
-Before any checkbox is marked complete, approve the specification, plan, this
-task list, exact dependency changes, and shared HTTP contract. No proposed
-commit boundary authorizes a commit in advance.
+The approval gates and exact dependency constraints are recorded in plan.md.
+T001 authorization is limited as stated above. Task checkboxes remain
+incomplete until each task's acceptance criteria, automated checks, and feature
+human acceptance are fulfilled. Proposed commit boundaries do not authorize
+commits in advance.

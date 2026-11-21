@@ -2,17 +2,17 @@
 
 **Branch**: `011-fake-backend-api` | **Date**: 2026-11-21 | **Spec**: [spec.md](spec.md)
 
-**Status**: Draft — not approved for implementation.
+**Status**: Approved for Feature 011 scope by Person 3 on 2026-11-21; T001 authorized.
 
 ## Summary
 
-After explicit approval of this plan and the feature specification, add the
+Under the approval recorded below, prepare the
 smallest Person 3 API slice: a synchronous, non-streaming
 `POST /api/v1/questions` endpoint for `research_question`. The endpoint will
 validate a closed Pydantic request, orchestrate independently injected
 deterministic fake retrieval and answer-generation dependencies, validate
 response-local evidence citations and corpus provenance, and return only the
-draft versioned success or sanitized error envelopes defined in
+approved versioned success or sanitized error envelopes defined in
 [spec.md](spec.md).
 
 The first implementation will use no database connection, private Person 2
@@ -27,19 +27,19 @@ This plan follows the architecture, dependency, module-boundary, data-contract,
 failure, test, risk, and integration requirements in
 [`docs/DEVELOPMENT_WORKFLOW.md`, Stage C](../../docs/DEVELOPMENT_WORKFLOW.md).
 The official generic Spec Kit planner can also create data-model, contract, and
-quickstart artifacts. The requested Phase 1G scope authorizes only this
-`plan.md`; the data model and public draft contract remain in
-[spec.md](spec.md), and no `tasks.md`, implementation, test, dependency, or
-shared-contract artifact is created here.
+quickstart artifacts. The approved feature artifacts are `spec.md`, this
+`plan.md`, and `tasks.md`; the HTTP contract is documented in [spec.md](spec.md).
+This approval record changes no implementation, tests, dependencies, or shared
+retrieval contract.
 
 ## Technical Context
 
-| Item | Draft decision |
+| Item | Approved decision |
 | --- | --- |
 | Language/runtime | Python `>=3.12,<3.13`, already declared in [pyproject.toml](../../pyproject.toml). |
 | Project type | Additive internal web-service package under the existing single Python project. |
-| Proposed runtime dependencies | FastAPI and direct Pydantic v2 use; exact constraints remain unresolved pending approval and lock resolution. |
-| Proposed test dependency | Explicit `httpx` development dependency used through FastAPI/Starlette's in-process `TestClient`; exact compatible constraint remains unresolved pending dependency resolution. |
+| Runtime dependencies | `fastapi>=0.115,<1` and `pydantic>=2.7,<3`; lock resolution is T001 work. |
+| Test dependency | `httpx>=0.27,<0.29` in the development group for the in-process `TestClient`; lock resolution and import check are T001 work. |
 | Storage | None in this feature. Fakes contain synthetic fixture data only. |
 | Execution model | One synchronous route/service path. The existing database and private retrieval core are synchronous, but are deliberately not called. |
 | Test framework | Existing `pytest` configuration (`tests` test path, `src` Python path) with future focused backend tests. |
@@ -51,7 +51,7 @@ The existing database session constructs a synchronous SQLAlchemy engine
 The present retrieval implementation is explicitly private (`_RetrievalCore`)
 and performs synchronous retrieval ([`src/sciscope/retrieval/_core.py`](../../src/sciscope/retrieval/_core.py)); it is not a dependency of this feature.
 
-## Dependency Research and Selection Gate
+## Dependency Research and Selection
 
 ### Verified external facts
 
@@ -65,13 +65,13 @@ lockfile, or environment was fetched or changed.
 | Test client | FastAPI documents `fastapi.testclient.TestClient`, backed by Starlette and HTTPX, for normal synchronous pytest tests. [FastAPI testing guide](https://fastapi.tiangolo.com/tutorial/testing/) |
 | Sanitized validation mapping | FastAPI documents overriding `RequestValidationError` through an exception handler; its examples show the error object can include raw request information, which this feature must not return or log. [FastAPI error handling guide](https://fastapi.tiangolo.com/tutorial/handling-errors/) |
 
-These current metadata facts make the proposed dependency direction compatible
+These current metadata facts make the approved dependency direction compatible
 with the repository's Python 3.12 range in principle. They do **not** verify a
 specific three-package resolver result, Windows wheel availability for the
 eventual chosen pins, security posture, or compatibility with the repository's
 current lock graph.
 
-### Proposed dependency decision — approval required
+### Approved dependency constraints
 
 1. Add FastAPI as an explicit direct runtime dependency.
 2. Add Pydantic as an explicit direct runtime dependency because the project
@@ -79,23 +79,22 @@ current lock graph.
    transitive lock entry.
 3. Add HTTPX as an explicit test/development dependency; do not rely on an
    unrelated transitive dependency for the documented in-process test client.
-4. Before changing `pyproject.toml` or `uv.lock`, select compatible bounded
-   constraints, resolve with the approved toolchain, inspect the resulting
-   dependency graph/license data, and confirm the test-client API at the
-   selected versions.
+4. During T001, resolve the approved bounded constraints with the approved
+   toolchain, inspect the resulting dependency graph/license data, and confirm
+   the test-client API at the resolved versions before completing the task.
 
-Exact FastAPI, Pydantic, Starlette, and HTTPX versions are **NOT SELECTED** in
-this draft. No dependency installation or synchronization is authorized by this
-plan.
+The FastAPI, Pydantic, and HTTPX constraint ranges are approved. Exact locked
+versions and compatibility of the resolved test-client stack remain to be
+verified during T001.
 
 ## Constitution Check
 
-| Gate | Draft-plan result |
+| Gate | Status |
 | --- | --- |
-| Research, specification, clarification, plan before implementation | Satisfied as artifacts; human approval is still required before tests or code. |
+| Research, specification, clarification, plan before implementation | Satisfied as artifacts and explicitly approved for Feature 011 on 2026-11-21. |
 | Test-first delivery | Future work begins with failing behavior tests, then minimal implementation, then declared checks. |
-| Shared-contract review | Not satisfied for public adoption: P1-11 and P1-14 remain open. This document keeps the HTTP contract proposed. |
-| Owner boundaries | Person 3 owns this API/fake-provider feature. Person 2 owns retrieval; no Person 2 source or private core is changed/imported. Person 4 must approve frontend-facing fields before integration. |
+| Shared-contract review | The user reports prior TEAM agreement on relevant Phase 1 decisions. P1-11/P1-14 gates are satisfied for this fake-only feature scope. Broader backlog completion remains unverified and unchecked; no retrieval contract is adopted. |
+| Owner boundaries | Person 3 owns this API/fake-provider feature. Person 2 and Person 4 delegated Backend & AI technical decisions to Person 3. No Person 2 source or private core is changed/imported. |
 | Security/provenance | Fakes only, explicit mock/test metadata, separate corpus provenance, no secrets/live calls/protected data. |
 | Evidence/backlog | No tasks are complete. After approved implementation and human verification, update `EVIDENCE.md` and `PROJECT_TODO.md` truthfully. |
 
@@ -165,7 +164,7 @@ or network client.
 
 ### HTTP models
 
-`api/http_models.py` will model the public draft shape in [spec.md](spec.md):
+`api/http_models.py` will model the approved public shape in [spec.md](spec.md):
 
 - Closed `QuestionRequest` object: literal `workflow`, trimmed `question`, and
   optional `request_id`; rejected extra fields and absence/type/length/pattern
@@ -175,7 +174,7 @@ or network client.
   `workflow`, `status`, `answer`, `claims`, `evidence`, `corpus`, and
   `metadata`.
 - Error envelope: always containing `api_version`, `request_id`, `error`, and
-  `metadata`, with the draft error code and retryability mapping.
+  `metadata`, with the approved error codes and retryability mapping.
 - Mock/test metadata is an explicit structured model with both booleans fixed
   to true for this feature; it is present for every success and error response.
 
@@ -287,7 +286,7 @@ scope and avoids an unreviewed strategy for offloading the existing synchronous
 database layer. A later real integration must separately decide event-loop
 blocking and lifecycle behavior.
 
-## Offline Test Strategy After Approval
+## Offline Test Strategy
 
 ### Test isolation
 
@@ -305,7 +304,7 @@ must not import network, database, embedding, or live-provider adapters.
 
 ### RED then GREEN sequence
 
-After explicit human approval of specification and plan, the next workflow is:
+With specification and plan approval recorded above, the workflow is:
 
 1. Add focused failing behavior tests for the versioned schema, one endpoint,
    strict validation/invalid-ID generation, and every success state.
@@ -318,7 +317,7 @@ After explicit human approval of specification and plan, the next workflow is:
 5. Run the approved focused and repository quality checks; record actual
    commands, outcomes, and human verification only after they occur.
 
-No test or code is created by this draft plan.
+This approval-record change creates no test or code.
 
 ### Planned verification categories
 
@@ -335,7 +334,7 @@ No test or code is created by this draft plan.
   timeout (`504`) retain required metadata and sanitized messages.
 - Isolation: fakes record no database/network/provider invocation; tests only
   use the in-process ASGI client.
-- Quality: after approval, the relevant `pytest`, Ruff, formatting, and mypy
+- Quality: during implementation, the relevant `pytest`, Ruff, formatting, and mypy
   commands from repository workflow are run, with outcomes recorded rather
   than presumed.
 
@@ -374,9 +373,9 @@ No test or code is created by this draft plan.
 
 | Risk or decision | Impact | Required resolution / mitigation |
 | --- | --- | --- |
-| HTTP contract is proposed | Person 4 cannot rely on the fields until P1-11/P1-14 acceptance. | Persons 3/4 review the path, field names, limits, states, and error mapping; record human approval. |
+| HTTP contract scope | Feature 011's contract is approved for its fake-only scope; this does not define real retrieval integration. | Keep implementation within the approved interface; make a separate decision for real retrieval contracts. |
 | No public Person 2 facade | Real retrieval integration could couple API code to `_RetrievalCore`. | Keep fakes behind independent protocols; Person 2 and Person 3 agree a public facade before P4-09. |
-| Dependency pins absent | Resolver or test-client mismatch could block implementation. | Approve exact constraints only after compatible Python 3.12 lock resolution and review; do not rely on transitive Pydantic. |
+| Dependency resolution unverified | Resolver or test-client mismatch could block implementation. | Use the approved ranges below and validate the Python 3.12 lock graph and imports during T001. If incompatible, pause for approval of revised ranges. |
 | Generated invalid-request correlation ID | Framework validation occurs before normal request-model handling. | Design exception handler/middleware seam in approved implementation and test it explicitly. |
 | Overbroad exception mapping | Could hide errors or leak details. | Map only declared failures; test sanitized output and let unclassified defects fail visibly in tests for review. |
 | Synthetic provenance mistaken for real provenance | Could mislead a frontend or later consumer. | Require immutable mock/test metadata and synthetic fixture IDs in every response. |
@@ -385,18 +384,25 @@ No test or code is created by this draft plan.
 ## Owner and Approval Gates
 
 - **Person 3**: owns the planned API, fake protocols, deterministic fixtures,
-  output validation, and offline tests after approval.
-- **Person 2**: reviews any future public retrieval facade/provenance mapping;
-  this feature makes no retrieval source change.
-- **Person 4**: reviews and accepts the frontend-facing proposed HTTP fields,
-  statuses, error envelope, and mock metadata before integration.
-- **TEAM/human gate**: must approve the specification and this plan, resolve the
-  P1-11/P1-14 shared-contract gate, and approve dependency changes before
-  behavior tests or implementation begin.
+  output validation, and offline tests under the approved scope.
+- **Person 2**: delegated Backend & AI technical decisions to Person 3 and
+  reviews any future public retrieval facade/provenance mapping; this feature
+  makes no retrieval source change.
+- **Person 4**: delegated Backend & AI technical decisions to Person 3; that
+  delegation is authority and is not represented as a separate Person 4
+  contract signature.
+- **TEAM/human gate**: the user reports that the TEAM previously agreed on the
+  relevant shared Phase 1 architecture decisions. Person 3 explicitly approved
+  this specification, plan, HTTP contract, checklist dispositions, and
+  dependency ranges on 2026-11-21 under delegated Backend & AI authority. This
+  satisfies the P1-11/P1-14 gates for Feature 011's fake-only scope.
+- **T001 authorization**: Person 3 explicitly authorized T001 on 2026-11-21
+  once this approval record is committed. T001 remains unstarted and incomplete
+  until its dependency changes and verification are performed and recorded.
 
 Relevant backlog items remain open: P4-01–P4-08, P4-13–P4-15, P4-17, P4-20,
 P4-21, and P5-05 ([`PROJECT_TODO.md`, Phases 1, 4, and 5](../../PROJECT_TODO.md)).
-No backlog task is completed by this draft.
+No backlog task is completed by this approval.
 
 ## Formal Analysis and Approval Status
 
@@ -405,12 +411,46 @@ No backlog task is completed by this draft.
   prerequisite exited `0` and resolved this Feature 011 directory.
 - The formal analysis found no critical or high-severity contradictions. All
   required FR, NFR, and SC items have planned coverage across T001–T008.
-- Checklist exceptions CHK001, CHK003, CHK008, and CHK016 (I2) remain unchecked
-  pending human disposition. I3 / CHK015 remains unchecked and deferred to
-  implementation verification.
-- Human and shared-contract approvals remain open. The feature remains
-  **DRAFT**. This documentation record does not authorize behavior tests,
-  dependency changes, or implementation.
+- Approval scope, artifact revision, contract decision, checklist dispositions,
+  dependencies, and T001 authorization are recorded in the next section.
+- The user-reported TEAM decision and feature-scoped P1-11/P1-14 gate status do
+  not complete the broader backlog tasks. All `PROJECT_TODO.md` Phase 1
+  checkboxes remain unchanged.
+- CHK001, CHK003, CHK008, CHK016, and CHK015 remain unchecked. No checklist
+  marker is changed by this approval record.
+
+## Approval Record
+
+- **Approver and date**: Person 3 explicitly approved in the current session on
+  2026-11-21, acting under Backend & AI technical authority delegated by the
+  TEAM.
+- **Owner delegation**: Person 2 and Person 4 delegated Backend & AI technical
+  decisions to Person 3. This records decision authority, not separate
+  individual endorsements of each contract detail.
+- **Approved artifacts**: `spec.md` and this `plan.md` as present at repository
+  revision `4309b22becef529940f86068329b01a6a5e862f9`.
+- **HTTP contract**: Person 3 adopted the proposed `POST /api/v1/questions`
+  contract without amendments. It is approved only for Feature 011's fake-only
+  scope.
+- **TEAM/shared-contract gates**: The user reports that the TEAM previously
+  agreed on relevant shared Phase 1 architecture decisions. No individual
+  votes or historical date are asserted. This agreement, together with Person
+  3's delegated technical authority and explicit approval, satisfies P1-11 and
+  P1-14 for this feature's fake-only scope. It does not complete those broader
+  backlog tasks or assert that P1-01 through P1-13 are complete.
+- **Checklist decisions**: Person 3 accepted the documented feature-specific
+  exceptions for CHK001, CHK003, CHK008, and CHK016. Those criteria remain
+  unchecked. CHK015 is deferred to implementation verification and remains
+  unchecked.
+- **Dependency constraints**: Person 3 approved `fastapi>=0.115,<1`,
+  `pydantic>=2.7,<3`, and `httpx>=0.27,<0.29`. Lock resolution and compatibility
+  checks remain T001 work.
+- **T001 authorization**: Person 3 authorized T001 after this record is
+  committed. T001 has not started and is not complete. T002–T008 remain
+  unstarted and must follow the approved task sequence.
+- **Scope limits**: No live provider, outgoing network call, database, real
+  retrieval, `_RetrievalCore`, `retrieval.v1` adoption, or `retrieval.v2`
+  enablement is authorized by this record.
 
 ## Post-Approval Verification and Evidence
 
@@ -420,6 +460,7 @@ It must name the exact RED test for each implementation increment and the
 focused verification commands. Only after actual execution and required human
 verification may it update `EVIDENCE.md` and `PROJECT_TODO.md`.
 
-Until then, this plan is documentation only: it does not approve implementation,
-dependency changes, tests, server startup, package installation, database
-access, provider calls, or contract adoption.
+This approval authorizes T001 only. T001 may prepare the approved dependency
+environment and run its specified dependency checks. T002–T008 remain gated by
+the task sequence. This approval does not authorize a server, database access,
+live provider calls, or real retrieval integration.
