@@ -76,7 +76,7 @@ rerun for this record.
 
 ## T002 — Create the injectable app factory
 
-- **Implementation commit:** PENDING
+- **Implementation commit:** `dc366ab84d73d16fa50f4b6b239675ad344462ca`
 - **Task objective:** Create an offline FastAPI composition-root skeleton that
   accepts and stores opaque injected retrieval and provider sentinels without
   invoking them or registering question behavior.
@@ -107,6 +107,33 @@ rerun for this record.
 | `uv run --locked ruff format --check src/sciscope/api tests/backend/test_app_factory.py` | Initial attempt reported one test file would be reformatted. The individual subcommand exit code was not separately captured because the grouped command continued; the final rerun PASSed, exit `0`, with three files already formatted. |
 | `uv run --locked mypy src/sciscope/api` | PASS, exit `0`; no issues in two source files. |
 | `git diff --check` | PASS, exit `0`. |
+
+### User-executed manual verification
+
+The following results were supplied by the user and were not independently
+rerun for this record. All checks used `PYTHONPATH=src:tests uv run --locked
+python`, an in-process FastAPI `TestClient`, and the test-only
+`backend.validation_asgi.create_validation_app` adapter.
+
+1. **Valid caller request ID** — A `POST /__test__/validation` request with a
+   blank question and `request_id=mateja-test-001` returned HTTP `422`. The
+   response request ID was `mateja-test-001`, the error code was
+   `invalid_request`, and the mock metadata was
+   `{'is_mock': True, 'is_test_data': True}`. **PASS:** the valid caller ID was
+   preserved.
+2. **Invalid caller request ID** — A `POST /__test__/validation` request with
+   `request_id="invalid request ID"` and an injected ID factory returning
+   `generated-safe-id` returned HTTP `422` with request ID
+   `generated-safe-id`. **PASS:** the invalid caller ID was safely replaced.
+3. **Malformed JSON** — A `POST /__test__/validation` request with body
+   `{invalid-json` and an injected ID factory returning `generated-json`
+   returned HTTP `422`, error code `invalid_request`, and request ID
+   `generated-json`. **PASS:** malformed JSON was safely handled.
+
+The user confirmed that these assertions held: HTTP `422` was returned; the
+approved error code was used; caller IDs were preserved or safely replaced;
+invalid IDs and malformed JSON text were not reflected; and no FastAPI
+`detail` field was exposed.
 
 ### User-executed manual verification
 
@@ -157,7 +184,7 @@ rerun for this record.
 
 ## T003 — Define closed versioned HTTP schemas and input validation
 
-- **Implementation commit:** PENDING
+- **Implementation commit:** `be4ea3ccbb3004119914a80e9d78830566505e6f`
 - **Task objective:** Define closed versioned Pydantic schemas for the approved
   request, three success states, error envelope, evidence, claims, corpus
   provenance, and mock/test metadata.
@@ -255,14 +282,76 @@ rerun for this record.
 ## T004 — Add request IDs and sanitized framework 422 translation
 
 - **Implementation commit:** PENDING
-- **Changed files:** PENDING
-- **RED command, expected failure, actual outcome:** NOT RUN
-- **GREEN command and actual outcome:** NOT RUN
-- **Additional verification commands/results:** NOT RUN
-- **Negative and isolation checks:** NOT RUN
-- **Warnings and unresolved issues:** PENDING
-- **Human review/acceptance:** PENDING
-- **Evidence status:** PENDING
+- **Task objective:** Generate and validate opaque request IDs, then translate
+  framework request-validation failures to the approved sanitized `422`
+  envelope without adding a production question route.
+- **Changed files:**
+  - `src/sciscope/api/app.py`
+  - `src/sciscope/question_service/__init__.py`
+  - `src/sciscope/question_service/ids.py`
+  - `tests/backend/validation_asgi.py`
+  - `tests/backend/test_request_ids_and_validation.py`
+  - `docs/person3/FEATURE_011_TEST_LOG.md`
+
+### RED result
+
+- **Command:** `uv run --locked pytest
+  tests/backend/test_request_ids_and_validation.py`
+- **Actual outcome:** Exit `2`; zero tests collected; one collection error;
+  zero failed tests.
+- **Failure reason:** `ModuleNotFoundError: No module named
+  'sciscope.question_service'` while importing the planned request-ID module.
+
+### GREEN result
+
+- **Command:** `uv run --locked pytest
+  tests/backend/test_request_ids_and_validation.py`
+- **Actual outcome:** PASS, exit `0`; five tests collected and five passed.
+
+### Additional verification
+
+| Command | Actual outcome |
+| --- | --- |
+| Focused T004 suite after the first implementation attempt | FAIL, exit `2`; test collection could not import `tests.backend.validation_asgi` because `tests` is not an importable package. The test-only import was corrected to `backend.validation_asgi`. |
+| Focused T004 suite after the adapter-import correction | FAIL, exit `1`; four tests passed and one assertion incorrectly treated the safe deterministic ID `generated-json` as parser-detail leakage. The assertion was narrowed to the malformed body and FastAPI JSON-error code. |
+| `uv run --locked pytest tests/backend/test_request_ids_and_validation.py` | Final PASS, exit `0`; five tests passed in 0.42s. |
+| `uv run --locked pytest tests/backend/ -v` | Initial PASS for 28 tests in 0.49s; subsequent Ruff command caused the grouped verification to exit `1`. Final PASS, exit `0`; 28 tests passed in 0.44s. |
+| `uv run --locked ruff check src/sciscope/api/app.py src/sciscope/question_service tests/backend/validation_asgi.py tests/backend/test_request_ids_and_validation.py` | Initial FAIL, exit `1`; 18 import-order or line-length findings. Ruff fixed three import-order findings; formatter and manual line wraps resolved the remaining findings. Final PASS, exit `0`. |
+| `uv run --locked ruff format --check src/sciscope/api/app.py src/sciscope/question_service tests/backend/validation_asgi.py tests/backend/test_request_ids_and_validation.py` | Final PASS, exit `0`; five files already formatted. |
+| `uv run --locked mypy src/sciscope/api/app.py src/sciscope/question_service` | PASS, exit `0`; no issues in three source files. |
+| `git diff --check` | PASS, exit `0`. |
+| Final commit verification: `uv run --locked pytest tests/backend/ -v` | PASS, exit `0`; 28 tests passed in 0.47s. |
+| Final commit verification: Ruff check and format check on the T004 source and test paths | PASS, exit `0`; all checks passed and five files already formatted. |
+| Final commit verification: `uv run --locked mypy src/sciscope/api/app.py src/sciscope/question_service` and `git diff --check` | PASS, exit `0`; no issues in three source files and no whitespace errors. |
+
+### Negative and isolation checks
+
+- A valid caller request ID is preserved in the `422` envelope; missing or
+  malformed IDs receive generated valid replacement IDs, and an invalid ID is
+  not echoed.
+- Invalid JSON, blank question data, unsupported workflow, and unsupported
+  fields are returned only as the approved four-field versioned envelope with
+  `is_mock` and `is_test_data` fixed to `true`.
+- Tests assert that raw question text, filters, unsupported workflow values,
+  malformed JSON, FastAPI JSON-error code, and `detail` are absent from the
+  public response.
+- The temporary validation route exists only in `tests/backend/validation_asgi.py`;
+  the production app still has no `/api/v1/questions` route. No external
+  provider, database, retrieval, or listening server is started.
+
+### Warnings and unresolved issues
+
+- The prior focused-test and Ruff failures above were corrected and retained
+  in this record. No verification blocker remains.
+- T004 adds only the validation boundary. Fake dependencies belong to T005;
+  output/citation validation belongs to T006; and the production question route
+  and success behavior belong to T007.
+
+- **Human review/acceptance:** ACCEPTED at task level based on the submitted
+  implementation, automated verification, and three successful user-executed
+  manual checks. Final Feature 011 acceptance remains PENDING.
+- **Evidence status:** Implementation checks and task-level human acceptance
+  recorded; final Feature 011 acceptance pending.
 
 ## T005 — Add typed protocols and deterministic independent fakes
 
