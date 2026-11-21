@@ -425,3 +425,45 @@ dependency resolution, and CI remain unverified. Human acceptance: NOT PROVIDED.
   completed-task decision is inferred.
 - **Outstanding decisions:** None within the requested change. Human-written
   questions, broader evaluation, and PR review remain outside this scope.
+
+### Person 3 Phase 0 — Baseline, environment, and integration readiness
+
+- **Owner:** Person 3 (Backend & AI).
+- **Current state:** AUTO_VALIDATED from user-supplied terminal evidence;
+  documentation-only record awaiting human review. This is not approval for a
+  Person 3 feature and does not complete P4-01 through P4-21.
+- **Detailed record:** `docs/person3/PHASE_0_BASELINE.md` is the chronological
+  source for the scope, provenance of reported results, environment setup,
+  diagnostics, database checks, test matrix, limitations, and next checkpoint.
+- **Repository baseline:** User-reported and documentation-session-checked
+  `main` at `c70507e7c686214528b69aab4566786320c5f43c`, clean before this
+  documentation update. Person 1 and Person 2 code and documentation are not
+  changed by this record.
+- **User-executed setup and static checks:** uv 0.13.9 installed CPython
+  3.12.16; locked sync created a local 87-dependency environment. Ruff check,
+  Ruff format check, and `mypy src` passed; the detailed report preserves the
+  exact supplied commands and 286-file/78-source-file outputs.
+- **User-executed tests:** Offline selections total **2,816 passed** across
+  separate commands. PostgreSQL initial import, rollback, retrieval/lookup, and
+  pipeline selections add 3, 8, 14, and 1 passes. **Aggregate: 2,842 passed**
+  (`2816 + 3 + 8 + 14 + 1`), explicitly not a single full-suite pytest run.
+  Synthetic evaluation coverage is not protected held-out evaluation.
+- **Database evidence:** The dedicated `sciscope_test_005` PostgreSQL 17.11 /
+  pgvector 0.8.7 database received only migration
+  `f005_pgvector_foundation` and an explicit guarded pilot initialization.
+  Reported active snapshot counts are 17 papers, 319 sections, 728 chunks, and
+  728 vectors; the development database remained at zero application tables.
+  The record does not expose connection data.
+- **Retained failure history:** Initial temporary JATS/chunking and embedding
+  failures were caused by incomplete temporary snapshots. Initial database
+  fixture/Compose failures were traced to CRLF formatting and stale inherited
+  local environment values, not a demonstrated importer/retrieval defect.
+- **Limits and gates:** No live provider call, paid embedding, protected
+  evaluation, FastAPI/backend implementation, production deployment, or
+  answer-quality claim occurred. The public retrieval facade and Person 3 API
+  integration remain subject to cross-owner review and P1-11/P1-14 gates.
+- **Documentation-only verification:** No test, static check, database command,
+  Docker command, or provider call was rerun by the documentation assistant.
+  Exact source/test changes: NONE. `PROJECT_TODO.md` remains unchanged because
+  no dedicated Person 3 baseline checklist item exists and broad foundation
+  items cannot be checked without the required acceptance gate.
