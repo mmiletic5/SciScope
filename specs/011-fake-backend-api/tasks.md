@@ -2,14 +2,14 @@
 
 **Feature branch**: `011-fake-backend-api`
 
-**Status**: Feature approval recorded — T001 is authorized but not started; no task is complete.
+**Status**: T001–T008 complete; Feature 011 accepted within its approved fake-only scope on 2026-11-22. See [the test and verification log](../../docs/person3/FEATURE_011_TEST_LOG.md#feature-level-human-acceptance) and [EVIDENCE.md](../../EVIDENCE.md#feature-011--fake-only-backend-question-api).
 
 ## Preconditions and execution rule
 
 Feature approval, the HTTP contract, feature-scoped P1-11/P1-14 disposition,
 and exact dependency constraints are recorded in [plan.md](plan.md#approval-record).
-Person 3 authorized T001 after that record is committed. T001 remains unstarted;
-later tasks remain subject to the dependency order below. All eight tasks exclude
+T001–T008 have been implemented, verified, accepted at task level, and accepted
+at feature level within the scope below. All eight tasks exclude
 `retrieval.v2`, live Gemini/query
 embedding, real retrieval/database, private `_RetrievalCore`, streaming, auth,
 rate limiting, deployment, and scientific-answer evaluation.
@@ -27,7 +27,7 @@ increment must observe its RED test before its minimal GREEN implementation.
 
 ### T001 — Establish the approved FastAPI test environment
 
-- [ ] T001 Apply the approved FastAPI/Pydantic/HTTPX constraints and prepare `pyproject.toml`, `uv.lock`, and `tests/backend/__init__.py` for backend behavior tests.
+- [x] T001 Apply the approved FastAPI/Pydantic/HTTPX constraints and prepare `pyproject.toml`, `uv.lock`, and `tests/backend/__init__.py` for backend behavior tests.
 
   - **Owner**: Person 3.
   - **Goal and scope**: After dependency approval, add explicit FastAPI and
@@ -60,7 +60,7 @@ increment must observe its RED test before its minimal GREEN implementation.
 
 ### T002 — Create the injectable app factory
 
-- [ ] T002 Create `src/sciscope/api/app.py` and `src/sciscope/api/__init__.py` with a minimal FastAPI app factory using injectable sentinels, proved by `tests/backend/test_app_factory.py`.
+- [x] T002 Create `src/sciscope/api/app.py` and `src/sciscope/api/__init__.py` with a minimal FastAPI app factory using injectable sentinels, proved by `tests/backend/test_app_factory.py`.
 
   - **Owner**: Person 3.
   - **Goal and scope**: Establish the composition-root skeleton with opaque,
@@ -90,7 +90,7 @@ increment must observe its RED test before its minimal GREEN implementation.
 
 ### T003 — Define closed versioned HTTP schemas and input validation
 
-- [ ] T003 [US1] Add Pydantic models in `src/sciscope/api/http_models.py` and RED schema tests in `tests/backend/test_http_models.py`.
+- [x] T003 [US1] Add Pydantic models in `src/sciscope/api/http_models.py` and RED schema tests in `tests/backend/test_http_models.py`.
 
   - **Owner**: Person 3.
   - **Goal and scope**: Define the request, three success states, error,
@@ -119,7 +119,7 @@ increment must observe its RED test before its minimal GREEN implementation.
 
 ### T004 — Add request IDs and sanitized framework 422 translation
 
-- [ ] T004 [US3] Add `src/sciscope/question_service/ids.py`, sanitized validation mapping, and an isolated test-only ASGI adapter in `tests/backend/`.
+- [x] T004 [US3] Add `src/sciscope/question_service/ids.py`, sanitized validation mapping, and an isolated test-only ASGI adapter in `tests/backend/`.
 
   - **Owner**: Person 3.
   - **Goal and scope**: Generate valid opaque IDs; preserve valid supplied IDs;
@@ -158,7 +158,7 @@ increment must observe its RED test before its minimal GREEN implementation.
 
 ### T005 — Add typed protocols and deterministic independent fakes
 
-- [ ] T005 [US1] Add plain contracts/fakes in `src/sciscope/question_service/` and deterministic tests in `tests/backend/test_fake_dependencies.py`.
+- [x] T005 [US1] Add plain contracts/fakes in `src/sciscope/question_service/` and deterministic tests in `tests/backend/test_fake_dependencies.py`.
 
   - **Owner**: Person 3.
   - **Goal and scope**: Define typed retrieval/provider protocols and controlled
@@ -187,7 +187,7 @@ increment must observe its RED test before its minimal GREEN implementation.
 
 ### T006 — Validate evidence, citations, and corpus provenance fail-closed
 
-- [ ] T006 [US1] Add `src/sciscope/question_service/validation.py` and output-validation RED tests in `tests/backend/test_response_validation.py`.
+- [x] T006 [US1] Add `src/sciscope/question_service/validation.py` and output-validation RED tests in `tests/backend/test_response_validation.py`.
 
   - **Owner**: Person 3.
   - **Goal and scope**: Validate fake output before it crosses HTTP. Answered
@@ -217,7 +217,7 @@ increment must observe its RED test before its minimal GREEN implementation.
 
 ### T007 — Orchestrate the three valid question outcomes
 
-- [ ] T007 [US1] [US2] Add synchronous service/route behavior in `src/sciscope/question_service/service.py` and `src/sciscope/api/routes.py`, tested by `tests/backend/test_question_service.py` and `tests/backend/test_question_api.py`.
+- [x] T007 [US1] [US2] Add synchronous service/route behavior in `src/sciscope/question_service/service.py` and `src/sciscope/api/routes.py`, tested by `tests/backend/test_question_service.py` and `tests/backend/test_question_api.py`.
 
   - **Owner**: Person 3.
   - **Goal and scope**: Connect fakes and validation so valid requests produce
@@ -250,7 +250,7 @@ increment must observe its RED test before its minimal GREEN implementation.
 
 ### T008 — Map controlled failures and complete offline API verification
 
-- [ ] T008 [US3] Complete controlled-failure mapping in `src/sciscope/api/app.py` and verify isolated integration in `tests/backend/test_question_api.py` before evidence recording.
+- [x] T008 [US3] Complete controlled-failure mapping in `src/sciscope/api/app.py` and verify isolated integration in `tests/backend/test_question_api.py` before evidence recording.
 
   - **Owner**: Person 3.
   - **Goal and scope**: Map controlled fake unavailable/timeout signals to
@@ -310,8 +310,9 @@ increment must observe its RED test before its minimal GREEN implementation.
 | US2 — empty vs insufficient evidence | T007 | Separate state assertions, including empty-result provenance. |
 | US3 — safe failure behavior | T008 | Sanitized 422/500/503/504 and unexpected-defect observability. |
 
-The approval gates and exact dependency constraints are recorded in plan.md.
-T001 authorization is limited as stated above. Task checkboxes remain
-incomplete until each task's acceptance criteria, automated checks, and feature
-human acceptance are fulfilled. Proposed commit boundaries do not authorize
-commits in advance.
+Feature-level acceptance was recorded by Mateja Miletic (Person 3, Backend & AI)
+on 2026-11-22 for the approved fake-only, deterministic, offline scope. The
+individual task records preserve each task's checks and task-level acceptance.
+The acceptance excludes live Gemini, production deployment, real
+corpus/retrieval integration, and scientific correctness. Broader project
+backlog items remain subject to their own deliverables and dependencies.

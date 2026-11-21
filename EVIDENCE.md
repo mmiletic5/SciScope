@@ -467,3 +467,27 @@ dependency resolution, and CI remain unverified. Human acceptance: NOT PROVIDED.
   Exact source/test changes: NONE. `PROJECT_TODO.md` remains unchanged because
   no dedicated Person 3 baseline checklist item exists and broad foundation
   items cannot be checked without the required acceptance gate.
+
+### Feature 011 — Fake-only Backend Question API
+
+- **Owner:** Person 3 (Backend & AI).
+- **Feature specification and plan:** [`specs/011-fake-backend-api/spec.md`](specs/011-fake-backend-api/spec.md) and [`plan.md`](specs/011-fake-backend-api/plan.md), approved for Feature 011's fake-only scope at revision `4309b22becef529940f86068329b01a6a5e862f9`.
+- **Current state:** DONE within the approved fake-only, deterministic, offline scope. Feature-level human acceptance is recorded below. This does not mark broader Phase 4 integration work complete.
+- **Implementation:** T001–T008 are implemented and committed through `1e18da5841f623be64c605fd808c7685eeb8bce4` on branch `011-fake-backend-api`. Individual task evidence and prior attempts are preserved in [`docs/person3/FEATURE_011_TEST_LOG.md`](docs/person3/FEATURE_011_TEST_LOG.md).
+- **Automated verification:**
+  - `uv run --locked pytest tests/backend/test_question_api.py -v` — PASS, exit `0`; 10 passed in 0.75s (post-commit run, 2026-11-21).
+  - `uv run --locked pytest tests/backend/ -v` — PASS, exit `0`; 67 passed in 0.75s (post-commit run, 2026-11-21).
+  - `uv run --locked mypy src/sciscope/api src/sciscope/question_service` — PASS, exit `0`; no issues in 10 source files.
+  - `uv run --locked ruff check src/sciscope/api/app.py src/sciscope/api/routes.py tests/backend/test_question_api.py` — PASS, exit `0`.
+  - `uv run --locked ruff format --check src/sciscope/api/app.py src/sciscope/api/routes.py tests/backend/test_question_api.py` — PASS, exit `0`; three files formatted.
+  - `git diff --check` — PASS, exit `0`.
+  - The first focused test invocation was blocked before pytest by uv's cache write restriction (exit `2`); it was rerun with approved cache-write permission and passed. This was not a test failure.
+- **Manual evidence:** The user reported three successful T008 TestClient checks using explicitly injected fakes: controlled unavailable/timeout mappings, invalid response-contract rejection, and sanitized unexpected-error handling with developer observability. Details and observed values are retained in the test log; these were reported user-executed checks, not rerun in the post-commit verification.
+- **Human evidence:**
+  - **Verifier:** Mateja Miletic — Person 3 (Backend & AI).
+  - **Verification date:** 2026-11-22.
+  - **Review scope:** FR-001–FR-018, NFR-001–NFR-004, SC-001–SC-005; T001–T008 implementation; recorded automated verification; user-executed manual HTTP verification; and final readiness audit.
+  - **Observed outcome:** Reviewer reports the requirements and evidence reviewed and accepts Feature 011 within its approved fake-only, deterministic, offline scope.
+  - **Explicit decision:** ACCEPTED.
+  - **Limitations:** Acceptance excludes live Gemini integration, production deployment, real corpus/retrieval integration, and scientific correctness of generated answers. Citation validation proves synthetic response-local identity membership, not scientific support.
+- **Final status:** DONE for Feature 011's approved scope. Broader real-provider, retrieval, deployment, and scientific-quality work remains open and is not accepted by this record.

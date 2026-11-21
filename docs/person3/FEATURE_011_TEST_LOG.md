@@ -679,7 +679,8 @@ injected `FakeRetrieval` and `FakeAnswerProvider` dependencies.
 
 ## T008 — Map controlled failures and complete offline API verification
 
-- **Implementation commit:** PENDING
+- **Implementation commit:**
+  `1e18da5841f623be64c605fd808c7685eeb8bce4`
 - **Task objective:** Map declared fake dependency and response-contract
   failures to the approved sanitized HTTP envelopes, add the required
   unexpected-exception boundary, and verify the API entirely offline.
@@ -822,7 +823,57 @@ for this record.
 - **Human review/acceptance:** ACCEPTED at task level based on the reviewed
   implementation, approved contract requirements, 10 passing focused HTTP
   tests, 67 passing backend tests, and three successful user-executed manual
-  verification scripts. Final Feature 011 acceptance remains PENDING.
-- **Evidence status:** Automated checks recorded; task-level human review and
-  implementation commit remain pending. Final Feature 011 acceptance and final
-  `EVIDENCE.md` update remain pending.
+  verification scripts. Feature-level acceptance was subsequently recorded
+  below.
+- **Evidence status:** Automated checks completed; user-executed manual
+  verification completed; task-level human acceptance ACCEPTED; local
+  implementation commit completed. Feature-level acceptance and final
+  `EVIDENCE.md` update are recorded below.
+
+### Post-commit Feature 011 readiness verification
+
+This subsection records fresh verification after T008 was committed. It is
+separate from the T008 RED/GREEN and additional verification results above.
+Feature-level human acceptance was PENDING when these checks were run; the
+separate feature-level decision is recorded after this verification subsection.
+
+- **Verification date:** 2026-11-21.
+- **Repository state before checks:** Branch `011-fake-backend-api`, HEAD
+  `1e18da5841f623be64c605fd808c7685eeb8bce4`; clean working tree and no staged
+  changes.
+- **Execution environment note:** The first focused-test invocation exited
+  `2` before pytest started because uv could not create a temporary file under
+  `/home/maki/.cache/uv` in the read-only sandbox. The same command was then
+  rerun with approved permission for the cache write and completed as recorded
+  below; this was an environment restriction, not a test failure.
+- **Focused API tests:** `uv run --locked pytest
+  tests/backend/test_question_api.py -v` — PASS, exit `0`; 10 tests passed
+  in 0.75s.
+- **Backend suite:** `uv run --locked pytest tests/backend/ -v` — PASS,
+  exit `0`; 67 tests passed in 0.75s.
+- **Mypy:** `uv run --locked mypy src/sciscope/api
+  src/sciscope/question_service` — PASS, exit `0`; no issues found in 10
+  source files.
+- **Ruff check:** `uv run --locked ruff check src/sciscope/api/app.py
+  src/sciscope/api/routes.py tests/backend/test_question_api.py` — PASS,
+  exit `0`; all checks passed.
+- **Ruff format check:** `uv run --locked ruff format --check
+  src/sciscope/api/app.py src/sciscope/api/routes.py
+  tests/backend/test_question_api.py` — PASS, exit `0`; three files already
+  formatted.
+- **`git diff --check`:** PASS, exit `0`; no whitespace errors.
+
+### Feature-level human acceptance
+
+- **Reviewer:** Mateja Miletic — Person 3 (Backend & AI).
+- **Acceptance date:** 2026-11-22.
+- **Reviewed scope:** Approved Feature 011 requirements FR-001–FR-018,
+  NFR-001–NFR-004, and SC-001–SC-005; completed T001–T008 implementation;
+  recorded automated verification (67 backend tests passed); user-executed
+  manual HTTP verification; and final acceptance-readiness audit.
+- **Explicit decision:** ACCEPTED within Feature 011's fake-only, deterministic,
+  offline scope.
+- **Exclusions:** Live Gemini integration, production deployment, real corpus
+  or retrieval integration, and scientific correctness of generated answers.
+- **Final Feature 011 status:** DONE within the approved scope. This acceptance
+  does not complete broader Phase 4 backlog deliverables.
