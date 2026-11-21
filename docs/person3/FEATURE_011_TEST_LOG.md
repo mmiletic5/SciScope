@@ -45,6 +45,16 @@ rerun while creating this log. Each reported command exited `0`.
 | `from fastapi.testclient import TestClient` import verification | PASS; reported module `starlette.testclient` |
 | `git diff --check` | PASS |
 
+### User-executed manual verification
+
+The following results were supplied by the user and were not independently
+rerun for this record.
+
+| Command | Observed result |
+| --- | --- |
+| `uv lock --check` | `Resolved 97 packages in 3ms`; PASS |
+| `uv run --locked python -c "import fastapi, pydantic, httpx; print('Dependencies OK')"` | `Dependencies OK`; PASS |
+
 ### Scope and notes
 
 - T001 is dependency and test-environment preparation. No RED behavior test
@@ -98,6 +108,27 @@ rerun while creating this log. Each reported command exited `0`.
 | `uv run --locked mypy src/sciscope/api` | PASS, exit `0`; no issues in two source files. |
 | `git diff --check` | PASS, exit `0`. |
 
+### User-executed manual verification
+
+The following results were supplied by the user and were not independently
+rerun for this record.
+
+- **Initial command:** `uv run --locked python -c "from sciscope.api import
+  create_app; ..."`
+  - **Observed result:** FAIL — `ModuleNotFoundError: No module named
+    'sciscope'`.
+- **Corrected command:** `PYTHONPATH=src uv run --locked python -c "from
+  sciscope.api import create_app; ..."`
+  - **Observed result:** `App: FastAPI`; routes
+    `['/openapi.json', '/docs', '/docs/oauth2-redirect', '/redoc']`; PASS.
+  - **Explanation:** Pytest config sets `pythonpath=["src"]`, while direct
+    Python invocation requires `PYTHONPATH=src` because the project is not
+    installed as a package.
+- **Shared backend-test command:** `uv run --locked pytest tests/backend/ -v`
+  - **Observed result:** `23 passed in 0.37s`, comprising one T002 app-factory
+    test and 22 T003 HTTP-model tests. This is a shared result and does not
+    supply a separate T003 acceptance decision.
+
 ### Negative and isolation checks
 
 - The injected retrieval and provider sentinels were not called during app
@@ -127,14 +158,62 @@ rerun while creating this log. Each reported command exited `0`.
 ## T003 — Define closed versioned HTTP schemas and input validation
 
 - **Implementation commit:** PENDING
-- **Changed files:** PENDING
-- **RED command, expected failure, actual outcome:** NOT RUN
-- **GREEN command and actual outcome:** NOT RUN
-- **Additional verification commands/results:** NOT RUN
-- **Negative and isolation checks:** NOT RUN
-- **Warnings and unresolved issues:** PENDING
-- **Human review/acceptance:** PENDING
-- **Evidence status:** PENDING
+- **Task objective:** Define closed versioned Pydantic schemas for the approved
+  request, three success states, error envelope, evidence, claims, corpus
+  provenance, and mock/test metadata.
+- **Changed files:**
+  - `src/sciscope/api/http_models.py`
+  - `tests/backend/test_http_models.py`
+  - `docs/person3/FEATURE_011_TEST_LOG.md`
+
+### RED result
+
+- **Command:** `uv run --locked pytest tests/backend/test_http_models.py`
+- **Actual outcome:** Exit `2`; zero tests collected; one collection error;
+  zero failed tests.
+- **Failure reason:** `ModuleNotFoundError: No module named
+  'sciscope.api.http_models'` during test-module import.
+
+### GREEN result
+
+- **Command:** `uv run --locked pytest tests/backend/test_http_models.py`
+- **Actual outcome:** PASS, exit `0`; 22 tests collected and 22 passed.
+
+### Additional verification
+
+| Command | Actual outcome |
+| --- | --- |
+| `uv run --locked ruff check src/sciscope/api/http_models.py tests/backend/test_http_models.py` | Initial attempt FAILed, exit `1`: one import-order issue and one overlong test line. The import-only Ruff fixer and line-wrap correction were applied; final rerun PASSed, exit `0`. |
+| `uv run --locked ruff format --check src/sciscope/api/http_models.py tests/backend/test_http_models.py` | First reached attempt FAILed, exit `1`: two test function signatures would be reformatted. The indicated layouts were applied; final rerun PASSed, exit `0`, with two files already formatted. |
+| `uv run --locked mypy src/sciscope/api/http_models.py` | PASS, exit `0`; no issues in one source file. |
+| `uv run --locked pytest tests/backend/ -v` | PASS, exit `0`; 23 tests passed in 0.58s, including the T002 app-factory test and 22 T003 HTTP-model tests. |
+| `git diff --check` | PASS, exit `0`. |
+
+### Negative and isolation checks
+
+- Request tests reject unsupported workflows; blank, overlength, and non-string
+  questions; invalid request IDs; and public `filters`, `provider`, and `model`
+  fields.
+- Model tests reject missing payloads, blank evidence and corpus fields, empty
+  claim citations, false mock metadata, unsupported error codes, and unknown
+  response fields.
+- All fixtures are synthetic. No route, database, provider, retrieval, or
+  network operation is invoked by these schema tests.
+
+### Warnings and unresolved issues
+
+- No blocker remains. The initial Ruff lint and formatter failures above were
+  corrected and preserved in this record.
+- Request-ID generation and sanitized framework `422` mapping remain T004.
+  Cross-record citation membership, duplicate checks, and state-specific
+  output validation remain T006.
+
+- **Human review/acceptance:** ACCEPTED based on the submitted implementation,
+  tests, central log, and reported verification. This is task-level acceptance
+  only; it does not establish production readiness or final feature-level
+  acceptance.
+- **Evidence status:** Implementation checks and task-level human review
+  recorded; final feature-level human acceptance remains pending.
 
 ## T004 — Add request IDs and sanitized framework 422 translation
 
