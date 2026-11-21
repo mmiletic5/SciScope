@@ -553,7 +553,7 @@ rerun for this record. All checks used `PYTHONPATH=src uv run --locked python`.
 
 ## T007 — Orchestrate the three valid question outcomes
 
-- **Implementation commit:** PENDING
+- **Implementation commit:** `33563e25155abcfe2e524d50f2591d99c7dd85a9`
 - **Task objective:** Orchestrate the fake retrieval and provider dependencies
   into the approved answered, no-results, and insufficient-evidence outcomes,
   validate each result, and expose the versioned success endpoint.
@@ -673,17 +673,156 @@ injected `FakeRetrieval` and `FakeAnswerProvider` dependencies.
   implementation, approved contract requirements, 8 passing focused tests, 61
   passing backend tests, and three successful user-executed manual HTTP
   verification scripts. Final Feature 011 acceptance remains PENDING.
-- **Evidence status:** Automated checks recorded; human review and local
-  implementation commit remain pending.
+- **Evidence status:** Automated checks, task-level human acceptance, and the
+  local implementation commit are recorded; final Feature 011 acceptance and
+  final `EVIDENCE.md` update remain pending.
 
 ## T008 — Map controlled failures and complete offline API verification
 
 - **Implementation commit:** PENDING
-- **Changed files:** PENDING
-- **RED command, expected failure, actual outcome:** NOT RUN
-- **GREEN command and actual outcome:** NOT RUN
-- **Additional verification commands/results:** NOT RUN
-- **Negative and isolation checks:** NOT RUN
-- **Warnings and unresolved issues:** PENDING
-- **Human review/acceptance:** PENDING
-- **Evidence status:** PENDING
+- **Task objective:** Map declared fake dependency and response-contract
+  failures to the approved sanitized HTTP envelopes, add the required
+  unexpected-exception boundary, and verify the API entirely offline.
+- **Changed files:**
+  - `src/sciscope/api/app.py`
+  - `src/sciscope/api/routes.py`
+  - `tests/backend/test_question_api.py`
+  - `docs/person3/FEATURE_011_TEST_LOG.md`
+
+### Approved failure mapping
+
+| Origin | HTTP status | Public code | Retryable |
+| --- | --- | --- | --- |
+| Fake retrieval unavailable | `503` | `retrieval_unavailable` | `true` |
+| Fake provider unavailable | `503` | `provider_unavailable` | `true` |
+| Fake retrieval or provider timeout | `504` | `dependency_timeout` | `true` |
+| Invalid retrieval/provider output | `500` | `response_contract_failure` | `false` |
+| Unexpected internal exception | `500` | `internal_error` | `false` |
+
+All responses use the closed `ErrorResponse` envelope with `api_version`, a
+valid request ID, `error`, and mock/test metadata. A valid caller ID is
+preserved after request parsing; an omitted ID uses the injected factory. The
+approved documents require sanitized messages but prescribe no literal message
+for these categories, so the tests assert nonempty static messages and absence
+of raw input, exception, provider, and invalid-output detail.
+
+### RED result
+
+- **Command:** `uv run --locked pytest tests/backend/test_question_api.py -v`
+- **Actual outcome:** Exit `1`; 10 tests collected, four existing success tests
+  passed, and six T008 tests failed. Controlled fake failures returned the
+  framework's un-mapped `500` response, the initially intended invalid-output
+  fixture returned `200`, and an unexpected defect returned plain `Internal
+  Server Error` rather than the required JSON envelope.
+- **Intermediate test correction:** The first invalid-output fixture used a
+  nonempty answer, which is valid under the approved validator and therefore
+  returned `200`. It was replaced before GREEN with an invalid private citation
+  identity; this exercised the approved contract-failure path.
+
+### GREEN result
+
+- **Command:** `uv run --locked pytest tests/backend/test_question_api.py -v`
+- **Actual outcome:** PASS, exit `0`; 10 tests passed in 0.79s.
+- **Behavior:** The app installs narrow handlers for `DependencyFailure` and
+  `ResponseContractFailure`, plus the approved centralized unexpected-error
+  boundary. The route stores its resolved request ID on request state before
+  invoking the service, enabling every post-validation failure envelope to
+  preserve or generate the correct ID. With
+  `raise_server_exceptions=True`, unexpected defects still raise to the test;
+  with it disabled, the client receives the sanitized `500 internal_error`
+  envelope.
+
+### Additional verification
+
+| Command | Actual outcome |
+| --- | --- |
+| `uv run --locked pytest tests/backend/ -v` | PASS, exit `0`; 67 tests passed in 0.92s. |
+| `uv run --locked mypy src/sciscope/api src/sciscope/question_service` | Initial FAIL, exit `1`; one app request-state return type error. A string type guard corrected it. Final PASS, exit `0`; no issues in 10 source files. |
+| `uv run --locked ruff check src/sciscope/api/app.py src/sciscope/api/routes.py tests/backend/test_question_api.py` | Initial FAIL, exit `1`; unsorted imports, three line-length findings, and one `getattr` finding. After the type-safe response helper and layout corrections, a final import-order finding and long test name remained. `uv run --locked ruff check --fix src/sciscope/api/app.py` applied the import-only correction; final PASS, exit `0`; all checks passed. |
+| `uv run --locked ruff format --check src/sciscope/api/app.py src/sciscope/api/routes.py tests/backend/test_question_api.py` | Initial FAIL, exit `1`; `test_question_api.py` would be reformatted. `uv run --locked ruff format src/sciscope/api/app.py src/sciscope/api/routes.py tests/backend/test_question_api.py` reformatted one file. Final PASS, exit `0`; three files already formatted. |
+| `git diff --check` | PASS, exit `0`; no whitespace errors. |
+
+### Failure mapping and isolation coverage
+
+- Parameterized in-process HTTP tests cover retrieval unavailable and timeout,
+  provider unavailable and timeout, valid caller-ID preservation, generated-ID
+  fallback, the exact approved status/code/retryability mappings, closed
+  envelope fields, and fixed mock/test metadata.
+- Invalid provider output with a private citation is discarded and maps to
+  `response_contract_failure`; private question and invalid-output values do
+  not appear in the public response.
+- The unexpected-defect test confirms both required modes: the default test
+  client raises the original `RuntimeError`, while
+  `raise_server_exceptions=False` returns only the sanitized `internal_error`
+  envelope. No exception text or private question appears publicly.
+- Tests inject only deterministic fakes and run through FastAPI's in-process
+  `TestClient`; no listener, network, database, pgvector, embedding, Gemini,
+  provider SDK, or Person 2 retrieval implementation is accessed.
+
+### User-executed manual verification
+
+The following checks were run directly by the user with FastAPI `TestClient`
+and explicitly injected fake dependencies. They were not independently rerun
+for this record.
+
+1. **Controlled dependency failures** — The user exercised retrieval
+   unavailable (HTTP `503`, `retrieval_unavailable`), retrieval timeout (HTTP
+   `504`, `dependency_timeout`), provider unavailable (HTTP `503`,
+   `provider_unavailable`), and provider timeout (HTTP `504`,
+   `dependency_timeout`). **PASS:** all controlled dependency failures. The
+   user also confirmed `retryable` was `True`, caller request ID
+   `manual-t008-001` was preserved, `is_mock` and `is_test_data` were true,
+   private question text was absent, and the error response contained only the
+   four approved top-level fields.
+2. **Invalid response contract** — An injected fake provider returned a claim
+   referencing a nonexistent private chunk ID. Observed HTTP `500`, code
+   `response_contract_failure`, `retryable: False`, and request ID
+   `manual-t008-002`. **PASS:** invalid response contract rejected safely. The
+   user also confirmed the generated request ID was preserved and neither the
+   invalid chunk ID nor private question text was exposed.
+3. **Unexpected internal error** — An injected retrieval dependency raised a
+   `RuntimeError` with private exception text. Observed HTTP `500`, code
+   `internal_error`, and `retryable: False`. **PASS:** unexpected error
+   sanitized. **PASS:** unexpected exception remains observable. The user also
+   confirmed generated request ID `manual-t008-003`, absence of the private
+   exception and question text, and propagation of the original `RuntimeError`
+   with the default `TestClient` configuration.
+
+### Final contract review and verification
+
+- **Contract review:** PASS. `DependencyFailure` maps retrieval/provider
+  availability and timeout codes to the approved `503`/`504` status,
+  public-code, and retryability combinations. `ResponseContractFailure` maps
+  fail-closed output to non-retryable `500 response_contract_failure`; the
+  centralized `Exception` boundary maps unexpected defects to non-retryable
+  `500 internal_error` while TestClient's default mode preserves developer
+  observability. Each path uses the closed `ErrorResponse` envelope, fixed
+  mock/test metadata, a preserved or generated valid request ID, and static
+  sanitized messages. Existing T004 tests retain sanitized `422` coverage and
+  T007 tests retain all three valid success outcomes. No external integration
+  or Person 2 retrieval code is used. No approved requirement gap was found.
+- `uv run --locked pytest tests/backend/test_question_api.py -v`: PASS, exit
+  `0`; 10 tests passed in 0.66s.
+- `uv run --locked pytest tests/backend/ -v`: PASS, exit `0`; 67 tests passed
+  in 0.85s.
+- `uv run --locked mypy src/sciscope/api src/sciscope/question_service`: PASS,
+  exit `0`; no issues in 10 source files.
+- `uv run --locked ruff check src/sciscope/api/app.py src/sciscope/api/routes.py tests/backend/test_question_api.py`: PASS, exit `0`; all checks passed.
+- `uv run --locked ruff format --check src/sciscope/api/app.py src/sciscope/api/routes.py tests/backend/test_question_api.py`: PASS, exit `0`; three files already formatted.
+- **Additional failures or corrections:** None during this final review.
+
+### Warnings and unresolved issues
+
+- The RED failures, invalid-fixture correction, and mypy/Ruff/format failures
+  above were corrected and retained in this record.
+- The approved contract specifies sanitization requirements but not literal
+  controlled-failure message text. The implementation uses fixed generic
+  messages and tests enforce the required absence of internal details. No
+  additional public code or mapping was introduced.
+- **Human review/acceptance:** ACCEPTED at task level based on the reviewed
+  implementation, approved contract requirements, 10 passing focused HTTP
+  tests, 67 passing backend tests, and three successful user-executed manual
+  verification scripts. Final Feature 011 acceptance remains PENDING.
+- **Evidence status:** Automated checks recorded; task-level human review and
+  implementation commit remain pending. Final Feature 011 acceptance and final
+  `EVIDENCE.md` update remain pending.

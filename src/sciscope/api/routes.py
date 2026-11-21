@@ -3,7 +3,7 @@
 from collections.abc import Callable
 from typing import cast
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 
 from sciscope.api.http_models import (
     AnsweredResponse,
@@ -54,7 +54,10 @@ def install_question_route(
     """
 
     @app.post("/api/v1/questions", response_model=SuccessResponse)
-    def ask_question(request: QuestionRequest) -> SuccessResponse:
+    def ask_question(
+        request: QuestionRequest,
+        fastapi_request: Request,
+    ) -> SuccessResponse:
         """Serve one validated, fake-only research-question outcome."""
         dependencies = app.state.dependencies
         service = QuestionService(
@@ -62,6 +65,7 @@ def install_question_route(
             provider=cast(AnswerProvider, dependencies.provider),
         )
         request_id = request.request_id or request_id_factory()
+        fastapi_request.state.request_id = request_id
         outcome = service.answer(request.question, request_id)
         return _to_http_response(outcome)
 

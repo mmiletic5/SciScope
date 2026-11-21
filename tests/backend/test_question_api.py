@@ -1,9 +1,10 @@
 """HTTP behavior tests for the Feature 011 fake-only question endpoint."""
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 import pytest
 from fastapi.testclient import TestClient
+from httpx import Response
 
 from sciscope.api.app import create_app
 from sciscope.question_service.contracts import (
@@ -46,6 +47,31 @@ class _FixedRetrieval:
     def retrieve(self, question: str, request_id: str) -> RetrievalOutcome:
         self.calls.append((question, request_id))
         return self.outcome
+
+
+@dataclass
+class _FixedProvider:
+    """Returns a supplied provider fixture without external access."""
+
+    outcome: ProviderOutcome
+
+    def answer(
+        self,
+        question: str,
+        evidence: tuple[object, ...],
+        corpus: object,
+        request_id: str,
+    ) -> ProviderOutcome:
+        del question, evidence, corpus, request_id
+        return self.outcome
+
+
+class _UnexpectedRetrieval:
+    """Raises a private defect to exercise the public error boundary."""
+
+    def retrieve(self, question: str, request_id: str) -> RetrievalOutcome:
+        del question, request_id
+        raise RuntimeError("private unexpected retrieval detail")
 
 
 @pytest.mark.parametrize(
@@ -143,3 +169,171 @@ def test_question_endpoint_skips_provider_for_empty_retrieval() -> None:
     assert response.json()["request_id"] == "generated-request-id"
     assert retrieval.calls == [("fixture question", "generated-request-id")]
     assert provider.calls == 0
+
+
+@pytest.mark.parametrize(
+    ("retrieval", "provider", "status_code", "error_code"),
+    [
+        (
+            FakeRetrieval(mode="unavailable"),
+            FakeAnswerProvider(),
+            503,
+            "retrieval_unavailable",
+        ),
+        (
+            FakeRetrieval(mode="timeout"),
+            FakeAnswerProvider(),
+            504,
+            "dependency_timeout",
+        ),
+        (
+            FakeRetrieval(),
+            FakeAnswerProvider(mode="unavailable"),
+            503,
+            "provider_unavailable",
+        ),
+        (
+            FakeRetrieval(),
+            FakeAnswerProvider(mode="timeout"),
+            504,
+            "dependency_timeout",
+        ),
+    ],
+)
+def test_question_endpoint_maps_controlled_dependency_failures(
+    retrieval: FakeRetrieval,
+    provider: FakeAnswerProvider,
+    status_code: int,
+    error_code: str,
+) -> None:
+    """Return the approved sanitized envelope for declared fake failures."""
+    app = create_app(
+        retrieval=retrieval,
+        provider=provider,
+        request_id_factory=lambda: "generated-error-id",
+    )
+    private_question = "Private question that must not be exposed"
+
+    with TestClient(app, raise_server_exceptions=False) as client:
+        response = client.post(
+            "/api/v1/questions",
+            json={
+                "workflow": "research_question",
+                "question": private_question,
+                "request_id": "caller-error-id",
+            },
+        )
+
+    _assert_sanitized_error(
+        response,
+        status_code=status_code,
+        error_code=error_code,
+        request_id="caller-error-id",
+        retryable=True,
+        private_value=private_question,
+    )
+
+
+def test_question_endpoint_maps_invalid_output_to_contract_failure() -> None:
+    """Discard invalid fake output behind the approved contract-failure code."""
+    retrieval_outcome = FakeRetrieval().retrieve(
+        "fixture question", "fixture-request"
+    )
+    provider_outcome = FakeAnswerProvider().answer(
+        "fixture question",
+        retrieval_outcome.evidence,
+        retrieval_outcome.corpus,
+        "fixture-request",
+    )
+    invalid_provider_outcome = replace(
+        provider_outcome,
+        claims=(
+            replace(
+                provider_outcome.claims[0],
+                citation_chunk_ids=("private-invalid-citation",),
+            ),
+        ),
+    )
+    app = create_app(
+        retrieval=_FixedRetrieval(retrieval_outcome),
+        provider=_FixedProvider(invalid_provider_outcome),
+        request_id_factory=lambda: "generated-contract-id",
+    )
+    private_question = "Private question that must not be exposed"
+
+    with TestClient(app, raise_server_exceptions=False) as client:
+        response = client.post(
+            "/api/v1/questions",
+            json={
+                "workflow": "research_question",
+                "question": private_question,
+            },
+        )
+
+    _assert_sanitized_error(
+        response,
+        status_code=500,
+        error_code="response_contract_failure",
+        request_id="generated-contract-id",
+        retryable=False,
+        private_value="private-invalid-citation",
+    )
+    assert private_question not in response.text
+
+
+def test_question_endpoint_maps_unexpected_errors_without_hiding_them() -> None:
+    """Return a sanitized error publicly while preserving test observability."""
+    app = create_app(
+        retrieval=_UnexpectedRetrieval(),
+        provider=FakeAnswerProvider(),
+        request_id_factory=lambda: "generated-internal-id",
+    )
+    payload = {
+        "workflow": "research_question",
+        "question": "Private question that must not be exposed",
+    }
+
+    with pytest.raises(
+        RuntimeError, match="private unexpected retrieval detail"
+    ):
+        with TestClient(app) as client:
+            client.post("/api/v1/questions", json=payload)
+
+    with TestClient(app, raise_server_exceptions=False) as client:
+        response = client.post("/api/v1/questions", json=payload)
+
+    _assert_sanitized_error(
+        response,
+        status_code=500,
+        error_code="internal_error",
+        request_id="generated-internal-id",
+        retryable=False,
+        private_value="private unexpected retrieval detail",
+    )
+    assert payload["question"] not in response.text
+
+
+def _assert_sanitized_error(
+    response: Response,
+    *,
+    status_code: int,
+    error_code: str,
+    request_id: str,
+    retryable: bool,
+    private_value: str,
+) -> None:
+    """Assert a closed error shape without private implementation data."""
+    assert response.status_code == status_code
+    body = response.json()
+    assert body == {
+        "api_version": "v1",
+        "request_id": request_id,
+        "error": {
+            "code": error_code,
+            "message": body["error"]["message"],
+            "retryable": retryable,
+        },
+        "metadata": {"is_mock": True, "is_test_data": True},
+    }
+    assert body["error"]["message"].strip()
+    assert private_value not in response.text
