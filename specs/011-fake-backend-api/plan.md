@@ -400,15 +400,16 @@ No backlog task is completed by this draft.
 
 ## Formal Analysis and Approval Status
 
-- **Formal speckit-analyze**: **NOT RUN / BLOCKED**. Its required PowerShell
-  prerequisite could not run because `pwsh` is unavailable, and no documented
-  Linux alternative was identified.
-- A manual cross-artifact consistency review found no critical or high-severity
-  contradictions. Manual review is **not** formal `speckit-analyze`.
-- CHK001, CHK003, CHK008, CHK015, and CHK016 remain unchecked pending human
-  disposition or later implementation verification.
+- **Formal speckit-analyze**: **COMPLETED** — formal `speckit-analyze` executed
+  successfully on Ubuntu using PowerShell 7.7.0. Its no-persist formal
+  prerequisite exited `0` and resolved this Feature 011 directory.
+- The formal analysis found no critical or high-severity contradictions. All
+  required FR, NFR, and SC items have planned coverage across T001–T008.
+- Checklist exceptions CHK001, CHK003, CHK008, and CHK016 (I2) remain unchecked
+  pending human disposition. I3 / CHK015 remains unchecked and deferred to
+  implementation verification.
 - Human and shared-contract approvals remain open. The feature remains
-  **DRAFT**. A documentation-only commit does not authorize behavior tests,
+  **DRAFT**. This documentation record does not authorize behavior tests,
   dependency changes, or implementation.
 
 ## Post-Approval Verification and Evidence
