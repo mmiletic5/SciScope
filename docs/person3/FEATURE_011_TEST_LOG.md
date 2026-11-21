@@ -67,14 +67,62 @@ rerun while creating this log. Each reported command exited `0`.
 ## T002 — Create the injectable app factory
 
 - **Implementation commit:** PENDING
-- **Changed files:** PENDING
-- **RED command, expected failure, actual outcome:** NOT RUN
-- **GREEN command and actual outcome:** NOT RUN
-- **Additional verification commands/results:** NOT RUN
-- **Negative and isolation checks:** NOT RUN
-- **Warnings and unresolved issues:** PENDING
-- **Human review/acceptance:** PENDING
-- **Evidence status:** PENDING
+- **Task objective:** Create an offline FastAPI composition-root skeleton that
+  accepts and stores opaque injected retrieval and provider sentinels without
+  invoking them or registering question behavior.
+- **Changed files:**
+  - `src/sciscope/api/__init__.py`
+  - `src/sciscope/api/app.py`
+  - `tests/backend/test_app_factory.py`
+  - `docs/person3/FEATURE_011_TEST_LOG.md`
+
+### RED result
+
+- **Command:** `uv run --locked pytest tests/backend/test_app_factory.py`
+- **Actual outcome:** Exit `2`; zero tests collected; one collection error;
+  zero failed tests.
+- **Failure reason:** `ModuleNotFoundError: No module named 'sciscope.api'` at
+  `from sciscope.api.app import create_app`.
+
+### GREEN result
+
+- **Command:** `uv run --locked pytest tests/backend/test_app_factory.py`
+- **Actual outcome:** PASS, exit `0`; one test collected and one passed.
+
+### Additional verification
+
+| Command | Actual outcome |
+| --- | --- |
+| `uv run --locked ruff check src/sciscope/api tests/backend/test_app_factory.py` | PASS, exit `0`; all checks passed. |
+| `uv run --locked ruff format --check src/sciscope/api tests/backend/test_app_factory.py` | Initial attempt reported one test file would be reformatted. The individual subcommand exit code was not separately captured because the grouped command continued; the final rerun PASSed, exit `0`, with three files already formatted. |
+| `uv run --locked mypy src/sciscope/api` | PASS, exit `0`; no issues in two source files. |
+| `git diff --check` | PASS, exit `0`. |
+
+### Negative and isolation checks
+
+- The injected retrieval and provider sentinels were not called during app
+  construction or while entering and leaving an in-process `TestClient`
+  context.
+- The test observed no imports of `sciscope.database.session`,
+  `sciscope.embedding.provider`, or `sciscope.retrieval._core`.
+- The application has no `/api/v1/questions` route. The test issued no HTTP
+  request and started no listening server.
+
+### Warnings and unresolved issues
+
+- The initial formatter check reported a parenthesization change in
+  `tests/backend/test_app_factory.py`; the required layout was applied and the
+  final formatter check passed.
+- T002 does not define formal dependency protocols, fake implementations,
+  schemas, validation, or question endpoint behavior; those remain scoped to
+  later approved tasks.
+
+- **Human review/acceptance:** ACCEPTED based on the submitted source files,
+  test, and reported verification results. This records the supplied human
+  review only; it does not claim independent runtime verification beyond the
+  Codex checks recorded above.
+- **Evidence status:** Implementation checks and task-level human review
+  recorded; final feature-level human acceptance remains pending.
 
 ## T003 — Define closed versioned HTTP schemas and input validation
 
