@@ -106,34 +106,7 @@ rerun for this record.
 | `uv run --locked ruff check src/sciscope/api tests/backend/test_app_factory.py` | PASS, exit `0`; all checks passed. |
 | `uv run --locked ruff format --check src/sciscope/api tests/backend/test_app_factory.py` | Initial attempt reported one test file would be reformatted. The individual subcommand exit code was not separately captured because the grouped command continued; the final rerun PASSed, exit `0`, with three files already formatted. |
 | `uv run --locked mypy src/sciscope/api` | PASS, exit `0`; no issues in two source files. |
-| `git diff --check` | PASS, exit `0`. |
-
-### User-executed manual verification
-
-The following results were supplied by the user and were not independently
-rerun for this record. All checks used `PYTHONPATH=src:tests uv run --locked
-python`, an in-process FastAPI `TestClient`, and the test-only
-`backend.validation_asgi.create_validation_app` adapter.
-
-1. **Valid caller request ID** — A `POST /__test__/validation` request with a
-   blank question and `request_id=mateja-test-001` returned HTTP `422`. The
-   response request ID was `mateja-test-001`, the error code was
-   `invalid_request`, and the mock metadata was
-   `{'is_mock': True, 'is_test_data': True}`. **PASS:** the valid caller ID was
-   preserved.
-2. **Invalid caller request ID** — A `POST /__test__/validation` request with
-   `request_id="invalid request ID"` and an injected ID factory returning
-   `generated-safe-id` returned HTTP `422` with request ID
-   `generated-safe-id`. **PASS:** the invalid caller ID was safely replaced.
-3. **Malformed JSON** — A `POST /__test__/validation` request with body
-   `{invalid-json` and an injected ID factory returning `generated-json`
-   returned HTTP `422`, error code `invalid_request`, and request ID
-   `generated-json`. **PASS:** malformed JSON was safely handled.
-
-The user confirmed that these assertions held: HTTP `422` was returned; the
-approved error code was used; caller IDs were preserved or safely replaced;
-invalid IDs and malformed JSON text were not reflected; and no FastAPI
-`detail` field was exposed.
+| `git diff --check` | Initial and post-review PASS, exit `0`; no whitespace errors. |
 
 ### User-executed manual verification
 
@@ -281,7 +254,7 @@ rerun for this record.
 
 ## T004 — Add request IDs and sanitized framework 422 translation
 
-- **Implementation commit:** PENDING
+- **Implementation commit:** `60f6cac9fed4166c41d39a4b5abd21923bc2c64b`
 - **Task objective:** Generate and validate opaque request IDs, then translate
   framework request-validation failures to the approved sanitized `422`
   envelope without adding a production question route.
@@ -324,6 +297,33 @@ rerun for this record.
 | Final commit verification: Ruff check and format check on the T004 source and test paths | PASS, exit `0`; all checks passed and five files already formatted. |
 | Final commit verification: `uv run --locked mypy src/sciscope/api/app.py src/sciscope/question_service` and `git diff --check` | PASS, exit `0`; no issues in three source files and no whitespace errors. |
 
+### User-executed manual verification
+
+The following results were supplied by the user and were not independently
+rerun for this record. All checks used `PYTHONPATH=src:tests uv run --locked
+python`, an in-process FastAPI `TestClient`, and the test-only
+`backend.validation_asgi.create_validation_app` adapter.
+
+1. **Valid caller request ID** — A `POST /__test__/validation` request with a
+   blank question and `request_id=mateja-test-001` returned HTTP `422`. The
+   response request ID was `mateja-test-001`, the error code was
+   `invalid_request`, and the mock metadata was
+   `{'is_mock': True, 'is_test_data': True}`. **PASS:** the valid caller ID was
+   preserved.
+2. **Invalid caller request ID** — A `POST /__test__/validation` request with
+   `request_id="invalid request ID"` and an injected ID factory returning
+   `generated-safe-id` returned HTTP `422` with request ID
+   `generated-safe-id`. **PASS:** the invalid caller ID was safely replaced.
+3. **Malformed JSON** — A `POST /__test__/validation` request with body
+   `{invalid-json` and an injected ID factory returning `generated-json`
+   returned HTTP `422`, error code `invalid_request`, and request ID
+   `generated-json`. **PASS:** malformed JSON was safely handled.
+
+The user confirmed that these assertions held: HTTP `422` was returned; the
+approved error code was used; caller IDs were preserved or safely replaced;
+invalid IDs and malformed JSON text were not reflected; and no FastAPI
+`detail` field was exposed.
+
 ### Negative and isolation checks
 
 - A valid caller request ID is preserved in the `422` envelope; missing or
@@ -356,14 +356,96 @@ rerun for this record.
 ## T005 — Add typed protocols and deterministic independent fakes
 
 - **Implementation commit:** PENDING
-- **Changed files:** PENDING
-- **RED command, expected failure, actual outcome:** NOT RUN
-- **GREEN command and actual outcome:** NOT RUN
-- **Additional verification commands/results:** NOT RUN
-- **Negative and isolation checks:** NOT RUN
-- **Warnings and unresolved issues:** PENDING
-- **Human review/acceptance:** PENDING
-- **Evidence status:** PENDING
+- **Task objective:** Define plain immutable retrieval/provider contracts and
+  deterministic, independently injectable fake dependencies with synthetic
+  evidence, provenance, metadata, success states, and controlled failures.
+- **Changed files:**
+  - `src/sciscope/question_service/contracts.py`
+  - `src/sciscope/question_service/fakes.py`
+  - `tests/backend/test_fake_dependencies.py`
+  - `docs/person3/FEATURE_011_TEST_LOG.md`
+
+### RED result
+
+- **Command:** `uv run --locked pytest tests/backend/test_fake_dependencies.py`
+- **Initial environment outcome:** BLOCKED before collection because the
+  sandboxed `uv` cache could not create a temporary file under
+  `/home/maki/.cache/uv`; the same command was rerun with access to the
+  existing cache.
+- **Actual outcome:** Exit `2`; zero tests collected; one collection error.
+- **Failure reason:** `ModuleNotFoundError: No module named
+  'sciscope.question_service.contracts'` during test-module import. This was
+  the expected missing-contract failure.
+
+### GREEN result
+
+- **Command:** `uv run --locked pytest tests/backend/test_fake_dependencies.py`
+- **Actual outcome:** PASS, exit `0`; eight tests collected and eight passed.
+
+### Additional verification
+
+| Command | Actual outcome |
+| --- | --- |
+| `uv run --locked pytest tests/backend/ -v` | PASS, exit `0`; 36 tests passed in 0.51s. |
+| `uv run --locked mypy src/sciscope/question_service/contracts.py src/sciscope/question_service/fakes.py` | PASS, exit `0`; no issues in two source files. |
+| `uv run --locked ruff check src/sciscope/question_service/contracts.py src/sciscope/question_service/fakes.py tests/backend/test_fake_dependencies.py` | Initial FAIL, exit `1`; 12 findings: a missing initializer docstring, unsorted imports, and line-length violations. After manual corrections, it FAILed again with one remaining import-order finding. `uv run --locked ruff check --fix src/sciscope/question_service/fakes.py` applied that import-only correction; final rerun PASSed, exit `0`. |
+| `uv run --locked ruff format --check src/sciscope/question_service/contracts.py src/sciscope/question_service/fakes.py tests/backend/test_fake_dependencies.py` | Initial FAIL, exit `1`; `fakes.py` and `test_fake_dependencies.py` would be reformatted. The required layouts were applied; final rerun PASSed, exit `0`, with three files already formatted. |
+| `git diff --check` | PASS, exit `0`. |
+| Post-review `uv run --locked pytest tests/backend/ -v` | PASS, exit `0`; 36 tests passed in 0.54s. |
+| Post-review `uv run --locked mypy src/sciscope/question_service/contracts.py src/sciscope/question_service/fakes.py` | PASS, exit `0`; no issues in two source files. |
+| Post-review Ruff check and format check on T005 source and test paths | PASS, exit `0`; all checks passed and three files were already formatted. |
+
+### User-executed manual verification
+
+The following results were supplied by the user and were not independently
+rerun for this record. All checks used `PYTHONPATH=src uv run --locked python`.
+
+1. **Deterministic synthetic retrieval** — Two `FakeRetrieval` calls with an
+   equivalent question and request ID returned equal results. The user
+   confirmed `first == second`, `is_mock == True`, `is_test_data == True`, and
+   one evidence item. Observed chunk ID: `synthetic-chunk-001`; paper:
+   `Synthetic Fixture Paper`; DOI: `10.0000/synthetic.001`; passage:
+   `Synthetic fixture passage for deterministic backend testing.`
+   **PASS:** deterministic synthetic retrieval.
+2. **Fake provider and empty retrieval** — The provider received synthetic
+   retrieval evidence and returned an answered outcome. The user confirmed
+   `status == answered`, the cited chunk ID matched supplied evidence, empty
+   retrieval evidence was `()`, a corpus delivery digest was present, and mock
+   metadata was true. Observed answer: `Synthetic fixture answer for
+   deterministic backend testing.`; citation:
+   `('synthetic-chunk-001',)`; empty retrieval evidence: `()`.
+   **PASS:** citation identity and empty retrieval.
+3. **Controlled timeout** — `FakeRetrieval(mode="timeout")` raised a
+   `DependencyFailure` with code `DEPENDENCY_TIMEOUT`. Observed failure code:
+   `dependency_timeout`. **PASS:** controlled offline timeout.
+
+### Negative and isolation checks
+
+- Tests assert separate runtime-checkable retrieval and provider protocols,
+  independent fake substitution, deterministic equal outputs, structured
+  mock/test metadata, synthetic evidence source fields, and corpus provenance
+  for both evidence and empty retrieval outcomes.
+- Tests assert answered fake output cites the supplied synthetic evidence ID,
+  and parameterize controlled retrieval/provider unavailable and timeout
+  signals.
+- Fake modules import only Python standard-library modules and
+  `sciscope.question_service.contracts`; tests inspect their sources for no
+  FastAPI, Pydantic, or `sciscope.retrieval` coupling. No database, network,
+  embedding, Gemini, provider SDK, or private retrieval-core operation occurs.
+
+### Warnings and unresolved issues
+
+- The initial cache-permission block and Ruff/format failures above were
+  corrected and retained in this record.
+- T005 defines plain fake contracts only. Output validation, cross-record
+  citation checks, service orchestration, HTTP response mapping, and the
+  production question route remain scoped to T006–T008.
+
+- **Human review/acceptance:** ACCEPTED based on submitted implementation,
+  automated tests, and successful user-executed manual checks. Final Feature
+  011 acceptance remains PENDING.
+- **Evidence status:** Automated checks recorded; feature-level human
+  acceptance and final `EVIDENCE.md` update remain pending.
 
 ## T006 — Validate evidence, citations, and corpus provenance fail-closed
 
