@@ -8,6 +8,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from sciscope.api.http_models import ErrorDetail, ErrorResponse, MockMetadata
+from sciscope.api.routes import install_question_route
 from sciscope.question_service.ids import (
     generate_request_id,
     is_valid_request_id,
@@ -32,7 +33,7 @@ def create_app(
     provider: object,
     request_id_factory: Callable[[], str] = generate_request_id,
 ) -> FastAPI:
-    """Create an inert FastAPI application with explicit dependencies.
+    """Create an offline FastAPI application with explicit dependencies.
 
     Args:
         retrieval: An opaque retrieval dependency supplied by the caller.
@@ -40,8 +41,8 @@ def create_app(
         request_id_factory: Generates IDs for validation-error envelopes.
 
     Returns:
-        A FastAPI application that stores the supplied dependencies without
-        starting external resources or registering question behavior.
+        A FastAPI application that stores the supplied dependencies, registers
+        the approved question route, and starts no external resource.
     """
     app = FastAPI()
     app.state.dependencies = AppDependencies(
@@ -51,6 +52,7 @@ def create_app(
     install_validation_exception_handler(
         app, request_id_factory=request_id_factory
     )
+    install_question_route(app, request_id_factory=request_id_factory)
     return app
 
 

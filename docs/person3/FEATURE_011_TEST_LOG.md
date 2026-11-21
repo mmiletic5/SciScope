@@ -449,7 +449,7 @@ rerun for this record. All checks used `PYTHONPATH=src uv run --locked python`.
 
 ## T006 — Validate evidence, citations, and corpus provenance fail-closed
 
-- **Implementation commit:** PENDING
+- **Implementation commit:** `590d48a478fb9e0086a7ac1933403e25eb8867e5`
 - **Task objective:** Validate synthetic retrieval/provider output before it
   crosses the HTTP boundary and produce a deterministic fail-closed signal for
   malformed evidence, citation, provenance, metadata, or state values.
@@ -554,14 +554,127 @@ rerun for this record. All checks used `PYTHONPATH=src uv run --locked python`.
 ## T007 — Orchestrate the three valid question outcomes
 
 - **Implementation commit:** PENDING
-- **Changed files:** PENDING
-- **RED command, expected failure, actual outcome:** NOT RUN
-- **GREEN command and actual outcome:** NOT RUN
-- **Additional verification commands/results:** NOT RUN
-- **Negative and isolation checks:** NOT RUN
-- **Warnings and unresolved issues:** PENDING
-- **Human review/acceptance:** PENDING
-- **Evidence status:** PENDING
+- **Task objective:** Orchestrate the fake retrieval and provider dependencies
+  into the approved answered, no-results, and insufficient-evidence outcomes,
+  validate each result, and expose the versioned success endpoint.
+- **Changed files:**
+  - `src/sciscope/question_service/service.py`
+  - `src/sciscope/api/routes.py`
+  - `src/sciscope/api/app.py`
+  - `tests/backend/test_question_service.py`
+  - `tests/backend/test_question_api.py`
+  - `tests/backend/test_app_factory.py`
+  - `docs/person3/FEATURE_011_TEST_LOG.md`
+
+### RED result
+
+- **Command:** `uv run --locked pytest tests/backend/test_question_service.py tests/backend/test_question_api.py`
+- **Actual outcome:** Exit `2`; four tests collected and one collection error.
+- **Failure reason:** `ModuleNotFoundError: No module named
+  'sciscope.question_service.service'` while importing the service tests. This
+  was the expected missing-orchestration failure.
+
+### GREEN result
+
+- **Command:** `uv run --locked pytest tests/backend/test_question_service.py tests/backend/test_question_api.py`
+- **Intermediate outcome:** Exit `1`; six passed and two failed because the
+  no-results outcome lacked `claims` and the insufficient-evidence outcome
+  lacked `answer`. The outcome contracts were completed with the approved
+  empty/null state values.
+- **Final outcome:** PASS, exit `0`; eight tests passed in 0.51s.
+
+### Additional verification
+
+| Command | Actual outcome |
+| --- | --- |
+| `uv run --locked pytest tests/backend/ -v` | Initial FAIL, exit `1`; 60 passed and one failed because the former app-factory test asserted that the now-approved question route was absent. The assertion was updated to verify route registration while retaining the no-initialization isolation check. Final PASS, exit `0`; 61 tests passed in 0.69s. |
+| `uv run --locked mypy src/sciscope/api src/sciscope/question_service` | Initial FAIL, exit `1`; 22 route type errors from untyped shared HTTP-model mapping and string-name casts. Explicit typed mapping helpers corrected the errors. Final PASS, exit `0`; no issues in 10 source files. |
+| `uv run --locked ruff check src/sciscope/api/app.py src/sciscope/api/routes.py src/sciscope/question_service/service.py tests/backend/test_app_factory.py tests/backend/test_question_service.py tests/backend/test_question_api.py` | Initial FAIL, exit `1`; 14 findings, including imports and line lengths. A subsequent run found one remaining import-order issue, corrected with `ruff check --fix` on `routes.py`; the final test-name line was then shortened. Final PASS, exit `0`; all checks passed. |
+| `uv run --locked ruff format --check src/sciscope/api/app.py src/sciscope/api/routes.py src/sciscope/question_service/service.py tests/backend/test_app_factory.py tests/backend/test_question_service.py tests/backend/test_question_api.py` | Initial FAIL, exit `1`; two test files required formatting. `uv run --locked ruff format tests/backend/test_question_service.py tests/backend/test_question_api.py` reformatted one file. Final PASS, exit `0`; six files already formatted. |
+| `git diff --check` | PASS, exit `0`; no whitespace errors after this log update. |
+
+### Outcome and isolation coverage
+
+- The service accepts injected `RetrievalService` and `AnswerProvider`
+  protocols. The route obtains those dependencies from the app factory state;
+  no hidden dependency globals are used.
+- Answered output retains deterministic synthetic evidence, response-local
+  citation identity, corpus provenance, and mock/test metadata. The output is
+  validated before HTTP-model conversion.
+- Empty retrieval produces `no_results`, retains valid synthetic provenance,
+  contains no answer, claims, or evidence, and skips provider invocation.
+- Nonempty retrieval plus a provider decline produces
+  `insufficient_evidence`, preserving evidence and provenance with no
+  fabricated answer or claims.
+- Tests cover supplied and generated request IDs, closed success schemas, and
+  the fail-closed validator rejecting an invalid provider answer before output.
+  They use only fakes; no database, network, embedding, Gemini, external
+  provider, or Person 2 retrieval implementation is accessed.
+
+### User-executed manual verification
+
+The following checks were performed directly by the user and were not
+independently rerun for this record. All used
+`PYTHONPATH=src uv run --locked python`, FastAPI `TestClient`, and explicitly
+injected `FakeRetrieval` and `FakeAnswerProvider` dependencies.
+
+1. **Answered HTTP outcome** — `POST /api/v1/questions` with workflow
+   `research_question`, request ID `manual-t007-001`, and a valid research
+   question returned HTTP `200` with status `answered`. Observed answer:
+   `Synthetic fixture answer for deterministic backend testing.`; evidence:
+   `synthetic-chunk-001`; citations: `['synthetic-chunk-001']`.
+   **PASS:** answered HTTP outcome. The user also confirmed the request ID was
+   preserved, the citation matched the evidence chunk ID, and `is_mock` and
+   `is_test_data` were true.
+2. **No-results HTTP outcome** — `POST /api/v1/questions` with injected
+   `FakeRetrieval(mode="empty")` and `FakeAnswerProvider()` returned HTTP `200`
+   with status `no_results` and generated request ID `generated-t007-002`.
+   Observed evidence: `[]`; corpus delivery digest:
+   `synthetic-delivery-digest-v1`; source contract version:
+   `synthetic-source-contract-v1`; corpus version:
+   `synthetic-corpus-v1`. **PASS:** no-results HTTP outcome. The user also
+   confirmed `answer is None`, claims and evidence were empty, and the corpus
+   delivery digest was present.
+3. **Insufficient-evidence HTTP outcome** — `POST /api/v1/questions` with
+   `FakeRetrieval()` and
+   `FakeAnswerProvider(mode="insufficient_evidence")` returned HTTP `200` with
+   status `insufficient_evidence`, `answer: None`, `claims: []`, and evidence
+   count `1`. **PASS:** insufficient-evidence HTTP outcome. The user also
+   confirmed the answer and claims were empty, retrieved evidence remained
+   present, and mock metadata was true.
+
+### Final contract review and verification
+
+- **Contract review:** PASS. The approved T007 contract in `spec.md`,
+  `plan.md`, and `tasks.md` is met: the app exposes only the approved
+  `POST /api/v1/questions` success behavior; its closed response union permits
+  only `answered`, `no_results`, and `insufficient_evidence`. The app factory
+  retains explicit dependency injection, preserves supplied valid request IDs,
+  generates omitted IDs through its injected factory, and retains the T004
+  sanitized `422` handler. The service skips provider invocation for empty
+  retrieval, validates all success outcomes before HTTP conversion, and
+  preserves synthetic corpus provenance and mock/test metadata. No external
+  provider, embedding, database, network, or Person 2 retrieval dependency is
+  introduced. No additional approved requirement gap was found.
+- `uv run --locked pytest tests/backend/test_question_service.py tests/backend/test_question_api.py -v`: PASS, exit `0`; eight tests passed in 0.57s.
+- `uv run --locked pytest tests/backend/ -v`: PASS, exit `0`; 61 tests passed in 0.89s.
+- `uv run --locked mypy src/sciscope/api src/sciscope/question_service`: PASS, exit `0`; no issues in 10 source files.
+- `uv run --locked ruff check src/sciscope/api/app.py src/sciscope/api/routes.py src/sciscope/question_service/service.py tests/backend/test_app_factory.py tests/backend/test_question_service.py tests/backend/test_question_api.py`: PASS, exit `0`; all checks passed.
+- `uv run --locked ruff format --check src/sciscope/api/app.py src/sciscope/api/routes.py src/sciscope/question_service/service.py tests/backend/test_app_factory.py tests/backend/test_question_service.py tests/backend/test_question_api.py`: PASS, exit `0`; six files already formatted.
+- **Additional failures or corrections:** None during this final review.
+
+### Warnings and unresolved issues
+
+- The RED failure and all intermediate test, type, lint, and formatting
+  failures above were corrected and retained in this record.
+- T007 handles valid success outcomes only. T008 remains responsible for
+  mapping controlled dependency and validation failures to HTTP errors.
+- **Human review/acceptance:** ACCEPTED at task level based on reviewed
+  implementation, approved contract requirements, 8 passing focused tests, 61
+  passing backend tests, and three successful user-executed manual HTTP
+  verification scripts. Final Feature 011 acceptance remains PENDING.
+- **Evidence status:** Automated checks recorded; human review and local
+  implementation commit remain pending.
 
 ## T008 — Map controlled failures and complete offline API verification
 

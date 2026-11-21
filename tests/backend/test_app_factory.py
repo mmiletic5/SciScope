@@ -20,7 +20,7 @@ class _OpaqueSentinel:
 
 
 def test_create_app_stores_injected_sentinels_without_initialization() -> None:
-    """Construct an offline app without configuring a question endpoint."""
+    """Construct an offline app and register its question endpoint inertly."""
     retrieval_sentinel = _OpaqueSentinel()
     provider_sentinel = _OpaqueSentinel()
 
@@ -42,7 +42,7 @@ def test_create_app_stores_injected_sentinels_without_initialization() -> None:
         }
         & sys.modules.keys()
     )
-    assert "/api/v1/questions" not in {route.path for route in app.routes}
+    assert "/api/v1/questions" in {route.path for route in app.routes}
 
     with TestClient(app):
         pass
