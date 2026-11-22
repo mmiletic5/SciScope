@@ -16,6 +16,7 @@ from sciscope.retrieval.contracts import (
     RetrievalScore,
 )
 from sciscope.retrieval.errors import RetrievalErrorCode, RetrievalException
+from sciscope.retrieval.service import QueryEmbedder, RetrievalService
 
 __all__ = [
     "Author",
@@ -23,6 +24,7 @@ __all__ = [
     "EmbeddingConfig",
     "NormalizedType",
     "PaperMetadata",
+    "QueryEmbedder",
     "RankingOptions",
     "RetrievalErrorCode",
     "RetrievalException",
@@ -33,4 +35,5 @@ __all__ = [
     "RetrievalResponse",
     "RetrievalResult",
     "RetrievalScore",
+    "RetrievalService",
 ]
