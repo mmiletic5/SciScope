@@ -1414,3 +1414,106 @@ commit in this increment.
 - **Status:** Person 2 review, native Windows verification, T007-E owner
   acceptance, and feature-level acceptance remain **PENDING**. The handoff
   records no reviewer decision or Windows test result.
+
+## T007-E-15 — Person 2 Review Acceptance and Final Gate Check
+
+- **Date and baseline:** 2026-11-22 on `007-public-retrieval-facade` at
+  `46d1c2ba7b77e8132dd421aef21f1d57adc49ee3`.
+- **Person 2 review:** **ACCEPTED (owner-reported).** The project owner
+  relayed that Person 2 reviewed the Feature 007/T007 work and confirmed it is
+  OK. Codex did not directly witness the review or fabricate reviewer commands,
+  findings, or test results.
+- **Native Windows verification:** **PENDING.** The evidence log contains
+  guarded Ubuntu migration, pilot-import, Codex-run integration, and
+  independent owner verification evidence, but no native Windows execution
+  result. Person 2 review acceptance is not evidence of native Windows
+  execution.
+- **T007-E acceptance:** **PENDING.** The remaining required evidence is an
+  independently executed guarded public PostgreSQL integration test in the
+  approved native Windows PostgreSQL 17 / pgvector 0.8.7 environment, including
+  the documented database identity, read-only, provenance, and postflight
+  assertions, followed by explicit owner acceptance.
+- **T007-F and Feature 007:** **PENDING.** Final feature-level verification,
+  explicit owner acceptance, and repository-prescribed evidence/task
+  synchronization must not be recorded until the Windows requirement and
+  T007-E acceptance have actually completed.
+- **Scope:** This entry records only the owner-reported review disposition. No
+  database operation, provider call, migration, ingestion, Windows test,
+  acceptance, merge, or push was performed.
+
+## T007-E-16 — Owner-Confirmed Windows Verification and T007-E Acceptance
+
+- **Date and baseline:** 2026-11-22 on `007-public-retrieval-facade` at
+  `46d1c2ba7b77e8132dd421aef21f1d57adc49ee3`.
+- **Person 2 review:** **ACCEPTED (owner-reported).** The project owner
+  confirms Person 2 reviewed and approved the T007 implementation. This is
+  consistent with the owner-reported review recorded in T007-E-15; Codex did
+  not directly witness the review.
+- **Native Windows verification:** **PASS — owner-reported, terminal evidence
+  not retained.** The project owner confirms a teammate executed the native
+  Windows PostgreSQL integration test and it passed. No Windows terminal output,
+  command transcript, environment measurement, test count, or reviewer command
+  was preserved; none is inferred or fabricated here.
+- **Ubuntu evidence:** T007-E-10 through T007-E-13 remain the recorded
+  migration, pilot-import, guarded public-facade integration, and independent
+  owner-verification evidence for the authorized Ubuntu environment.
+- **Owner decision:** **T007-E ACCEPTED — owner-confirmed.** The owner accepts
+  the completed T007-E work based on the reported native Windows verification,
+  Person 2 review, and recorded Ubuntu evidence.
+- **T007-F / Feature 007:** **PENDING.** This T007-E acceptance does not itself
+  provide the explicit feature-level human acceptance required by T007-F before
+  `EVIDENCE.md`, task/backlog synchronization, and a separately authorized
+  final documentation commit. No T007-F completion, feature-level acceptance,
+  merge, or push is recorded by this entry.
+- **Scope:** This entry records owner-reported verification and acceptance only.
+  No Windows command was run by Codex; no database operation, provider call,
+  migration, ingestion, or Git operation was performed.
+
+## T007-F-01 — Final Offline Verification
+
+- **Date and baseline:** 2026-11-22 on `007-public-retrieval-facade` at
+  `46d1c2ba7b77e8132dd421aef21f1d57adc49ee3`.
+- **Verification source:** Codex. These results are distinct from the
+  owner-reported Ubuntu and native Windows verification recorded above.
+- **Public conformance:**
+  `uv run --locked pytest tests/retrieval/test_public_service.py tests/retrieval/test_public_contracts.py tests/retrieval/test_errors.py`
+  exited 0: **66 passed** in 0.65s.
+- **Validation and core offline checks:**
+  `PYTHONPATH=. uv run --locked pytest tests/retrieval/test_validation.py tests/retrieval/test_core_offline.py tests/retrieval/test_v2_bm25.py`
+  exited 0: **43 passed** in 0.49s.
+- **Offline retrieval regression:**
+  `PYTHONPATH=. uv run --locked pytest tests/retrieval -q --ignore=tests/retrieval/test_postgres_core.py --ignore=tests/retrieval/test_postgres_lookup.py --ignore=tests/retrieval/test_phase_c_pipeline.py --ignore=tests/retrieval/test_public_postgres.py`
+  exited 0: **154 passed** in 0.91s. All PostgreSQL-backed tests, including
+  the guarded public integration test, were explicitly excluded.
+- **Static checks:** Ruff lint exited 0 (`All checks passed!`); Ruff formatting
+  exited 0 (`15 files already formatted`); mypy exited 0 (`Success: no issues
+  found in 13 source files`).
+- **Limitations:** No database connection, PostgreSQL test, migration, import,
+  live provider, or external API was used during this verification.
+- **T007-F / Feature 007:** **PENDING.** The workflow requires explicit
+  feature-level human acceptance before central evidence/task synchronization
+  and a separately authorized final documentation commit. T007-E acceptance
+  does not satisfy that distinct gate.
+
+## T007-F-02 — Final Feature 007 Owner Acceptance and Documentation Synchronization
+
+- **Date and baseline:** 2026-11-22 on `007-public-retrieval-facade` at
+  `46d1c2ba7b77e8132dd421aef21f1d57adc49ee3`.
+- **Feature-level owner decision:** **Feature 007 ACCEPTED — owner-confirmed.**
+  This explicit decision follows the accepted T007-B, T007-C, T007-D, and
+  T007-E increments and the T007-F-01 automated verification.
+- **Review and integration evidence:** Person 2 review is **ACCEPTED
+  (owner-reported)**. Native Windows guarded integration is **PASS —
+  owner-reported, terminal evidence not retained**. No Windows command output,
+  environment measurement, test count, or other unretained terminal detail is
+  claimed. T007-E-10 through T007-E-13 remain the recorded authorized Ubuntu
+  migration, pilot-import, guarded-integration, and independent-verification
+  evidence.
+- **Documentation synchronization:** This entry authorizes the workflow-required
+  updates to `EVIDENCE.md`, `PROJECT_TODO.md`, and the Feature 007 status/task
+  records. Historical pending and blocked entries are retained as historical
+  evidence.
+- **Scope boundary:** Feature 007 acceptance does not complete broader P1
+  shared-contract tasks, the separate GIN migration, T008, P4-09, P4-10, or
+  any other backlog item. No production change, database operation, provider
+  call, merge, or push is performed by this documentation entry.

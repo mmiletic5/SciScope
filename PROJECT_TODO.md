@@ -158,6 +158,15 @@ The Phase 4 backlog items above remain unchecked because their deliverables
 include broader work or dependencies outside Feature 011, including real
 provider/retrieval integration, scientific validation, and production behavior.
 
+Feature 007 — Public Retrieval Facade — T007-A through T007-F was accepted at
+feature level by the project owner on 2026-11-22. It delivers the public,
+driver-independent retrieval facade and guarded integration verification; it
+does not complete P1-09, P1-11, P1-14, P4-09, P4-10, or any other backlog item.
+Person 2 review and native Windows guarded-test PASS are owner-reported; Windows
+terminal evidence was not retained. See
+[`EVIDENCE.md`](EVIDENCE.md#feature-007--public-retrieval-facade-t007) and
+[`specs/007-phase-b-retrieval-core/tasks.md`](specs/007-phase-b-retrieval-core/tasks.md).
+
 ## Phase 5 — Frontend (Person 4)
 
 - [ ] **P5-01** | Owner: Person 4 | Deliverable: React and TypeScript application setup | Phase: 5 | Depends on: P0-05

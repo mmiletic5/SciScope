@@ -2,7 +2,13 @@
 
 **Branch**: `007-phase-b-retrieval-core` | **Date**: 2026-11-19 | **Spec**: [spec.md](spec.md)
 
-**Status:** As of 2026-11-19, Person 2 internal retrieval core (P3-05 through P3-08) was human-accepted and closed after owner-reported independent verification; shared contract, public facade, and schema gates remained open. The current T007 scope-limited approval record is stated below.
+**Status:** Person 2's internal retrieval core (P3-05 through P3-08) was
+human-accepted and closed after owner-reported independent verification. The
+delegated T007 public-facade scope was completed and **Feature 007 was
+owner-confirmed accepted on 2026-11-22**. The final acceptance includes
+owner-reported Person 2 review and native Windows guarded-integration PASS;
+Windows terminal evidence was not retained. Broader shared-contract and schema
+gates remain separate.
 
 ## Approved T007 public-facade amendment — scope-limited approval record
 
@@ -41,13 +47,10 @@ metadata. Those choices remain separate approvals.
 
 ### Proposed T007 implementation increments
 
-The following increments remain unchecked until their respective work is
-performed and accepted. The dedicated
-chronological record for implemented work will be
-`docs/person3/FEATURE_007_T007_TEST_LOG.md`; it is not created by this
-documentation-only amendment. `EVIDENCE.md` and `PROJECT_TODO.md` remain
-unchanged until automated checks and feature-level human acceptance are
-recorded.
+The following increments were completed in sequence. The dedicated
+chronological record is `docs/person3/FEATURE_007_T007_TEST_LOG.md`.
+`EVIDENCE.md` and `PROJECT_TODO.md` were synchronized only after automated
+checks and explicit feature-level human acceptance were recorded.
 
 | Increment | Goal and proposed files | RED then minimal GREEN | Verification and review | Proposed commit boundary |
 |---|---|---|---|---|

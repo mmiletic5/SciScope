@@ -2,7 +2,12 @@
 
 **Feature Branch**: `007-phase-b-retrieval-core`  
 **Created**: 2026-11-19  
-**Status**: As of 2026-11-19, Person 2 internal retrieval core (P3-05 through P3-08) was human-accepted and closed; shared contract, facade, and migration gates remained pending. The current T007 scope-limited approval record is stated below.
+**Status**: Person 2's internal retrieval core (P3-05 through P3-08) was
+human-accepted and closed on 2026-11-19. The delegated T007 public-facade scope
+was completed and **Feature 007 was owner-confirmed accepted on 2026-11-22**.
+That acceptance includes owner-reported Person 2 review and native Windows
+guarded-integration PASS; Windows terminal evidence was not retained. T007 does
+not complete the broader shared-contract, P1, or separate migration gates.
 **Input**: Owner approval of the Person 2 retrieval core scope and implementation plan.
 
 ## Approved T007 public-facade amendment — scope-limited approval record

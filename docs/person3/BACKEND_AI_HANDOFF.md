@@ -1,6 +1,6 @@
 # Backend & AI Handoff
 
-> **Status: DRAFT — awaiting T007-E and T007-F completion.**
+> **Status: CURRENT — Feature 007 accepted; P4-09 and P4-10 remain pending.**
 >
 > This handoff records repository evidence available on branch
 > `007-public-retrieval-facade` at commit
@@ -16,10 +16,10 @@ not use a real corpus, database retrieval, Gemini, or another live provider.
 Person 3 also implemented the delegated T007 public retrieval-facade scope:
 versioned public DTOs and errors, an import-safe `RetrievalService`, a private
 core composition bridge, response/provenance mapping, and offline conformance
-coverage. T007-B, T007-C, and T007-D are accepted and committed. T007-E has
-native Ubuntu migration, corpus-import, and guarded integration-test evidence,
-but its review, Windows verification, owner acceptance, focused commit, and
-T007-F remain open.
+coverage. T007-B, T007-C, and T007-D are accepted and committed. T007-E is
+owner-confirmed accepted after Person 2 review and an owner-reported native
+Windows pass whose terminal evidence was not retained. Feature 007 is
+owner-confirmed accepted; P4-09 and P4-10 remain future work.
 
 The confirmed next Backend & AI backlog item is **P4-09 — shared retrieval
 service integration**. It is a future adapter/composition task between the
@@ -178,7 +178,7 @@ revision `f005_pgvector_foundation`. Feature 006 supplies validated snapshot
 ingestion and the pilot corpus. These are prerequisites consumed by T007-E;
 they are not Person 3-owned feature implementation.
 
-The uncommitted guarded integration test
+The guarded integration test
 [tests/retrieval/test_public_postgres.py](../../tests/retrieval/test_public_postgres.py)
 uses the existing `retrieval_engine` fixture and test-side private composition
 seam to exercise a public lexical request. The T007 log records successful
@@ -187,9 +187,10 @@ owner's independent rerun. It also records that the test uses read-only
 transactions and compares persisted source records with the returned public
 provenance.
 
-This evidence verifies the prepared public-facade path against the authorized
-Ubuntu test database. It does not complete P4-09, establish native Windows
-compatibility, or replace review/feature acceptance.
+This evidence verifies the public-facade path against the authorized Ubuntu test
+database. The owner also reports a native Windows guarded-test pass, though its
+terminal evidence was not retained. Feature 007 acceptance does not complete
+P4-09 or establish real Backend Retrieval Integration.
 
 ## 7. Verified Tests and Evidence
 
@@ -199,23 +200,24 @@ compatibility, or replace review/feature acceptance.
 | T007-B public contracts | T007 chronology records RED/GREEN, static checks, offline regression, review, and acceptance. | Accepted and committed. |
 | T007-C facade/composition | T007 chronology records 19 facade tests, contract/error and validation checks, core/BM25 checks, 144 offline retrieval tests, static checks, reviews, and acceptance. | Accepted and committed. |
 | T007-D conformance | T007 chronology records public v1/v2/error/consumer-isolation coverage and 154 offline retrieval tests, reviews, and acceptance. | Accepted and committed. |
-| T007-E Ubuntu integration | T007 chronology records migration, pilot import, one guarded PostgreSQL test pass, and independent owner verification. | Technical Ubuntu evidence recorded; acceptance gates remain pending. |
+| T007-E integration | T007 chronology records Ubuntu migration/import/integration evidence, Person 2 review, and a native Windows pass reported by the owner without retained terminal output. | Accepted as part of Feature 007. |
 
-The uncommitted [T007-E review handoff](FEATURE_007_T007_E_REVIEW_HANDOFF.md)
-is the current review and native-Windows-verification handoff, not a completed
-review record.
+The [T007-E review handoff](FEATURE_007_T007_E_REVIEW_HANDOFF.md) is a
+historical review package. Its pending statuses are superseded by T007-E-16 and
+T007-F-02 in the chronological log; it is retained without rewriting history.
 
 ## 8. Git Branches and Commit History
 
-Current development is on `007-public-retrieval-facade` at
-`6c7748147fb0c3a47d26f8a0deb4dbdd58764a4f`. At handoff drafting time, the
-worktree also contains the T007-E evidence log modification and untracked
-T007-E review/integration-test files. Those files have not been staged or
-committed by this handoff.
+The review-ready T007-E package was committed on
+`007-public-retrieval-facade` as
+`97ea843407e0424a388a7206f182b5c72a4f4f08`
+(`test(retrieval): prepare PostgreSQL integration for review`). The Person 4
+frontend integration handoff followed as
+`46d1c2ba7b77e8132dd421aef21f1d57adc49ee3`
+(`docs: add Person 4 frontend integration handoff`).
 
 Feature 011 acceptance is recorded in `2054252`. The T007-B/C/D commits above
-are the confirmed retrieval-facade history. No T007-E commit hash is claimed,
-because T007-E is not accepted or committed.
+and the T007-E review-ready package are the confirmed retrieval-facade history.
 
 ## 9. Current Development Environment
 
@@ -232,11 +234,8 @@ because T007-E is not accepted or committed.
 
 ## 10. Known Limitations and Pending Gates
 
-- **T007-E:** Person 2 retrieval review, native Windows verification, owner
-  acceptance, and a focused commit are pending.
-- **T007-F:** final Feature 007 acceptance and documentation synchronization
-  remain pending.
-- **Feature 007:** remains open; no feature-level acceptance is claimed.
+- **Feature 007:** Owner-confirmed accepted. Person 2 review and native Windows
+  PASS are owner-reported; Windows terminal evidence was not retained.
 - **Provider boundary:** `QueryEmbedder` has no approved typed transient
   provider-error signal. The matter remains deferred for a future live adapter.
 - **Feature 011:** real retrieval, live providers, scientific correctness, and
@@ -299,27 +298,23 @@ design decisions; no live-call behavior is claimed here.
 
 ## 13. Recommended Implementation Sequence
 
-1. Complete T007-E's pending Person 2 review and native Windows guarded-test
-verification; obtain explicit owner acceptance and create the authorized
-focused T007-E commit.
-2. Complete T007-F only after the required feature-level gates; synchronize
-central evidence/TODO records only at the workflow-prescribed acceptance point.
-3. Create an approved P4-09 specification and plan that chooses public
+1. Create an approved P4-09 specification and plan that chooses public
 retrieval version/mode/configuration and defines the adapter's error and
 evidence mapping.
-4. Add deterministic behavior tests for the adapter using public retrieval
+2. Add deterministic behavior tests for the adapter using public retrieval
 fakes, then implement the smallest injected adapter.
-5. Run the approved offline checks. Add guarded database integration only under
+3. Run the approved offline checks. Add guarded database integration only under
 separate authorization and retain the Windows verification requirement.
-6. Specify P4-10 separately before adding Gemini or any other live provider.
+4. Specify P4-10 separately before adding Gemini or any other live provider.
 
 ## 14. Verification and Acceptance Checklist
 
-- [ ] T007-E Person 2 retrieval review recorded.
-- [ ] T007-E native Windows guarded integration result recorded.
-- [ ] T007-E owner acceptance and focused commit completed.
-- [ ] T007-F feature-level evidence/document synchronization completed under
-the approved workflow.
+- [x] T007-E Person 2 retrieval review recorded as owner-reported.
+- [x] T007-E native Windows result recorded as owner-reported PASS; terminal
+  evidence was not retained.
+- [x] T007-E accepted by the project owner.
+- [x] T007-F feature-level evidence/document synchronization completed under
+  the approved workflow.
 - [ ] P4-09 has an approved specification, plan, and behavior tests.
 - [ ] P4-09 adapter preserves public request/error/provenance contracts.
 - [ ] P4-09 receives automated, human, and required ownership review.
@@ -347,11 +342,11 @@ configuration, testing, and acceptance.
 
 ## 16. Handoff Status
 
-**DRAFT — awaiting T007-E and T007-F completion.**
+**CURRENT — Feature 007 accepted; P4-09 and P4-10 remain pending.**
 
 The next recipient should treat Feature 011 as an accepted fake-only foundation
-and T007-B/C/D as accepted public-facade work. T007-E's Ubuntu technical
-evidence is available for review, but it has not cleared its remaining review,
-Windows, owner-acceptance, and commit gates. Backend Retrieval Integration
-(P4-09) and Gemini/real-AI integration are future approved-work candidates,
-not completed capabilities.
+and T007-B through T007-F as accepted public-facade work. Native Windows PASS
+and Person 2 review were reported by the owner; Windows terminal evidence was
+not retained. Backend Retrieval Integration (P4-09) and Gemini/real-AI
+integration (P4-10) are future approved-work candidates, not completed
+capabilities.
