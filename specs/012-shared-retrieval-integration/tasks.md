@@ -27,7 +27,7 @@ description: "Ordered Feature 012 implementation checklist; all approval and dat
 
 **Independent Test**: Offline public-service stubs exercise request construction, mapping, empty results, malformed responses, and invalid settings without a database/provider.
 
-- [ ] T003 [US1] (012-C) Owner: Person 3. Add RED behavior tests in `tests/backend/test_retrieval_adapter.py` for exact question/request-ID forwarding, explicit version/mode/top-k/filters/ranking, response-ID consistency, exact evidence/corpus provenance, malformed/duplicate response data, and empty results; then implement the smallest `src/sciscope/question_service/retrieval_adapter.py`. It imports only public `sciscope.retrieval` contracts and cannot initialize DB/provider resources. **Dependencies**: T001, T002. **Verification**: `uv run --locked pytest tests/backend/test_retrieval_adapter.py -q`; Person 2 boundary review and independent Person 3 mapping verification.
+- [x] T003 [US1] (012-C) COMPLETE 2026-11-22 — Owner: Person 3. Added public-boundary adapter RED tests and `src/sciscope/question_service/retrieval_adapter.py`: immutable explicit settings, one injected public-facade request, strict response/configuration validation, exact evidence/corpus mapping, and retrieval-only metadata. **Dependencies**: T001, T002. **Verification**: Codex and independent Person 3 focused/backend/public-retrieval/static checks are recorded in `docs/person3/P4_09_TEST_LOG.md`; Person 3 decision is `ACCEPTED`. Person 2 boundary confirmation is owner-reported only. T004–T008 remain separately gated.
 
 ## Phase 4: User Story 2/3 — Versioned HTTP integration and typed retrieval errors (Priority: P1)
 
