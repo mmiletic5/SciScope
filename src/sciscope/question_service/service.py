@@ -1,20 +1,26 @@
 """Synchronous orchestration for Feature 011 fake question outcomes."""
 
 from dataclasses import dataclass
+from typing import cast
 
 from sciscope.question_service.contracts import (
     AnswerProvider,
     Claim,
+    ComponentMetadata,
     CorpusProvenance,
     Evidence,
     MockMetadata,
+    OutcomeMetadata,
     ProviderOutcomeStatus,
+    QuestionMetadata,
     RetrievalService,
 )
 from sciscope.question_service.validation import (
+    ResponseContractFailure,
     validate_answered_outcome,
     validate_insufficient_evidence_outcome,
     validate_no_results_outcome,
+    validate_question_metadata,
 )
 
 
@@ -101,7 +107,10 @@ class QuestionService:
                 request_id=request_id,
                 evidence=retrieval_outcome.evidence,
                 corpus=retrieval_outcome.corpus,
-                metadata=retrieval_outcome.metadata,
+                metadata=cast(
+                    MockMetadata,
+                    _no_results_metadata(retrieval_outcome.metadata),
+                ),
             )
 
         provider_outcome = self._provider.answer(
@@ -119,7 +128,12 @@ class QuestionService:
                 claims=provider_outcome.claims,
                 evidence=retrieval_outcome.evidence,
                 corpus=retrieval_outcome.corpus,
-                metadata=retrieval_outcome.metadata,
+                metadata=cast(
+                    MockMetadata,
+                    _answered_metadata(
+                        retrieval_outcome.metadata, provider_outcome.metadata
+                    ),
+                ),
             )
 
         validate_insufficient_evidence_outcome(
@@ -129,5 +143,64 @@ class QuestionService:
             request_id=request_id,
             evidence=retrieval_outcome.evidence,
             corpus=retrieval_outcome.corpus,
-            metadata=retrieval_outcome.metadata,
+            metadata=cast(
+                MockMetadata,
+                _answered_metadata(
+                    retrieval_outcome.metadata, provider_outcome.metadata
+                ),
+            ),
         )
+
+
+def _no_results_metadata(
+    metadata: OutcomeMetadata,
+) -> MockMetadata | QuestionMetadata:
+    """Return validated metadata for a retrieval request with no evidence.
+
+    Empty retrieval has no provider invocation. Component metadata must already
+    include that configured provider with ``executed`` set to ``False``.
+    """
+    if type(metadata) is MockMetadata:
+        return metadata
+    if type(metadata) is QuestionMetadata:
+        validate_question_metadata(metadata)
+        if (
+            metadata.retrieval.executed is not True
+            or metadata.answer_provider.executed is not False
+        ):
+            raise ResponseContractFailure()
+        return metadata
+    raise ResponseContractFailure()
+
+
+def _answered_metadata(
+    retrieval_metadata: OutcomeMetadata,
+    provider_metadata: OutcomeMetadata,
+) -> MockMetadata | QuestionMetadata:
+    """Combine the components that were invoked for an answered outcome."""
+    if type(retrieval_metadata) is MockMetadata:
+        if type(provider_metadata) is not MockMetadata:
+            raise ResponseContractFailure()
+        return retrieval_metadata
+    if type(retrieval_metadata) is ComponentMetadata:
+        if type(provider_metadata) is not ComponentMetadata:
+            raise ResponseContractFailure()
+        metadata = QuestionMetadata(
+            retrieval=retrieval_metadata,
+            answer_provider=provider_metadata,
+        )
+    elif type(retrieval_metadata) is QuestionMetadata:
+        if type(provider_metadata) is not ComponentMetadata:
+            raise ResponseContractFailure()
+        if retrieval_metadata.answer_provider != provider_metadata:
+            raise ResponseContractFailure()
+        metadata = retrieval_metadata
+    else:
+        raise ResponseContractFailure()
+    validate_question_metadata(metadata)
+    if (
+        metadata.retrieval.executed is not True
+        or metadata.answer_provider.executed is not True
+    ):
+        raise ResponseContractFailure()
+    return metadata

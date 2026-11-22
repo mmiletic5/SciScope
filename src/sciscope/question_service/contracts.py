@@ -13,6 +13,29 @@ class MockMetadata:
     is_test_data: Literal[True] = True
 
 
+ComponentOrigin = Literal["synthetic", "fake", "real"]
+
+
+@dataclass(frozen=True, slots=True)
+class ComponentMetadata:
+    """Describes one configured dependency for an internal question outcome."""
+
+    configured_origin: ComponentOrigin
+    executed: bool
+    is_test_data: bool
+
+
+@dataclass(frozen=True, slots=True)
+class QuestionMetadata:
+    """Preserves independent retrieval and answer-provider metadata."""
+
+    retrieval: ComponentMetadata
+    answer_provider: ComponentMetadata
+
+
+OutcomeMetadata = MockMetadata | ComponentMetadata | QuestionMetadata
+
+
 @dataclass(frozen=True, slots=True)
 class Evidence:
     """Synthetic retrieved evidence used by the fake retrieval dependency."""
@@ -48,7 +71,7 @@ class RetrievalOutcome:
 
     evidence: tuple[Evidence, ...]
     corpus: CorpusProvenance
-    metadata: MockMetadata = MockMetadata()
+    metadata: OutcomeMetadata = MockMetadata()
 
 
 class ProviderOutcomeStatus(StrEnum):
@@ -65,7 +88,7 @@ class ProviderOutcome:
     status: ProviderOutcomeStatus
     answer: str | None
     claims: tuple[Claim, ...]
-    metadata: MockMetadata = MockMetadata()
+    metadata: OutcomeMetadata = MockMetadata()
 
 
 class DependencyFailureCode(StrEnum):

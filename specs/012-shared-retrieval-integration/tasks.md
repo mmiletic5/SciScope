@@ -19,7 +19,7 @@ description: "Ordered Feature 012 implementation checklist; all approval and dat
 
 **Independent Test**: Offline contract tests cover all seven metadata scenarios, including provider-not-invoked and failed-provider states, while existing v1 fake-only values remain exact.
 
-- [ ] T002 (012-B) Owner: Person 3. Add RED contract/validation tests for internal retrieval and answer-provider configured origin, executed state, and independent test-data state across synthetic/fake, real/fake, real/real, isolated DB, empty retrieval, retrieval failure, and provider failure. Then implement the smallest internal metadata and validation foundation in question-service contracts without changing v1 HTTP models/routes. **Dependencies**: T001. **Verification**: focused offline metadata/validation pytest command selected from actual new test path; independent Person 3 scenario inspection; Person 4 review only if public shape is affected.
+- [x] T002 (012-B) COMPLETE 2026-11-22 — Owner: Person 3. Added RED contract/validation tests and the smallest internal retrieval/answer-provider component metadata foundation for configured origin, execution, and independent test-data state across synthetic/fake, real/fake, real/real, isolated DB, empty retrieval, retrieval failure, and provider failure. Existing v1 HTTP models/routes remain unchanged. **Dependencies**: T001. **Verification**: Codex and independent Person 3 offline focused/backend, Ruff, mypy, and diff checks are recorded in `docs/person3/P4_09_TEST_LOG.md`; formal Person 3 decision is `ACCEPTED`. T003–T008 remain separately gated.
 
 ## Phase 3: User Story 1 — Public RetrievalService question adapter (Priority: P1)
 

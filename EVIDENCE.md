@@ -645,3 +645,11 @@ dependency resolution, and CI remain unverified. Human acceptance: NOT PROVIDED.
   link/task/contract audit; its whitespace scan found only the known historical
   hard break at `EVIDENCE.md:245`, which was preserved.
 - **Initial commit:** `ea5e6f0` — `docs: approve Feature 012 integration plan`. It was amended only to retain this post-creation evidence; the final commit ID is reported from Git after the amendment.
+
+### Feature 012 / T012-B — Internal Metadata Contracts and Validation Foundations
+
+- **Owner / decision:** Person 3 (Backend & AI) explicitly **ACCEPTED** T002 / 012-B on 2026-11-22. The accepted scope is immutable internal component/question metadata, fail-closed validation, independent component origin/execution/test-data state, answered/no-results propagation, and preservation of the accepted fake-only v1 behavior.
+- **Implementation and test paths:** [`contracts.py`](src/sciscope/question_service/contracts.py), [`validation.py`](src/sciscope/question_service/validation.py), [`service.py`](src/sciscope/question_service/service.py), and [`test_retrieval_metadata.py`](tests/backend/test_retrieval_metadata.py). The chronological RED/GREEN attempts, corrections, Codex results, and owner verification are retained in [`P4_09_TEST_LOG.md`](docs/person3/P4_09_TEST_LOG.md).
+- **Owner-reported verification:** On branch `feature/p4-09-backend-retrieval-integration` at `503df57425cf939900a2f1322365362e9ea398e0`, using Python 3.12.16, the owner reported: focused metadata suite 13 passed in 0.38s; backend regression 80 passed in 0.68s; focused Ruff lint/format and mypy passed. `git diff --check` produced no error output; no owner exit code, operating system, or shell was recorded.
+- **Codex verification:** The preceding chronological evidence records a focused GREEN 13 passed, backend regression 80 passed, Ruff lint/format pass, and mypy pass using uv Python 3.12.16. v1 success/error regressions passed; no v2 route/model, database access, retrieval benchmark, migration, ingestion, live provider, or Gemini call occurred.
+- **Limitation and remaining work:** Retrieval/provider failures still propagate exceptions without a returned `QuestionOutcome` or v2 failure-metadata envelope; later approved HTTP/error work owns that integration. T003–T008 remain incomplete and separately gated. Feature 012 / P4-09 remains incomplete.
