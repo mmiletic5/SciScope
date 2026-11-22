@@ -527,3 +527,121 @@ dependency resolution, and CI remain unverified. Human acceptance: NOT PROVIDED.
   This does not complete broader P1 shared-contract work, the separate GIN
   migration, T008, P4-09 real retrieval integration, P4-10 Gemini integration,
   or any broader application/feature acceptance.
+
+### Feature 012 — P4-09 Shared Retrieval Integration planning package
+
+- **Owner:** Person 3 (Backend & AI).
+- **Date:** 2026-11-22.
+- **Baseline:** `feature/p4-09-backend-retrieval-integration` at
+  `7a8233bd029ba666274d8ecd902a84bfe6cf8fe6`.
+- **Scope:** Draft-only Spec Kit research, specification, plan, dependency-ordered
+  tasks, requirements checklist, and append-only chronological test log, plus
+  this planning evidence and a backlog note. No behavior tests, application
+  changes, database connection, migration, ingestion, embedding, provider call,
+  commit, or push.
+- **Artifacts:**
+  [`specs/012-shared-retrieval-integration/research.md`](specs/012-shared-retrieval-integration/research.md),
+  [`spec.md`](specs/012-shared-retrieval-integration/spec.md),
+  [`plan.md`](specs/012-shared-retrieval-integration/plan.md),
+  [`tasks.md`](specs/012-shared-retrieval-integration/tasks.md),
+  [`checklists/requirements.md`](specs/012-shared-retrieval-integration/checklists/requirements.md),
+  and [`docs/person3/P4_09_TEST_LOG.md`](docs/person3/P4_09_TEST_LOG.md).
+- **Research:** Existing Person 2 five-question development comparison is
+  summarized in `research.md`; it includes mixed results and is insufficient
+  for a reliable general mode winner. Mode/version selection remains PENDING.
+  No new comparison was run.
+- **Decisions pending:** Person 2 review of retrieval mode/version and error
+  semantics; Person 4 review of metadata/error HTTP compatibility; Person 1
+  source/provenance review if meanings change; Person 3 decisions on application
+  setting and resource lifecycle; explicit spec and plan approval.
+- **Automated verification:** Spec Kit composed `spec-template` resolution
+  completed through the repository PowerShell resolver. The first resolver
+  attempt failed during PowerShell initialization because its user module
+  directory was outside the sandbox; the elevated read-only retry succeeded.
+  Plan/tasks/checklist template resolution and Spec Kit prerequisite scripts
+  completed. `git diff --check`, the targeted new-document whitespace scan,
+  and a one-off local-link/eight-task structural audit passed. The broad
+  whitespace scan found one pre-existing historical hard-break at EVIDENCE.md
+  line 245; it was left untouched. Read-only manual Spec Kit cross-artifact
+  analysis found no inconsistency, with D012-01 through D012-05 explicitly
+  pending. Exact command outcomes and the whitespace correction are recorded
+  in [`docs/person3/P4_09_TEST_LOG.md`](docs/person3/P4_09_TEST_LOG.md). Pytest,
+  Ruff, mypy, database, and provider checks were NOT RUN.
+- **Human verification / acceptance:** PENDING. No owner or reviewer decisions
+  are inferred. The P4-09 backlog checkbox remains unchecked.
+- **Current status:** DRAFT / PLANNED; no implementation authorization or
+  feature completion is claimed.
+
+### Feature 012 / T012-A — Delegated design decisions
+
+- **Date / baseline:** 2026-11-22; branch `feature/p4-09-backend-retrieval-integration`, baseline `7a8233bd029ba666274d8ecd902a84bfe6cf8fe6`.
+- **Delegation:** Person 2 and Person 4 told the Person 3 owner that Person 3 may make technical choices within the feature, with retrieval selection based on best available measured results. This is owner-reported delegation only; no specific implementation or test result was reviewed or approved. Person 3 is responsible for validation and approval. Concrete affected-owner reviews, independent verification, and explicit acceptance remain separate gates.
+- **D012-01:** `retrieval.v1` + `dense` is the leading candidate based on existing Person 2 measurements: tied v1 hybrid at Recall@10 0.875 and MRR@10 0.521, with lower median latency (23.462 ms vs 162.734 ms). This five-question development sample is not a reliable general winner. Final activation requires approved comparative evidence, compatible explicitly configured query embedder, and explicit Person 3 acceptance. v1 lexical may be used only for a separately authorized PostgreSQL wiring smoke test. No implicit fallback.
+- **D012-02:** Adopt component-origin retrieval/answer metadata and separate test-data status, preserve exact Feature 011 fake-only behavior, verify DTO/frontend compatibility, and use a separately approved HTTP version if additive fields break strict clients.
+- **D012-03:** Adopt sanitized error mapping where compatible, preserve typed retryability, classify server-owned invalid configuration as server/internal failure, and expose no private exception details. Exact HTTP compatibility remains to be verified.
+- **D012-04:** Adopt explicit composition-root ownership; creator owns Engine disposal, adapters do not dispose borrowed engines, and imports/app construction/fake-only paths do not initialize DB/providers implicitly.
+- **D012-05:** Preserve exact source identifiers, DOI, locator, passage text, title, delivery digest, source-contract version, and corpus version. Person 1 review is needed only if source meaning/upstream contract changes.
+- **Checks and actions:** Documentation consistency checks and `git diff --check` are pending. No source/tests, benchmark, database, migration, ingestion, embedding, or provider activity. No commit or push. Feature remains DRAFT; backlog unchecked; no acceptance inferred.
+- **Artifacts:** See the updated D012 decision register in [`specs/012-shared-retrieval-integration/spec.md`](specs/012-shared-retrieval-integration/spec.md), and full dated entry in [`docs/person3/P4_09_TEST_LOG.md`](docs/person3/P4_09_TEST_LOG.md).
+
+### Feature 012 / T012-A — Documentation verification result
+
+- **Date:** 2026-11-22.
+- **Checks:** `git diff --check` PASS. Targeted trailing-whitespace scan on the new Feature 012 docs and test log found no matches. One-off Python documentation audit PASS: 8 Markdown files checked, relative links resolve, and D012-01 through D012-05 are traceable across decision artifacts. The audit initially found missing plan labels for D012-01 and D012-05; these were added before the passing rerun.
+- **Tests / application / database / providers:** NOT RUN. No implementation, benchmark, database access, migration, ingestion, or provider call.
+- **Human review and acceptance:** No specific Person 2/Person 4 implementation or test review was performed; their reported delegation is not such approval. Person 3 explicit feature decision remains PENDING. No acceptance inferred.
+- **Git:** No staging, commit, push, or merge.
+
+### Feature 012 / T012-A — Final contract and task-order correction
+
+- **Date / scope:** 2026-11-22. Documentation-only reconciliation on branch
+  `feature/p4-09-backend-retrieval-integration` at baseline
+  `7a8233bd029ba666274d8ecd902a84bfe6cf8fe6`. No application source, test
+  source, database, benchmark, migration, ingestion, or provider activity.
+- **HTTP direction:** The accepted closed fake-only `/api/v1/questions` success
+  and error JSON contracts remain exact. The package now documents a DRAFT
+  separately versioned `POST /api/v2/questions` proposal for real retrieval;
+  it has its own closed success/error shapes, component metadata, response-local
+  citation validation, corpus identity, no-results behavior, and migration tests.
+  It requires explicit approval before implementation or consumer migration.
+- **Task direction:** The eight incomplete tasks are reordered sequentially:
+  T001 approval, T002 internal metadata/validation, T003 public adapter, T004
+  v2 HTTP/error handling, T005 composition/lifecycle, T006 offline regression,
+  T007 separately authorized PostgreSQL comparison/verification, and T008
+  evidence close-out.
+- **Safety direction:** Typed retrieval errors retain their actual retryability
+  and a safe route-scoped request ID through a dedicated proposed handler. The
+  repository currently exposes no approved production Engine-backed
+  public-facade factory; the proposed explicit composition root is a later
+  implementation dependency, and private test helpers are not production APIs.
+- **Human decisions:** Person 2 and Person 4 delegation remains owner-reported
+  only. No specific implementation review, test approval, formal Person 3
+  specification/plan approval, or feature acceptance is claimed.
+- **Verification:** Final documentation checks are recorded in the chronological
+  Feature 012 log: `git diff --check` passed; the targeted trailing-whitespace
+  scan had no matches; and a local link/task/contract audit passed for all eight
+  planning/evidence documents. No staging, commit, push, or merge.
+
+### Feature 012 / T012-A — Formal planning approval
+
+- **Approver / date:** Person 3 — Backend & AI, 2026-11-22.
+- **Approved scope:** The Feature 012 research, specification, plan, ordered
+  T001–T008 workflow, and beginning T012-B offline RED/GREEN implementation.
+  T012-A is complete as the planning/authorization gate; it required no
+  artificial RED/GREEN behavior test. No application implementation occurred.
+- **Restrictions and remaining gates:** PostgreSQL access, benchmarks, live
+  embedding/provider or Gemini calls, final mode activation, v1 response-shape
+  changes, automatic later-increment acceptance, push, and merge remain
+  unauthorized. Concrete v2 HTTP implementation, applicable affected-owner
+  reviews, independent owner verification, and final Feature 012 acceptance
+  remain separate gates.
+- **Review status:** Person 2 and Person 4 delegation is owner-reported only;
+  no concrete implementation or test approval is asserted. T002–T008 remain
+  unchecked and unaccepted.
+- **Verification:** Existing documentation checks remain the only automated
+  evidence for T012-A. Pytest, Ruff, mypy, database, benchmark, and provider
+  checks were not run. The chronological log contains the commands and actual
+  outcomes. The approval-record rerun passed `git diff --check` and the local
+  link/task/contract audit; its whitespace scan found only the known historical
+  hard break at `EVIDENCE.md:245`, which was preserved.
+- **Initial commit:** `ea5e6f0` — `docs: approve Feature 012 integration plan`. It was amended only to retain this post-creation evidence; the final commit ID is reported from Git after the amendment.

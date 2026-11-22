@@ -167,6 +167,23 @@ terminal evidence was not retained. See
 [`EVIDENCE.md`](EVIDENCE.md#feature-007--public-retrieval-facade-t007) and
 [`specs/007-phase-b-retrieval-core/tasks.md`](specs/007-phase-b-retrieval-core/tasks.md).
 
+Feature 012 / P4-09 planning package is APPROVED for T012-B offline work by
+Person 3 on 2026-11-22, on branch
+`feature/p4-09-backend-retrieval-integration` at baseline
+`7a8233bd029ba666274d8ecd902a84bfe6cf8fe6`. The P4-09 checkbox above remains
+unchecked. The accepted fake-only `/api/v1/questions` contract remains exact;
+the proposed real-retrieval wire contract is separately versioned as draft
+`/api/v2/questions` and needs explicit approval. D012-01 records v1 dense as
+the leading candidate, not a final application selection; D012-02 through
+D012-05 record adopted design directions with compatibility, implementation, or
+conditional provenance gates. The Person 2/Person 4 technical delegation is
+owner-reported, not implementation or test approval. Concrete v2 HTTP work,
+affected-owner reviews, database authorization, mode activation, and feature
+acceptance remain gated. No application code, tests, database operations, or
+provider calls are part of this planning record. See
+[`specs/012-shared-retrieval-integration/tasks.md`](specs/012-shared-retrieval-integration/tasks.md)
+and [`docs/person3/P4_09_TEST_LOG.md`](docs/person3/P4_09_TEST_LOG.md).
+
 ## Phase 5 — Frontend (Person 4)
 
 - [ ] **P5-01** | Owner: Person 4 | Deliverable: React and TypeScript application setup | Phase: 5 | Depends on: P0-05
