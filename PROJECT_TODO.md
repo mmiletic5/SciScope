@@ -169,6 +169,15 @@ terminal evidence was not retained. See
 
 ## Phase 5 — Frontend (Person 4)
 
+Feature 012 (`012-frontend-explorer`) has approved specification, plan, and
+eight-task list in [`specs/012-frontend-explorer`](specs/012-frontend-explorer).
+Implementation is authorized through T007; T001 through T006 are
+automated-validated. T007's implementation and four automated checks pass;
+the Explorer walkthrough was accepted by Milena (Person 4) on 2026-11-22. T008 is authorized after the documented pre-task fixes. Task order is
+T001–T006 for the Explorer foundation and User Stories 1–2, T007 for the
+accepted Explorer demo-ready gate, and T008 for User Story 3 previews. P5 items
+remain unchecked pending final feature-owner manual verification.
+
 - [ ] **P5-01** | Owner: Person 4 | Deliverable: React and TypeScript application setup | Phase: 5 | Depends on: P0-05
 - [ ] **P5-02** | Owner: Person 4 | Deliverable: shared research interface layout | Phase: 5 | Depends on: P5-01
 - [ ] **P5-03** | Owner: Person 4 | Deliverable: research question input | Phase: 5 | Depends on: P5-02, P1-11
