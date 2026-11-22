@@ -35,7 +35,7 @@ description: "Ordered Feature 012 implementation checklist; all approval and dat
 
 **Independent Test**: Offline stubs raise each public retrieval error; HTTP results are checked against the approved status/code/message/retryability/request-ID matrix.
 
-- [ ] T004 [US2] [US3] (012-D) Owner: Person 3. After explicit approval of the v2 proposal, add RED v2 API tests for request compatibility, success/no-results/provider-not-invoked metadata, response-local citations, unchanged v1 key sets, all seven public retrieval codes, typed retryability, route-scoped request ID, caller-invalid versus adapter-config-invalid behavior, and controlled timeout. Then implement only the approved `/api/v2/questions` models/routes and dedicated typed-retrieval error handler. **Dependencies**: T001–T003. **Verification**: focused v1/v2 API pytest command; Person 2 error-boundary and Person 4 v2 contract review.
+- [x] T004 [US2] [US3] (012-D) COMPLETE 2026-11-22 — Owner: Person 3. Added the separately versioned `/api/v2/questions` models/routes, explicit validated `v2_metadata` opt-in, truthful component execution metadata, response-local citation failure handling, typed public retrieval error mapping, and route-scoped request-ID protection while preserving v1. **Dependencies**: T001–T003. **Verification**: Codex and independent Person 3 focused v2, v1/v2, backend, public retrieval, Ruff, format, mypy, and diff checks are recorded in `docs/person3/P4_09_TEST_LOG.md`; Person 3 decision is `ACCEPTED`. T005–T008 remain separately gated.
 
 ## Phase 5: User Story 4 — Compose dependencies without hidden resources (Priority: P2)
 

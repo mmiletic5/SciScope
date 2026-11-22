@@ -8,16 +8,28 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from sciscope.api.http_models import ErrorDetail, ErrorResponse, MockMetadata
+from sciscope.api.http_models_v2 import QuestionMetadataV2
 from sciscope.api.routes import install_question_route
+from sciscope.api.routes_v2 import (
+    error_response_v2,
+    failure_metadata,
+    install_question_v2_route,
+    is_v2_request,
+)
 from sciscope.question_service.contracts import (
     DependencyFailure,
     DependencyFailureCode,
+    QuestionMetadata,
 )
 from sciscope.question_service.ids import (
     generate_request_id,
     is_valid_request_id,
 )
-from sciscope.question_service.validation import ResponseContractFailure
+from sciscope.question_service.validation import (
+    ResponseContractFailure,
+    validate_question_metadata,
+)
+from sciscope.retrieval import RetrievalErrorCode, RetrievalException
 
 _CONTROLLED_FAILURES = {
     DependencyFailureCode.RETRIEVAL_UNAVAILABLE: (
@@ -53,12 +65,14 @@ class AppDependencies:
 
     retrieval: object
     provider: object
+    v2_metadata: QuestionMetadata | None = None
 
 
 def create_app(
     *,
     retrieval: object,
     provider: object,
+    v2_metadata: QuestionMetadata | None = None,
     request_id_factory: Callable[[], str] = generate_request_id,
 ) -> FastAPI:
     """Create an offline FastAPI application with explicit dependencies.
@@ -66,6 +80,7 @@ def create_app(
     Args:
         retrieval: An opaque retrieval dependency supplied by the caller.
         provider: An opaque answer-provider dependency supplied by the caller.
+        v2_metadata: Explicit component configuration required to register v2.
         request_id_factory: Generates IDs for validation-error envelopes.
 
     Returns:
@@ -73,9 +88,12 @@ def create_app(
         the approved question route, and starts no external resource.
     """
     app = FastAPI()
+    if v2_metadata is not None:
+        validate_question_metadata(v2_metadata)
     app.state.dependencies = AppDependencies(
         retrieval=retrieval,
         provider=provider,
+        v2_metadata=v2_metadata,
     )
     install_validation_exception_handler(
         app, request_id_factory=request_id_factory
@@ -84,6 +102,8 @@ def create_app(
         app, request_id_factory=request_id_factory
     )
     install_question_route(app, request_id_factory=request_id_factory)
+    if v2_metadata is not None:
+        install_question_v2_route(app, request_id_factory=request_id_factory)
     return app
 
 
@@ -102,12 +122,24 @@ def install_validation_exception_handler(
 
     @app.exception_handler(RequestValidationError)
     async def validation_exception_handler(
-        _request: Request,
+        request: Request,
         exc: RequestValidationError,
     ) -> JSONResponse:
         request_id = _valid_request_id_or_generated(
             exc.body, request_id_factory
         )
+        if is_v2_request(request):
+            return error_response_v2(
+                status_code=422,
+                code="invalid_request",
+                message=(
+                    "The request does not meet this API version's validation "
+                    "rules."
+                ),
+                retryable=False,
+                request_id=request_id,
+                metadata=None,
+            )
         response = ErrorResponse(
             api_version="v1",
             request_id=request_id,
@@ -144,12 +176,22 @@ def install_controlled_failure_handlers(
         status_code, code, message, retryable = _CONTROLLED_FAILURES[
             exception.code
         ]
+        request_id = _request_id_or_generated(request, request_id_factory)
+        if is_v2_request(request):
+            return error_response_v2(
+                status_code=status_code,
+                code=code,
+                message=message,
+                retryable=retryable,
+                request_id=request_id,
+                metadata=_failure_metadata_for_request(request),
+            )
         return _error_response(
             status_code=status_code,
             code=code,
             message=message,
             retryable=retryable,
-            request_id=_request_id_or_generated(request, request_id_factory),
+            request_id=request_id,
         )
 
     @app.exception_handler(ResponseContractFailure)
@@ -157,12 +199,47 @@ def install_controlled_failure_handlers(
         request: Request,
         _exception: ResponseContractFailure,
     ) -> JSONResponse:
+        request_id = _request_id_or_generated(request, request_id_factory)
+        if is_v2_request(request):
+            return error_response_v2(
+                status_code=500,
+                code="response_contract_failure",
+                message=_CONTRACT_FAILURE_MESSAGE,
+                retryable=False,
+                request_id=request_id,
+                metadata=None,
+            )
         return _error_response(
             status_code=500,
             code="response_contract_failure",
             message=_CONTRACT_FAILURE_MESSAGE,
             retryable=False,
-            request_id=_request_id_or_generated(request, request_id_factory),
+            request_id=request_id,
+        )
+
+    @app.exception_handler(RetrievalException)
+    async def retrieval_exception_handler(
+        request: Request,
+        exception: RetrievalException,
+    ) -> JSONResponse:
+        """Map a typed public retrieval error at the separate v2 boundary."""
+        request_id = _request_id_or_generated(request, request_id_factory)
+        if not is_v2_request(request):
+            return _error_response(
+                status_code=500,
+                code="internal_error",
+                message=_INTERNAL_ERROR_MESSAGE,
+                retryable=False,
+                request_id=request_id,
+            )
+        status_code, code, message = _retrieval_error_mapping(exception.code)
+        return error_response_v2(
+            status_code=status_code,
+            code=code,
+            message=message,
+            retryable=exception.retryable,
+            request_id=request_id,
+            metadata=_failure_metadata_for_request(request),
         )
 
     @app.exception_handler(Exception)
@@ -170,13 +247,55 @@ def install_controlled_failure_handlers(
         request: Request,
         _exception: Exception,
     ) -> JSONResponse:
+        request_id = _request_id_or_generated(request, request_id_factory)
+        if is_v2_request(request):
+            return error_response_v2(
+                status_code=500,
+                code="internal_error",
+                message=_INTERNAL_ERROR_MESSAGE,
+                retryable=False,
+                request_id=request_id,
+                metadata=None,
+            )
         return _error_response(
             status_code=500,
             code="internal_error",
             message=_INTERNAL_ERROR_MESSAGE,
             retryable=False,
-            request_id=_request_id_or_generated(request, request_id_factory),
+            request_id=request_id,
         )
+
+
+def _failure_metadata_for_request(
+    request: Request,
+) -> QuestionMetadataV2 | None:
+    """Map only observed v2 execution state into error metadata."""
+    return failure_metadata(
+        request,
+        retrieval_executed=getattr(
+            request.state, "v2_retrieval_executed", False
+        ),
+        answer_provider_executed=getattr(
+            request.state, "v2_answer_provider_executed", False
+        ),
+    )
+
+
+def _retrieval_error_mapping(
+    code: RetrievalErrorCode,
+) -> tuple[int, str, str]:
+    """Map approved public retrieval codes to sanitized HTTP categories."""
+    if code in {
+        RetrievalErrorCode.INVALID_REQUEST,
+        RetrievalErrorCode.UNSUPPORTED_CONTRACT_VERSION,
+        RetrievalErrorCode.RETRIEVAL_INTERNAL_ERROR,
+    }:
+        return 500, "internal_error", _INTERNAL_ERROR_MESSAGE
+    return (
+        503,
+        "retrieval_unavailable",
+        "The requested dependency is currently unavailable.",
+    )
 
 
 def _error_response(
