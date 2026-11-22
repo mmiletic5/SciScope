@@ -2,26 +2,30 @@
 
 **Feature Branch**: `007-phase-b-retrieval-core`  
 **Created**: 2026-11-19  
-**Status**: Person 2 internal retrieval core (P3-05 through P3-08) human-accepted and closed (2026-11-19); shared contract, facade, and migration gates remain pending.  
+**Status**: As of 2026-11-19, Person 2 internal retrieval core (P3-05 through P3-08) was human-accepted and closed; shared contract, facade, and migration gates remained pending. The current T007 scope-limited approval record is stated below.
 **Input**: Owner approval of the Person 2 retrieval core scope and implementation plan.
 
-## Proposed T007 public-facade amendment — pending human approval
+## Approved T007 public-facade amendment — scope-limited approval record
 
-This amendment is prepared for review on 2026-11-22. It does not change the
-accepted internal-core closure, satisfy any shared-contract gate, authorize
-implementation, or enable Person 3 application integration.
+The project owner reports that all four team members (Persons 1–4) discussed
+and agreed upon the proposed T007 public-facade amendment and its shared
+integration direction. This user-reported human approval records the amended
+T007 scope only. It does not change the accepted internal-core closure, mark
+the broader P1-09/P1-11/P1-14 backlog tasks complete, change either shared
+contract's status, or enable Person 3 application integration.
 
 Person 2 has delegated implementation responsibility for T007's public
 retrieval facade to Person 3. Person 2 remains the required reviewer for
 retrieval-owned source and contract changes. Person 1 must review the public
 mapping of source metadata, source locators, stable chunk identifiers, and
-corpus provenance. The affected owners and TEAM must record the P1-11/P1-14
-shared-contract adoption required by the existing T007 gate before any
-behavior test or implementation begins. Because full `retrieval.v1`
-compatibility includes the documented metadata filters, P1-09 cross-owner
-filter-semantics confirmation is also required before publishing the facade.
+corpus provenance. The owner-reported four-person agreement records the
+T007-scope P1-09 filter-semantics confirmation and the affected-owner/TEAM
+agreement required for the P1-11/P1-14 facade gate. Broader P1-09/P1-11/P1-14
+deliverables remain pending in `PROJECT_TODO.md`. Because full `retrieval.v1`
+compatibility includes the documented metadata filters, the agreed facade
+continues to preserve those filter semantics.
 
-If approved, T007 is limited to a driver-independent public boundary with
+Within the approved T007 scope, the work is limited to a driver-independent public boundary with
 typed, versioned request and response DTOs; typed sanitized exceptions; an
 injected query-embedder protocol; stable corpus provenance; and public support
 for the documented `retrieval.v1` and explicit `retrieval.v2` selectors. The
@@ -81,7 +85,7 @@ As a research workflow, I can combine semantic and lexical rankings so complemen
 
 ### User Story 4 — Consume a versioned shared retrieval boundary (Priority: P1)
 
-As a downstream consumer, I can eventually call one versioned, driver-independent retrieval interface and receive typed outcomes, source provenance, and active corpus identity. The public shared facade is gated separately; the approved implementation scope is the private Person 2 retrieval core.
+As a downstream consumer, I can eventually call one versioned, driver-independent retrieval interface and receive typed outcomes, source provenance, and active corpus identity. At the 2026-11-19 internal-core acceptance, the public shared facade was separately gated. The current approval record authorizes the limited T007 facade scope; the private Person 2 core acceptance remains unchanged.
 
 **Independent Test**: Contract tests exercise request/response examples, all modes, errors, and fake embedding without importing database internals.
 
@@ -115,7 +119,7 @@ As a downstream consumer, I can eventually call one versioned, driver-independen
 - **FR-003**: Query embedding MUST be injected through a protocol and match active provider, model, dimensions, and query prefix; tests MUST use deterministic fakes and never call a paid provider.
 - **FR-004**: Lexical mode MUST use PostgreSQL English full-text search via `websearch_to_tsquery` and `ts_rank_cd` over chunk text only. Scores are ordering signals, not confidence. The proposed GIN expression-index migration is separately gated.
 - **FR-005**: All modes MUST apply one shared filter implementation before ranking. Categories combine with AND; values in one category combine with OR.
-- **FR-006**: Filters MUST include inclusive publication-year bounds, normalized section types, journals, languages, and DOIs. Year bounds must be ordered. Types use the fixed taxonomy; journal matches exact persisted values after input trim; language matches case-insensitively; DOI input follows accepted F001 prefix/URL/punctuation/lowercase normalization then exact matching. Omitted categories are unrestricted; null, empty, blank, or post-normalization duplicate arrays are invalid. These are Person 2 proposed shared semantics; adoption remains subject to P1-09/P1-11/P1-14 review.
+- **FR-006**: Filters MUST include inclusive publication-year bounds, normalized section types, journals, languages, and DOIs. Year bounds must be ordered. Types use the fixed taxonomy; journal matches exact persisted values after input trim; language matches case-insensitively; DOI input follows accepted F001 prefix/URL/punctuation/lowercase normalization then exact matching. Omitted categories are unrestricted; null, empty, blank, or post-normalization duplicate arrays are invalid. The current owner-reported agreement confirms these semantics for T007; broader P1-09/P1-11/P1-14 deliverables remain pending.
 - **FR-007**: Hybrid mode MUST use bounded branch candidate lists and deterministic RRF with constant 60, one-based ranks, formula `sum(1/(60 + rank))`, pool default `min(eligible_count, max(50, 5 * top_k))` capped at 250, union by chunk ID, top-k output. Ties: fusion score descending, best branch rank ascending, chunk ID ascending.
 - **FR-008**: Dense, lexical, and fused score fields MUST be documented as ranking signals, not probabilities. Results MUST retain branch ranks/scores needed to explain fusion.
 - **FR-009**: Retrieval MUST use a read-only PostgreSQL `REPEATABLE READ` transaction and read only records belonging to the active `delivery_imports` row and its compatible `embedding_sets`; response provenance MUST describe that same snapshot.
@@ -149,12 +153,12 @@ Phase B response excludes timing, token selection/budget, reranker fields, evide
 
 The owner independently verified the internal retrieval core on 2026-11-19 and explicitly accepted P3-05 through P3-08. Reported evidence: read-only preflight passed for `sciscope_test_005`; all 47 retrieval tests passed; Feature 005 read-only verification passed; Feature 006 verification passed 10/10 with zero mismatches; active pilot counts remained 17/319/728/728. This closes the private Person 2 retrieval core only.
 
-Known limits are retained: synchronized committed activation was not simulated (the read-only `REPEATABLE READ` and snapshot provenance checks passed); PostgreSQL branch tests did not have a separately observed pre-implementation RED run; the five-question smoke was deferred behind the shared facade gate; and non-gating warm/cold latency observations were not recorded. The 16 held-out Golden v0 questions remain untouched. These limits do not reopen the owner's accepted internal scope; they remain relevant to future integration/evaluation work. The shared `retrieval.v1` contract/facade, P1-09/P1-11/P1-14, and GIN migration are not approved by this acceptance.
+Known limits are retained: synchronized committed activation was not simulated (the read-only `REPEATABLE READ` and snapshot provenance checks passed); PostgreSQL branch tests did not have a separately observed pre-implementation RED run; the five-question smoke was deferred behind the shared facade gate; and non-gating warm/cold latency observations were not recorded. The 16 held-out Golden v0 questions remain untouched. These limits do not reopen the owner's accepted internal scope; they remain relevant to future integration/evaluation work. At the 2026-11-19 internal-core acceptance, the shared `retrieval.v1` contract/facade, P1-09/P1-11/P1-14, and GIN migration were not approved; the current T007 approval record is scope-limited and does not change shared-contract status or the migration gate.
 
 ## Assumptions
 
 - Phase A closure and pilot data in `sciscope_test_005` remain accepted and authoritative.
 - Current pilot embeddings are preserved and query embeddings must be compatible with the fixed embedding metadata.
-- Person 2 has approved technical direction for ADR-009 through ADR-012 baseline, transaction/security posture; this does not mark ADRs as team-approved or approve P1-09 shared metadata/UI semantics, retrieval.v1 adoption, or schema migration.
-- Person 1/3/4 and team review remain obligations before claiming shared contract adoption or completing dependent integrations. They do not prevent isolated Person 2 implementation after this feature spec/plan is approved. Separate FTS migration approval remains required only for the index migration.
+- Person 2 has approved technical direction for ADR-009 through ADR-012 baseline and transaction/security posture. The current owner-reported agreement confirms the relevant decisions for T007 only; it does not change shared-contract status, broader P1 completion, or schema migration approval.
+- The current approval record satisfies the affected-owner agreement for T007. Broader shared-contract adoption and dependent integrations remain separate obligations. Separate FTS migration approval remains required only for the index migration.
 - Phase B does not include reranking, diversity/duplicate policy, context selection, evidence lookup, held-out evaluation, latency benchmarking, FastAPI endpoint, or frontend controls.
