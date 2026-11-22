@@ -4,6 +4,60 @@
 
 **Status:** Person 2 internal retrieval core (P3-05 through P3-08) human-accepted and closed 2026-11-19 after owner-reported independent verification. Shared contract, public facade, and schema gates remain open.
 
+## Proposed T007 public-facade amendment — pending human approval
+
+This section is a review draft dated 2026-11-22. It does not authorize work,
+change the acceptance of T002–T006, or record the pending P1-09/P1-11/P1-14
+gates as approved.
+
+Person 2 has delegated T007 implementation responsibility to Person 3. Person
+2 remains an affected-module reviewer for every retrieval-owned source and
+contract change. Person 1 reviews the public preservation of source metadata,
+source locators, stable chunk IDs, and corpus provenance. TEAM and affected
+owners must record shared-contract adoption before implementation. Person 3
+owns later HTTP adaptation; P4-09 is excluded from T007. Because full
+`retrieval.v1` compatibility includes the documented metadata filters, P1-09
+cross-owner filter-semantics confirmation is also required before publishing
+the facade.
+
+If approved, the public facade will expose only driver-independent DTOs,
+typed sanitized exceptions, an injected query-embedder protocol, and a
+`RetrievalService` boundary. Its public contract will accept the documented
+`retrieval.v1` and `retrieval.v2` selectors and preserve their existing
+semantics. It will not expose SQLAlchemy, ORM, connection, or private-core
+types. A composition root owns database-engine lifecycle and injects it into a
+concrete facade; the facade must not read environment configuration, create
+credentials, or open database connections at import time.
+
+The amendment preserves all retrieval algorithms, filters, rankings,
+repeatable-read transaction behavior, database/schema behavior, and v1/v2
+compatibility. It does not select a default retrieval mode, create a live query
+embedding adapter, enable Gemini, or revise Feature 011's fake-only HTTP
+metadata. Those choices remain separate approvals.
+
+### Proposed T007 implementation increments
+
+The following increments are proposed only. Each remains unchecked until the
+amended feature artifacts receive explicit human approval. The dedicated
+chronological record for implemented work will be
+`docs/person3/FEATURE_007_T007_TEST_LOG.md`; it is not created by this
+documentation-only amendment. `EVIDENCE.md` and `PROJECT_TODO.md` remain
+unchanged until automated checks and feature-level human acceptance are
+recorded.
+
+| Increment | Goal and proposed files | RED then minimal GREEN | Verification and review | Proposed commit boundary |
+|---|---|---|---|---|
+| T007-A | Record the approved delegation, P1-09/P1-11/P1-14 gates, scope, reviews, and completion criteria in `specs/007-phase-b-retrieval-core/{spec,plan,tasks}.md`. | Documentation review; no behavior RED test. | Person 2, Person 1, Person 3, and required TEAM review. | `docs(retrieval): approve public facade amendment` |
+| T007-B | After approved P1-09/P1-11/P1-14 and affected-owner adoption, add public DTOs and typed sanitized errors in proposed `src/sciscope/retrieval/{contracts,errors}.py`, exports in `__init__.py`, and `tests/retrieval/test_public_contracts.py`. | RED: public imports and v1/v2 DTO/error conformance tests fail because the public API does not exist. GREEN: immutable public values validate/marshal without database or private-type imports. | Focused pytest, Ruff, formatter, and mypy; Person 2 reviews public contract compatibility. | `feat(retrieval): expose versioned retrieval contracts` |
+| T007-C | Add proposed `src/sciscope/retrieval/service.py` and `tests/retrieval/test_public_service.py` for the facade and injected embedder seam. | RED: public service/fake conformance tests fail. GREEN: facade maps public values to the existing core and maps only sanitized public outcomes/errors, without changing private algorithms. | Focused checks; Person 2 verifies no algorithm, transaction, or database-lifecycle behavior changed. | `feat(retrieval): add public retrieval facade` |
+| T007-D | Add offline conformance coverage in `tests/retrieval/test_public_contracts.py` and `test_public_service.py`. | RED: unsupported version, empty result, typed failure, fake-embedder, and no-private-import assertions fail. GREEN: deterministic fixtures pass with no database, network, paid provider, or private consumer import. | Focused tests plus applicable retrieval regression, Ruff, formatter, and mypy; Person 3 verifies consumer usability and Person 2 reviews conformance. | `test(retrieval): cover public facade conformance` |
+| T007-E | Optionally verify the public facade through a proposed `tests/retrieval/test_public_postgres.py`. | No artificial database RED run. GREEN only after separately authorized guarded read-only execution against `sciscope_test_005`. | Explicit database authorization, read-only preflight, focused integration test, and human-observed result. | `test(retrieval): verify public facade on pilot` |
+| T007-F | Complete the dedicated log, obtain feature-level human acceptance, then synchronize approved evidence/task/backlog records. | No artificial behavior test. | Preserve all prior results and corrections; update central records only after explicit acceptance. | Separate authorized documentation commit. |
+
+Future Python work must invoke the repository's Google Python engineering skill.
+Before each feature behavior-test increment, rerun solution research as required
+by the repository workflow.
+
 ## Summary and architecture
 
 Deliver a driver-independent retrieval subsystem with exact cosine, English PostgreSQL FTS, common filters, and deterministic RRF. `docs/contracts/retrieval-v1.md` is the only detailed contract source. Person 2 owns the Python service, validation, SQL, ranking, and provenance mapping. Person 3 consumes the protocol and owns HTTP orchestration/answer generation. Person 4 maps controls to request filters. Person 1 remains authority for persisted source metadata and locators.

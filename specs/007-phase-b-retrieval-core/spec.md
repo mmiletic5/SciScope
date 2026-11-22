@@ -5,6 +5,34 @@
 **Status**: Person 2 internal retrieval core (P3-05 through P3-08) human-accepted and closed (2026-11-19); shared contract, facade, and migration gates remain pending.  
 **Input**: Owner approval of the Person 2 retrieval core scope and implementation plan.
 
+## Proposed T007 public-facade amendment — pending human approval
+
+This amendment is prepared for review on 2026-11-22. It does not change the
+accepted internal-core closure, satisfy any shared-contract gate, authorize
+implementation, or enable Person 3 application integration.
+
+Person 2 has delegated implementation responsibility for T007's public
+retrieval facade to Person 3. Person 2 remains the required reviewer for
+retrieval-owned source and contract changes. Person 1 must review the public
+mapping of source metadata, source locators, stable chunk identifiers, and
+corpus provenance. The affected owners and TEAM must record the P1-11/P1-14
+shared-contract adoption required by the existing T007 gate before any
+behavior test or implementation begins. Because full `retrieval.v1`
+compatibility includes the documented metadata filters, P1-09 cross-owner
+filter-semantics confirmation is also required before publishing the facade.
+
+If approved, T007 is limited to a driver-independent public boundary with
+typed, versioned request and response DTOs; typed sanitized exceptions; an
+injected query-embedder protocol; stable corpus provenance; and public support
+for the documented `retrieval.v1` and explicit `retrieval.v2` selectors. The
+facade must not expose ORM, SQLAlchemy, connection, private-core, or other
+private implementation types. It preserves existing algorithms, ranking,
+filtering, transaction isolation, database behavior, and version semantics.
+
+P4-09 remains a separate, unimplemented feature. This amendment does not
+select a backend default retrieval mode, enable Gemini, alter the Feature 011
+fake-only HTTP contract, or decide truthful real-data HTTP metadata.
+
 ## User Scenarios & Testing
 
 ### User Story 1 — Retrieve exact dense neighbors (Priority: P1)
@@ -62,6 +90,10 @@ As a downstream consumer, I can eventually call one versioned, driver-independen
 1. **Given** a valid `retrieval.v1` request, **When** the service returns results, **Then** it echoes request identity, mode, effective filters, active delivery/corpus identity, embedding configuration, scores/ranks, and exact source locator/DOI provenance.
 2. **Given** unsupported versions or malformed inputs, **When** validated by the private core, **Then** a typed exception with a stable code and sanitized message is raised.
 3. **Given** no active corpus, **When** retrieval is requested, **Then** `CORPUS_NOT_LOADED` is returned.
+4. **Given** a valid request explicitly selecting `retrieval.v2`, **When** the public facade returns a response, **Then** it preserves `retrieval.v2`, the request ID, and the documented v2 mode semantics.
+5. **Given** an unsupported contract version, **When** it reaches the public facade, **Then** it fails closed with the documented sanitized typed error code.
+6. **Given** a consumer imports and calls the public facade, **When** it constructs a request and receives a response or typed error, **Then** it imports no private retrieval, ORM, connection, or SQLAlchemy type.
+7. **Given** the public facade returns retrieval results, **When** a consumer inspects them, **Then** each result retains its exact stable chunk/source identity and the response retains the active corpus provenance.
 
 ## Edge Cases
 
