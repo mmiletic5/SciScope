@@ -908,3 +908,178 @@ commit in this increment.
   provider behavior were not exercised. The typed transient provider-error
   contract remains deferred.
 - **Commit:** Pending staging and commit at the time of this entry.
+
+## T007-D-02 — Offline Conformance Test Additions
+
+- **Date:** 2026-11-22
+- **Baseline:** `007-public-retrieval-facade` at
+  `d2262668dbb4afbf2ad5a34c9423a0db7244d55e`; working tree and index were
+  clean before this increment.
+- **Files changed:**
+  - `tests/retrieval/test_public_service.py`
+  - `docs/person3/FEATURE_007_T007_TEST_LOG.md`
+- **Solution research:** Confirmed the existing public DTO constructors,
+  `_private_response` fixture, private `RetrievalFailure` taxonomy, and the
+  public service boundary. No new production behavior or public API was
+  required.
+- **Tests added:**
+  - `test_service_preserves_matching_request_and_response_versions`,
+    parameterized for `retrieval.v1` and `retrieval.v2`, verifies one public
+    service call preserves the selected version, request ID, response type,
+    corpus digest, and stable chunk ID.
+  - `test_service_translates_each_approved_private_failure_code`,
+    parameterized over every approved `RetrievalErrorCode`, verifies a fresh
+    public `RetrievalException`, preserved code/request ID/retryability,
+    approved stable message, private-diagnostic exclusion, and one executor
+    invocation.
+  - `test_consumer_subprocess_uses_facade_without_private_imports`, which
+    performs a fresh-process consumer-only public import, DTO construction,
+    facade call through a deterministic fake executor, and module-isolation
+    check for private core, database, driver, and provider modules.
+- **Initial focused command:** `uv run --locked pytest
+  tests/retrieval/test_public_service.py`
+  - **Initial sandbox outcome:** BLOCKED before collection; uv could not
+    create a temporary cache file under `/home/maki/.cache/uv` because that
+    sandbox location was read-only.
+  - **Correction:** Reran the identical offline command with permission to
+    write uv's local cache. No database, network, provider, Docker, or
+    credential access occurred.
+  - **Actual test outcome:** PASS; exit `0`; 29 collected, 29 passed in 0.66
+    seconds.
+- **Formatting correction:** Initial Ruff lint and formatter checks found only
+  line-length/formatting issues in the new consumer-subprocess test name.
+  Applied mechanical Ruff formatting and shortened that test's descriptive
+  identifier without changing assertions or behavior. An intermediate
+  formatter/lint conflict is preserved by this entry; no production behavior
+  was changed.
+- **Final focused verification:** `uv run --locked pytest
+  tests/retrieval/test_public_service.py`
+  - **Actual outcome:** PASS; exit `0`; 29 collected, 29 passed in 0.51
+    seconds.
+- **Regression and static verification executed by Codex:**
+  - `uv run --locked pytest tests/retrieval/test_public_contracts.py
+    tests/retrieval/test_errors.py`: PASS; exit `0`; 37 passed in 0.52
+    seconds.
+  - `PYTHONPATH=. uv run --locked pytest tests/retrieval/test_validation.py`:
+    PASS; exit `0`; 30 passed in 0.41 seconds.
+  - `PYTHONPATH=. uv run --locked pytest tests/retrieval/test_core_offline.py
+    tests/retrieval/test_v2_bm25.py`: PASS; exit `0`; 13 passed in 0.37
+    seconds.
+  - `PYTHONPATH=. uv run --locked pytest tests/retrieval -q --ignore=
+    tests/retrieval/test_postgres_core.py --ignore=
+    tests/retrieval/test_postgres_lookup.py --ignore=
+    tests/retrieval/test_phase_c_pipeline.py`: PASS; exit `0`; 154 passed in
+    1.10 seconds.
+  - `uv run --locked ruff check --no-cache src/sciscope/retrieval
+    tests/retrieval/test_public_contracts.py
+    tests/retrieval/test_public_service.py`: PASS; exit `0`; all checks
+    passed.
+  - `uv run --locked ruff format --check src/sciscope/retrieval
+    tests/retrieval/test_public_contracts.py
+    tests/retrieval/test_public_service.py`: PASS; exit `0`; 15 files already
+    formatted.
+  - `uv run --locked mypy src/sciscope/retrieval`: PASS; exit `0`; no issues
+    found in 13 source files.
+  - `git diff --check`: PASS; exit `0`; no output.
+- **Limitations:** PostgreSQL-backed tests and live embedding-provider behavior
+  were not run. No database, network, paid provider, private-consumer import,
+  or credential access was used by the new test families.
+- **Human verification:** Pending.
+- **Person 3 consumer review:** Pending.
+- **Person 2 conformance review:** Pending.
+- **T007-D owner acceptance:** Pending.
+- **Commit:** Not created.
+
+## T007-D-03 — Independent Human Verification, Team Review and Owner Acceptance
+
+- **Date:** 2026-11-22
+- **Verification source:** Project owner, independent local terminal. The
+  results below are owner-run verification, not Codex-run checks.
+- **Focused public conformance:** `uv run --locked pytest
+  tests/retrieval/test_public_service.py
+  tests/retrieval/test_public_contracts.py tests/retrieval/test_errors.py`
+  - **Actual outcome:** PASS; 66 passed in 0.53 seconds.
+- **Full offline retrieval regression:** `PYTHONPATH=. uv run --locked pytest
+  tests/retrieval -q --ignore=tests/retrieval/test_postgres_core.py --ignore=
+  tests/retrieval/test_postgres_lookup.py --ignore=
+  tests/retrieval/test_phase_c_pipeline.py`
+  - **Actual outcome:** PASS; 154 passed in 0.72 seconds.
+- **Ruff lint:** `uv run --locked ruff check --no-cache
+  src/sciscope/retrieval tests/retrieval/test_public_contracts.py
+  tests/retrieval/test_public_service.py`
+  - **Actual outcome:** PASS; all checks passed.
+- **Ruff formatting:** `uv run --locked ruff format --check
+  src/sciscope/retrieval tests/retrieval/test_public_contracts.py
+  tests/retrieval/test_public_service.py`
+  - **Actual outcome:** PASS; 15 files formatted correctly.
+- **Mypy:** `uv run --locked mypy src/sciscope/retrieval`
+  - **Actual outcome:** PASS; no issues in 13 source files.
+- **Whitespace:** `git diff --check`
+  - **Actual outcome:** PASS; no reported errors.
+- **Git state reported by the owner:** Branch
+  `007-public-retrieval-facade`; baseline
+  `d2262668dbb4afbf2ad5a34c9423a0db7244d55e`; only this log and
+  `tests/retrieval/test_public_service.py` modified; staging index empty.
+- **Person 3 consumer-usability review:** ACCEPTED (owner-reported). The
+  project owner reports internal acceptance of public root-package imports,
+  public DTO construction, `RetrievalService` consumer usage, consumer
+  isolation, and deterministic offline behavior. Codex did not witness this
+  review.
+- **Person 2 retrieval conformance review:** ACCEPTED (owner-reported). The
+  project owner reports internal acceptance of explicit v1/v2 behavior, typed
+  public error translation, sanitized messages, consumer isolation, complete
+  offline conformance coverage, and the absence of unauthorized production
+  changes. Codex did not witness this review.
+- **Owner decision:** `T007-D ACCEPTED`. The project owner accepts the
+  completed offline conformance increment and authorizes exactly one focused
+  T007-D commit. Push is not authorized.
+- **Limitations and remaining work:** PostgreSQL-backed integration and live
+  embedding-provider behavior were not executed. The transient provider-error
+  adapter contract remains deferred. T007-E requires separate explicit
+  authorization; T007-F remains pending. Feature 007 is not yet accepted or
+  complete.
+- **Commit:** Pending final Codex verification; no commit hash is recorded
+  before it exists.
+
+## T007-D-04 — Final Pre-Commit Verification
+
+- **Date:** 2026-11-22
+- **Verification source:** Codex. These results are distinct from the
+  independent owner-run verification recorded in T007-D-03.
+- **Owner and review state before this verification:** T007-D owner acceptance
+  was already recorded. Person 3 consumer-usability review and Person 2
+  conformance review were accepted (owner-reported) in T007-D-03.
+- **Commands and actual outcomes:**
+  - `uv run --locked pytest tests/retrieval/test_public_service.py
+    tests/retrieval/test_public_contracts.py tests/retrieval/test_errors.py`:
+    PASS; exit `0`; 66 passed in 0.61 seconds.
+  - `PYTHONPATH=. uv run --locked pytest tests/retrieval/test_validation.py`:
+    PASS; exit `0`; 30 passed in 0.42 seconds.
+  - `PYTHONPATH=. uv run --locked pytest tests/retrieval/test_core_offline.py
+    tests/retrieval/test_v2_bm25.py`: PASS; exit `0`; 13 passed in 0.45
+    seconds.
+  - `PYTHONPATH=. uv run --locked pytest tests/retrieval -q --ignore=
+    tests/retrieval/test_postgres_core.py --ignore=
+    tests/retrieval/test_postgres_lookup.py --ignore=
+    tests/retrieval/test_phase_c_pipeline.py`: PASS; exit `0`; 154 passed in
+    1.01 seconds.
+  - `uv run --locked ruff check --no-cache src/sciscope/retrieval
+    tests/retrieval/test_public_contracts.py
+    tests/retrieval/test_public_service.py`: PASS; exit `0`; all checks
+    passed.
+  - `uv run --locked ruff format --check src/sciscope/retrieval
+    tests/retrieval/test_public_contracts.py
+    tests/retrieval/test_public_service.py`: PASS; exit `0`; 15 files already
+    formatted.
+  - `uv run --locked mypy src/sciscope/retrieval`: PASS; exit `0`; no issues
+    found in 13 source files.
+  - `git diff --check`: PASS; exit `0`; no output.
+- **Final pre-commit scope:** Only
+  `docs/person3/FEATURE_007_T007_TEST_LOG.md` and
+  `tests/retrieval/test_public_service.py` are modified; the staging index is
+  empty at this point.
+- **Limitations:** PostgreSQL-backed integration and live embedding-provider
+  tests were not executed. The deferred transient provider-error adapter
+  contract remains unresolved. T007-E and T007-F are not started.
+- **Commit:** Pending staging and creation; no commit hash is recorded before
+  it exists.

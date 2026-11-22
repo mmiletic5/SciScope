@@ -6,7 +6,7 @@ import importlib
 import inspect
 import subprocess
 import sys
-from dataclasses import FrozenInstanceError
+from dataclasses import FrozenInstanceError, replace
 from types import ModuleType
 from typing import Any
 
@@ -21,6 +21,7 @@ from sciscope.retrieval._core import (
 )
 from sciscope.retrieval._errors import RetrievalErrorCode, RetrievalFailure
 from sciscope.retrieval._validation import InternalFilters
+from sciscope.retrieval.errors import PUBLIC_MESSAGES
 
 
 def _public_api() -> ModuleType:
@@ -648,3 +649,131 @@ def test_private_composition_passes_dependencies_without_eager_execution(
     assert type(core.embedder).__name__ == "_PrivateEmbedderBridge"
     assert core.reranker is reranker
     assert core.calls == []
+
+
+@pytest.mark.parametrize("contract_version", ["retrieval.v1", "retrieval.v2"])
+def test_service_preserves_matching_request_and_response_versions(
+    contract_version: str,
+) -> None:
+    """A public service call preserves one explicitly selected version."""
+    module = _public_api()
+    request = replace(_valid_request(module), contract_version=contract_version)
+    executor = _PrivateResponseExecutor(
+        _private_response(contract_version=contract_version)
+    )
+
+    response = module.RetrievalService(executor=executor).retrieve(request)
+
+    assert isinstance(response, module.RetrievalResponse)
+    assert executor.calls == [request]
+    assert response.contract_version == contract_version
+    assert response.request_id == request.request_id
+    assert response.corpus.delivery_digest == "sha256:" + "c" * 64
+    assert response.results[0].chunk_id == "d" * 64
+
+
+@pytest.mark.parametrize(
+    ("code", "retryable"),
+    [
+        (RetrievalErrorCode.INVALID_REQUEST, False),
+        (RetrievalErrorCode.UNSUPPORTED_CONTRACT_VERSION, False),
+        (RetrievalErrorCode.CORPUS_NOT_LOADED, False),
+        (RetrievalErrorCode.EMBEDDING_CONFIGURATION_MISMATCH, False),
+        (RetrievalErrorCode.EMBEDDING_UNAVAILABLE, True),
+        (RetrievalErrorCode.DATABASE_UNAVAILABLE, True),
+        (RetrievalErrorCode.RETRIEVAL_INTERNAL_ERROR, False),
+    ],
+)
+def test_service_translates_each_approved_private_failure_code(
+    code: RetrievalErrorCode, retryable: bool
+) -> None:
+    """Every approved private failure maps to a fresh public error once."""
+    module = _public_api()
+    request = _valid_request(module)
+    failure = RetrievalFailure(
+        code, request_id=request.request_id, retryable=retryable
+    )
+    object.__setattr__(failure, "diagnostic", "private diagnostic secret")
+    executor = _PrivateResponseExecutor(failure)
+
+    with pytest.raises(module.RetrievalException) as raised:
+        module.RetrievalService(executor=executor).retrieve(request)
+
+    assert type(raised.value) is module.RetrievalException
+    assert raised.value is not failure
+    assert not isinstance(raised.value, RetrievalFailure)
+    assert raised.value.code is code
+    assert raised.value.request_id == request.request_id
+    assert raised.value.retryable is retryable
+    assert raised.value.public_message == PUBLIC_MESSAGES[code]
+    assert "private diagnostic secret" not in str(raised.value)
+    assert executor.calls == [request]
+
+
+def test_consumer_subprocess_uses_facade_without_private_imports() -> None:
+    """A consumer can use the facade without loading private dependencies."""
+    script = """
+import sys
+sys.path.insert(0, 'src')
+from sciscope.retrieval import (
+    CorpusIdentity,
+    RetrievalMetadata,
+    RetrievalRequest,
+    RetrievalResponse,
+    RetrievalService,
+)
+
+class FakeExecutor:
+    def __init__(self, response):
+        self.calls = []
+        self.response = response
+
+    def retrieve(self, request):
+        self.calls.append(request)
+        return self.response
+
+request = RetrievalRequest(
+    contract_version='retrieval.v2',
+    request_id='consumer-isolation-1',
+    query_text='honey bee homing',
+    mode='lexical',
+    top_k=1,
+)
+response = RetrievalResponse(
+    contract_version='retrieval.v2',
+    request_id='consumer-isolation-1',
+    corpus=CorpusIdentity(
+        delivery_digest='sha256:' + 'a' * 64,
+        source_contract_version='0.3.0',
+        corpus_version='pilot17-xml-1fff1573b610',
+    ),
+    embedding=None,
+    retrieval=RetrievalMetadata('lexical', 1, None, None, None),
+    results=(),
+    warnings=('EMPTY_RESULT',),
+)
+executor = FakeExecutor(response)
+returned = RetrievalService(executor=executor).retrieve(request)
+assert returned is response
+assert executor.calls == [request]
+assert returned.contract_version == request.contract_version
+assert returned.results == ()
+forbidden = (
+    'sqlalchemy', 'pgvector', 'psycopg', 'asyncpg',
+    'sciscope.retrieval._core', 'openai', 'google', 'anthropic',
+)
+loaded = set(sys.modules)
+assert not any(
+    name == prefix or name.startswith(prefix + '.')
+    for prefix in forbidden
+    for name in loaded
+), sorted(name for name in loaded if name.startswith(forbidden))
+"""
+    completed = subprocess.run(
+        [sys.executable, "-c", script],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert completed.returncode == 0, completed.stderr or completed.stdout
