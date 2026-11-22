@@ -1083,3 +1083,334 @@ commit in this increment.
   contract remains unresolved. T007-E and T007-F are not started.
 - **Commit:** Pending staging and creation; no commit hash is recorded before
   it exists.
+
+## T007-E-04 — Cross-Platform Integration Test Preparation
+
+- **Date:** 2026-11-22
+- **Baseline commit:** `6c7748147fb0c3a47d26f8a0deb4dbdd58764a4f`
+- **Prepared file:** `tests/retrieval/test_public_postgres.py`.
+- **Linux alternative environment:** APPROVED (owner-reported). Codex did not
+  directly witness this approval. The existing Feature 005 native Windows
+  workflow and Feature 007 FR-015 remain unchanged.
+- **Test design:** The prepared test uses the existing `retrieval_engine`
+  identity gate, composes the private executor with `embedder=None`, and sends
+  an explicit `retrieval.v1` lexical request for the existing pilot query
+  `bee` through `RetrievalService`. Test-local preflight and postflight
+  snapshots each use `REPEATABLE READ READ ONLY`, compare active delivery
+  identity and stable corpus counts, and verify each public result against its
+  stored chunk and paper source fields, lexical scores, deterministic result
+  equality, and no public citation field.
+- **Database execution:** NOT YET AUTHORIZED. The new PostgreSQL test was not
+  collected or executed. No database connection, provider execution, migration,
+  ingestion, or corpus seeding was performed for this preparation increment.
+- **Offline verification executed by Codex:**
+  - `uv run --locked pytest tests/retrieval/test_public_service.py
+    tests/retrieval/test_public_contracts.py tests/retrieval/test_errors.py`:
+    PASS; exit `0`; 66 passed in 0.72 seconds.
+  - `PYTHONPATH=. uv run --locked pytest tests/retrieval -q --ignore=
+    tests/retrieval/test_postgres_core.py --ignore=
+    tests/retrieval/test_postgres_lookup.py --ignore=
+    tests/retrieval/test_phase_c_pipeline.py --ignore=
+    tests/retrieval/test_public_postgres.py`: PASS; exit `0`; 154 passed in
+    0.72 seconds.
+  - `uv run --locked ruff check --no-cache src/sciscope/retrieval
+    tests/retrieval/test_public_postgres.py`: PASS; exit `0`; all checks
+    passed.
+  - `uv run --locked ruff format --check src/sciscope/retrieval
+    tests/retrieval/test_public_postgres.py`: PASS; exit `0`; 14 files already
+    formatted.
+  - `uv run --locked mypy src/sciscope/retrieval`: PASS; exit `0`; no issues
+    found in 13 source files.
+- **Correction:** Initial Ruff checks found import-order and line-length issues
+  only in the new test. A mechanical Ruff formatting correction resolved them;
+  no production behavior or assertion was changed.
+- **WINDOWS VERIFICATION REQUIRED — PENDING.**
+
+  The T007-E public PostgreSQL integration test is designed to be
+  operating-system independent, but successful execution on native Windows has
+  not been verified.
+
+  A designated team member must execute the same guarded integration test in
+  the approved native Windows PostgreSQL 17 / pgvector 0.8.7 environment,
+  confirm all database identity, read-only, provenance and postflight
+  assertions, and record the actual results before Windows compatibility can be
+  claimed.
+
+  Linux execution does not substitute for Windows verification.
+
+  The existing Feature 005 native Windows workflow and Feature 007 FR-015
+  remain unchanged.
+- **Assigned Windows verifier:** NOT YET ASSIGNED.
+- **Windows verification:** PENDING.
+- **Windows result:** NOT EXECUTED.
+- **T007-E acceptance:** PENDING.
+- **Feature-level acceptance:** PENDING.
+- **Commit:** Not created.
+
+## T007-E-05 — Final Integration Test Hardening and Cross-Platform Verification Preparation
+
+- **Date:** 2026-11-22
+- **Baseline commit:** `6c7748147fb0c3a47d26f8a0deb4dbdd58764a4f`
+- **Test-only correction:** Moved the final active-corpus snapshot and its
+  equality assertion until after every returned result has been compared with
+  its independently read persisted chunk and paper record. The postflight
+  comparison therefore checks the same active import identifier, delivery
+  digest, source-contract version, and stored paper/section/chunk/vector counts
+  after all test-local provenance reads.
+- **Source and provenance safeguards:** The test does not generate source IDs,
+  DOI values, citation text, or paper metadata. It fails when a returned chunk
+  lacks a corresponding active stored source record or any exact chunk text,
+  DOI, locator, section, ordered path, paper metadata, or ordered author value
+  differs. Lexical score metadata and corpus delivery identity remain asserted.
+- **Read-only boundary:** Fixture identity validation precedes retrieval. Each
+  test-local preflight, source-record, and postflight query opens an explicit
+  `REPEATABLE READ READ ONLY` transaction. These transactions, together with
+  the core's own read-only transaction, enforce the no-write boundary; snapshot
+  equality alone is not treated as proof of the absence of all writes.
+- **No database execution:** The PostgreSQL integration test was not collected
+  or run. No database connection, provider call, environment setup, migration,
+  ingestion, corpus seed, production change, commit, or push occurred.
+- **Offline verification executed by Codex:**
+  - `uv run --locked pytest tests/retrieval/test_public_service.py
+    tests/retrieval/test_public_contracts.py tests/retrieval/test_errors.py`:
+    PASS; exit `0`; 66 passed in 0.62 seconds.
+  - `PYTHONPATH=. uv run --locked pytest tests/retrieval -q --ignore=
+    tests/retrieval/test_postgres_core.py --ignore=
+    tests/retrieval/test_postgres_lookup.py --ignore=
+    tests/retrieval/test_phase_c_pipeline.py --ignore=
+    tests/retrieval/test_public_postgres.py`: PASS; exit `0`; 154 passed in
+    0.71 seconds.
+  - `uv run --locked ruff check --no-cache src/sciscope/retrieval
+    tests/retrieval/test_public_postgres.py`: PASS; exit `0`; all checks
+    passed.
+  - `uv run --locked ruff format --check src/sciscope/retrieval
+    tests/retrieval/test_public_postgres.py`: PASS; exit `0`; 14 files already
+    formatted.
+  - `uv run --locked mypy src/sciscope/retrieval`: PASS; exit `0`; no issues
+    found in 13 source files.
+  - `git diff --check`: PASS; exit `0`; no output.
+- **Cross-platform design:** The test uses Python, pytest, SQLAlchemy, and the
+  existing `SCISCOPE_TEST_DATABASE_URL` fixture only. It contains no operating
+  system path, shell command, Docker dependency, or hardcoded credential. The
+  Feature 005 native Windows workflow and Feature 007 FR-015 remain unchanged.
+- **WINDOWS VERIFICATION REQUIRED — PENDING.** A designated team member must
+  execute the same guarded public PostgreSQL test on native Windows with the
+  approved PostgreSQL 17 / pgvector 0.8.7 setup and record actual results before
+  Windows compatibility is claimed.
+- **Windows verifier:** NOT YET ASSIGNED.
+- **Windows test result:** NOT EXECUTED.
+- **Linux database test result:** NOT EXECUTED.
+- **T007-E acceptance:** PENDING.
+- **Feature-level acceptance:** PENDING.
+- **Commit:** Not created.
+
+## T007-E-06 — Independent Owner Offline Verification
+
+- **Date:** 2026-11-22
+- **Baseline commit:** `6c7748147fb0c3a47d26f8a0deb4dbdd58764a4f`
+- **Verification source:** Project owner, independent Ubuntu Linux terminal.
+  These are owner-reported results, not Codex-executed checks.
+- **Public tests:** PASS; 66 passed in 0.52 seconds.
+- **Offline retrieval regression:** PASS; 154 passed in 0.59 seconds.
+- **Ruff lint:** PASS.
+- **Ruff formatting:** PASS; 14 files formatted.
+- **Mypy:** PASS; 13 source files checked.
+- **Whitespace:** `git diff --check` reported no errors.
+- **Reported Git scope:** only this chronological log modified and
+  `tests/retrieval/test_public_postgres.py` untracked; staging index empty.
+- **PostgreSQL test:** NOT EXECUTED.
+- **Linux integration:** PENDING.
+- **Windows verification:** PENDING.
+- **Windows verifier:** NOT ASSIGNED.
+- **Person 2 review:** PENDING.
+- **T007-E acceptance:** PENDING.
+- **Linux environment exception:** APPROVED (owner-reported). The existing
+  Feature 005 native Windows workflow and Feature 007 FR-015 remain unchanged.
+- **Environment activity:** No package installation, repository configuration,
+  database connection, service operation, migration, ingestion, or commit was
+  performed during this record.
+
+## T007-E-10 — Authorized Native Ubuntu Alembic Migration
+
+- **Date:** 2026-11-22
+- **Baseline:** `007-public-retrieval-facade` at
+  `6c7748147fb0c3a47d26f8a0deb4dbdd58764a4f`.
+- **Authorization and target:** The project owner authorized the Alembic chain
+  only for the isolated native Ubuntu PostgreSQL target
+  `sciscope_test_005`, role `sciscope`, local Unix socket
+  `/var/run/postgresql`, port `5433`. The existing `.env` TCP target was not
+  loaded or used.
+- **Process-scoped configuration:** Commands used `PYTHONPATH=src`,
+  `PGHOST=/var/run/postgresql`, `PGPORT=5433`, `PGUSER=sciscope`, and
+  `DATABASE_URL=postgresql+psycopg:///sciscope_test_005`. No credential value
+  was recorded.
+- **Preflight corrections:** The first SQLAlchemy preflight stopped before a
+  database operation because `PYTHONPATH=src` was absent and the package could
+  not be imported. A second read-only identity query reached the approved
+  database but stopped before migration because its SQL quoting treated
+  `port` as a column name. Neither correction performed DDL, migration, or
+  data work. The corrected preflight exited `0` and confirmed database
+  `sciscope_test_005`, role `sciscope`, port `5433`, Unix-socket transport,
+  PostgreSQL server version `170012` (major 17), pgvector `0.8.7`, no Alembic
+  revision, no SciScope application tables, and no active imports.
+- **Migration graph:** `alembic heads` reported
+  `f005_pgvector_foundation (head)` and `alembic history` reported this as the
+  sole revision with no predecessor. `alembic current` reported no revision
+  before migration.
+- **Migration execution:**
+  `env PYTHONPATH=src PGHOST=/var/run/postgresql PGPORT=5433 PGUSER=sciscope DATABASE_URL=postgresql+psycopg:///sciscope_test_005 uv run --locked alembic upgrade f005_pgvector_foundation`
+  exited `0`. Alembic ran the upgrade from base to
+  `f005_pgvector_foundation`.
+- **Post-migration verification:** A new explicit SQLAlchemy connection with
+  the same process-scoped configuration exited `0` and reconfirmed the target
+  database, role, port, Unix-socket transport, PostgreSQL major version, and
+  pgvector `0.8.7`. `alembic_version` was
+  `f005_pgvector_foundation`. All required application tables were present:
+  `delivery_imports`, `embedding_sets`, `papers`, `sections`, `chunks`, and
+  `chunk_embeddings`; the expected constraints and indexes were present.
+  `delivery_imports` and active-import counts were both `0`, so no pilot corpus
+  data was created. `alembic current` reported
+  `f005_pgvector_foundation (head)` and `alembic check` exited `0` with no new
+  upgrade operations detected.
+- **Scope limitations:** No pilot ingestion, public-facade integration test,
+  provider call, Docker operation, port-5432 connection, or Git commit was
+  performed.
+- **Pending:** Windows verification remains **PENDING**. Person 2 review is
+  **PENDING**. T007-E acceptance is **PENDING**. The public PostgreSQL
+  integration test remains **NOT EXECUTED**.
+
+## T007-E-11 — Authorized Native Ubuntu Pilot Corpus Ingestion
+
+- **Date and baseline:** 2026-11-22 on `007-public-retrieval-facade` at
+  `6c7748147fb0c3a47d26f8a0deb4dbdd58764a4f`. The existing modified test log
+  and untracked `tests/retrieval/test_public_postgres.py` were preserved; the
+  staging index remained empty.
+- **Authorization and target:** The project owner authorized exactly one
+  `ImportMode.INITIALIZE` operation only against `sciscope_test_005` as role
+  `sciscope`, using the local Unix socket `/var/run/postgresql` on port `5433`.
+  Commands used process-scoped `PYTHONPATH=src`, `PGHOST`, `PGPORT`, `PGUSER`,
+  and `DATABASE_URL=postgresql+psycopg:///sciscope_test_005`; `.env` and its
+  port-5432 TCP target were not loaded or used. No credential value was
+  recorded.
+- **Pre-import database verification:** A read-only SQLAlchemy transaction
+  exited `0` and confirmed database `sciscope_test_005`, role `sciscope`, port
+  `5433`, Unix-socket transport, PostgreSQL `170012` (major 17), pgvector
+  `0.8.7`, Alembic revision `f005_pgvector_foundation`, and all six migrated
+  application tables. It also confirmed zero delivery imports, active imports,
+  papers, sections, chunks, and chunk embeddings.
+- **Validated inputs:**
+  `data/delivery/pilot/{delivery_manifest.json,embedding_manifest.json,papers.jsonl,sections.jsonl,chunks.jsonl,vectors.f32}`
+  and `data/pilot/{parse_report.json,chunk_report.json,embedding_report.json}`
+  were present. The established `validate-delivery` command exited `0` with
+  `17` papers, `319` sections, `728` chunks, `728` vectors, six files, and zero
+  failures. No input, source metadata, identifier, DOI, citation, or embedding
+  was generated or changed.
+- **Authorized import entrypoint:**
+  `SnapshotImporter(create_database_engine(DatabaseSettings.from_environment())).import_snapshot(ImportRequest(..., ImportMode.INITIALIZE))`
+  used the established importer transaction and the validated package/report
+  paths. The one invocation exited `0` with outcome `imported`, import ID `1`,
+  delivery digest
+  `sha256:998241789fd9675853962bdfdf98b15b0991bc4cda103413b0abc470666af9d2`,
+  and result counts `17/319/728/728`. No retry, replacement, migration, or
+  compensating write was performed.
+- **Post-import verification:** The repository's independent read-only
+  `sciscope.ingestion.verify_pilot` command exited `0`: `17` papers, `319`
+  sections, `728` chunks, `728` vectors, and zero missing IDs, extra IDs,
+  provenance mismatches, dimension mismatches, vector-byte mismatches, and
+  orphans. A supplemental read-only query initially failed because it used the
+  nonexistent `chunks.content` column; it performed no write. After inspecting
+  the persisted model and using `chunks.text`, the corrected query exited `0`.
+  It reconfirmed target identity, revision, pgvector version, one import and
+  one active import, one embedding set, zero invalid vector dimensions, and
+  complete persisted source/provenance counts: 17 papers with sources, 319
+  sections with IDs and locators, and 728 chunks with IDs, text, and locators.
+  The active import records schema and contract version `0.3.0`; the stored
+  embedding configuration is `openai` / `text-embedding-3-small`, 1536
+  dimensions, `float32-le`, and empty prefixes, with delivered chunk and vector
+  hashes preserved.
+- **Scope limitations:** No Gemini or other provider call, public PostgreSQL
+  integration test, Docker operation, port-5432 connection, source mutation,
+  embedding regeneration, Git staging, or commit was performed.
+- **Pending:** Windows verification remains **PENDING**. Person 2 review is
+  **PENDING**. T007-E acceptance is **PENDING**. The public PostgreSQL
+  integration test remains **NOT EXECUTED**.
+
+## T007-E-12 — Native Ubuntu Public PostgreSQL Integration Test
+
+- **Date and baseline:** 2026-11-22 on `007-public-retrieval-facade` at
+  `6c7748147fb0c3a47d26f8a0deb4dbdd58764a4f`. Existing T007-E work was
+  preserved: this log remained modified and
+  `tests/retrieval/test_public_postgres.py` remained untracked; the staging
+  index was empty.
+- **Authorized target and preflight:** Process-scoped settings used
+  `PYTHONPATH=.`, `PGHOST=/var/run/postgresql`, `PGPORT=5433`,
+  `PGUSER=sciscope`, and
+  `SCISCOPE_TEST_DATABASE_URL=postgresql+psycopg:///sciscope_test_005`. The
+  existing `.env` target was not loaded. An initial standalone preflight
+  attempt stopped before connecting because the uninstalled `src/` package
+  could not be imported with `PYTHONPATH=.`. A corrected direct SQLAlchemy
+  read-only preflight exited `0` and confirmed `sciscope_test_005`, role
+  `sciscope`, Unix-socket transport, port `5433`, PostgreSQL `170012` (major
+  17), pgvector `0.8.7`, revision `f005_pgvector_foundation`, one active
+  import, and `17/319/728/728` paper/section/chunk/vector counts.
+- **Authorized test command:**
+  `env PYTHONPATH=. PGHOST=/var/run/postgresql PGPORT=5433 PGUSER=sciscope SCISCOPE_TEST_DATABASE_URL=postgresql+psycopg:///sciscope_test_005 uv run --locked pytest -v tests/retrieval/test_public_postgres.py`
+  exited `0`; one test was collected and passed in 0.85 seconds.
+- **Observed public behavior:**
+  `test_public_service_reads_active_v1_lexical_corpus_read_only` constructed
+  the public service with the private composition seam and performed two
+  explicit `retrieval.v1` lexical requests. It verified the public response,
+  request ID, version, lexical mode, `top_k`, absent embedding, deterministic
+  equality, ordered ranks, lexical-only score fields, and no synthesized public
+  citation attribute. Every returned result was compared with independently
+  read persisted chunk and paper fields: stable chunk ID, exact text, DOI,
+  source locator, section ID/path, title, ordered authors, publication
+  metadata, language, license, and source URL.
+- **Read-only and postflight verification:** The test's preflight and
+  postflight snapshots each asserted `REPEATABLE READ READ ONLY` and equal
+  active-corpus identity/counts. A final separate read-only SQLAlchemy query
+  exited `0` and reconfirmed the approved database, role, port, revision,
+  pgvector `0.8.7`, one total/active import, unchanged delivery digest
+  `sha256:998241789fd9675853962bdfdf98b15b0991bc4cda103413b0abc470666af9d2`,
+  and unchanged `17/319/728/728` counts. No migration, ingestion, provider
+  call, Docker operation, or other database test was executed.
+- **Pending:** Windows verification remains **PENDING**. Person 2 review is
+  **PENDING**. T007-E owner acceptance is **PENDING**. No Git commit was
+  created.
+
+## T007-E-13 — Independent Owner Verification
+
+- **Date:** 2026-11-22.
+- **Verification source:** Project owner, independent local terminal. These
+  results are owner-reported and were not executed by Codex.
+- **Owner-run command:**
+  `env PYTHONPATH=. PGHOST=/var/run/postgresql PGPORT=5433 PGUSER=sciscope SCISCOPE_TEST_DATABASE_URL=postgresql+psycopg:///sciscope_test_005 uv run --locked pytest -v tests/retrieval/test_public_postgres.py`.
+- **Observed result:** Linux; Python 3.12.16; pytest 8.4.2; one test collected,
+  one passed in 0.76 seconds; no failures and no skips.
+- **Git checks:** The owner ran `git status --short` and `git diff --check`.
+  Reported scope was this modified chronological log and untracked
+  `tests/retrieval/test_public_postgres.py`; no whitespace errors were
+  reported.
+- **Distinction:** T007-E-12 records Codex-run authorized integration testing;
+  this entry records the owner's independent verification of the same guarded
+  test.
+- **Pending:** Native Windows verification: **PENDING**. Person 2 review:
+  **PENDING**. T007-E owner acceptance: **PENDING**. Feature-level acceptance:
+  **PENDING**. No commit was created.
+
+## T007-E-14 — Person 2 Review and Native Windows Verification Handoff
+
+- **Date and baseline:** 2026-11-22 on `007-public-retrieval-facade` at
+  `6c7748147fb0c3a47d26f8a0deb4dbdd58764a4f`.
+- **Documentation created:**
+  `docs/person3/FEATURE_007_T007_E_REVIEW_HANDOFF.md` provides the remaining
+  Person 2 review checklist and native Windows PowerShell verification
+  procedure. It preserves Feature 007 FR-015 and the Feature 005 Windows
+  workflow, uses the established guarded in-memory test-target derivation, and
+  does not copy Ubuntu socket configuration into Windows instructions.
+- **Scope:** Documentation only. No database access, test execution, provider
+  call, migration, ingestion, source/test change, staging, or commit was
+  performed in this increment.
+- **Status:** Person 2 review, native Windows verification, T007-E owner
+  acceptance, and feature-level acceptance remain **PENDING**. The handoff
+  records no reviewer decision or Windows test result.
