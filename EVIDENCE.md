@@ -491,3 +491,39 @@ dependency resolution, and CI remain unverified. Human acceptance: NOT PROVIDED.
   - **Explicit decision:** ACCEPTED.
   - **Limitations:** Acceptance excludes live Gemini integration, production deployment, real corpus/retrieval integration, and scientific correctness of generated answers. Citation validation proves synthetic response-local identity membership, not scientific support.
 - **Final status:** DONE for Feature 011's approved scope. Broader real-provider, retrieval, deployment, and scientific-quality work remains open and is not accepted by this record.
+
+### Feature 007 — Public Retrieval Facade (T007)
+
+- **Owner:** Person 3 (Backend & AI), with Person 2 retrieval review and
+  Person 1 provenance/source-mapping review recorded in the chronological log.
+- **Scope and artifacts:** [`spec.md`](specs/007-phase-b-retrieval-core/spec.md),
+  [`plan.md`](specs/007-phase-b-retrieval-core/plan.md), and
+  [`tasks.md`](specs/007-phase-b-retrieval-core/tasks.md). The complete
+  chronological implementation, correction, verification, and decision record
+  is [`docs/person3/FEATURE_007_T007_TEST_LOG.md`](docs/person3/FEATURE_007_T007_TEST_LOG.md).
+- **Implementation history:** T007-B public DTOs/errors:
+  `df104b966c1a5725f50f1f8845f79366fa5c6b9f`; T007-C public facade and
+  composition: `d2262668dbb4afbf2ad5a34c9423a0db7244d55e`; T007-D offline
+  conformance: `6c7748147fb0c3a47d26f8a0deb4dbdd58764a4f`; T007-E review
+  package: `97ea843407e0424a388a7206f182b5c72a4f4f08`.
+- **Automated verification:** T007-F-01, run by Codex on 2026-11-22:
+  - `uv run --locked pytest tests/retrieval/test_public_service.py tests/retrieval/test_public_contracts.py tests/retrieval/test_errors.py` — PASS, exit 0; 66 passed.
+  - `PYTHONPATH=. uv run --locked pytest tests/retrieval/test_validation.py tests/retrieval/test_core_offline.py tests/retrieval/test_v2_bm25.py` — PASS, exit 0; 43 passed.
+  - `PYTHONPATH=. uv run --locked pytest tests/retrieval -q --ignore=tests/retrieval/test_postgres_core.py --ignore=tests/retrieval/test_postgres_lookup.py --ignore=tests/retrieval/test_phase_c_pipeline.py --ignore=tests/retrieval/test_public_postgres.py` — PASS, exit 0; 154 passed. PostgreSQL-backed tests were explicitly excluded from this offline regression.
+  - Ruff lint, Ruff formatting, mypy (13 source files), and `git diff --check` — PASS, exit 0.
+- **Database integration evidence:** The chronological log records separately
+  authorized Ubuntu migration, pilot import, guarded public-facade integration,
+  and independent owner verification. The project owner reports that the same
+  native Windows guarded integration test passed. **Windows result: PASS —
+  owner-reported; terminal evidence not retained.** No command transcript,
+  environment measurement, test count, or other unretained Windows terminal
+  detail is asserted.
+- **Human verification and acceptance:** Person 2 review is **ACCEPTED
+  (owner-reported)**. The project owner explicitly confirms **Feature 007
+  ACCEPTED** on 2026-11-22 after T007-B through T007-E and the final offline
+  verification. Person 1 provenance review is recorded in the chronological
+  log as owner-reported acceptance.
+- **Final status:** DONE for the approved T007 public-retrieval-facade scope.
+  This does not complete broader P1 shared-contract work, the separate GIN
+  migration, T008, P4-09 real retrieval integration, P4-10 Gemini integration,
+  or any broader application/feature acceptance.
