@@ -7,6 +7,7 @@ import socket
 import urllib.request
 from collections.abc import Iterator
 from dataclasses import dataclass, field
+from typing import cast
 
 import pytest
 
@@ -733,12 +734,13 @@ def _walk_objects(schema: object) -> Iterator[dict[str, object]]:
             yield from _walk_objects(value)
 
 
-def test_registry_lists_only_implemented_workflows() -> None:
-    """Only implemented workflows have a prompt entry."""
+def test_registry_lists_all_four_workflows() -> None:
+    """All four workflows have a prompt entry."""
     expected = (
         "research_question",
         "evidence_comparison",
         "conflicting_evidence",
+        "research_gap",
     )
     assert tuple(WORKFLOW_PROMPTS) == expected
     assert OpenAIAnswerProvider.supported_workflows == expected
@@ -773,15 +775,21 @@ def test_research_question_schema_follows_strict_mode_rules() -> None:
         assert set(required) == set(properties)
 
 
-@pytest.mark.parametrize("workflow", ["research_gap"])
+@pytest.mark.parametrize("workflow", ["not_a_workflow"])
 def test_unimplemented_workflow_fails_before_any_network_call(
-    workflow: Workflow,
+    workflow: str,
 ) -> None:
     """A sanitized controlled failure, never a guessed prompt."""
     instance, transport, _ = provider([])
 
     with pytest.raises(DependencyFailure) as raised:
-        instance.answer(QUESTION, EVIDENCE, CORPUS, "req-1", workflow=workflow)
+        instance.answer(
+            QUESTION,
+            EVIDENCE,
+            CORPUS,
+            "req-1",
+            workflow=cast(Workflow, workflow),
+        )
 
     assert raised.value.code is DependencyFailureCode.WORKFLOW_NOT_IMPLEMENTED
     assert transport.calls == []

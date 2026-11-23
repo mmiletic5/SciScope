@@ -70,13 +70,9 @@ curl.exe -X POST http://127.0.0.1:8000/api/v2/questions `
 ## Known limits
 
 - `/api/health` `workflows` lists the workflows of the configured provider:
-  all four with `AI_PROVIDER=fake`; only `research_question` with
-  `AI_PROVIDER=openai` (the OpenAI prompts and schemas for
-  `evidence_comparison`, `conflicting_evidence` and `research_gap` are not
-  written yet). Asking the OpenAI provider for one of those three returns
-  503 `provider_unavailable` (retryable per the contract table) after
-  retrieval ran, without any OpenAI call; with empty retrieval it returns
-  200 `no_results` because the provider is never invoked.
+  all four with `AI_PROVIDER=fake` and with `AI_PROVIDER=openai`. All four
+  workflows are implemented for the fake and openai providers; live OpenAI
+  behavior is verified only by the user's smoke run.
 - The fake provider answers all four workflows from synthetic evidence of
   three synthetic papers (`10.0000/synthetic.*`, `is_test_data: true`). Its
   text is placeholder, not a finding.
@@ -86,8 +82,9 @@ curl.exe -X POST http://127.0.0.1:8000/api/v2/questions `
   contract rejects ranking options for lexical mode. Fake retrieval ignores
   the profile.
 - Payload workflows are validated server-side (citations, subject DOIs,
-  item and hypothesis rules); a comparison citing fewer than two papers or a
-  conflicts answer without items is returned as `insufficient_evidence`.
+  item and hypothesis rules); a comparison citing fewer than two papers, a
+  conflicts answer without items or a gap analysis without gaps is returned
+  as `insufficient_evidence`.
 - `/api/v1/questions` returns a 500 `internal_error` when the server uses
   component metadata (all server modes); use v2.
 - Fake mode reports retrieval origin `synthetic` and provider origin `fake`,
@@ -96,4 +93,4 @@ curl.exe -X POST http://127.0.0.1:8000/api/v2/questions `
 - Live OpenAI and Postgres paths are unit-tested offline only; they have not been
   verified end to end by this change. `scripts/mvp_smoke.py` runs each dev
   question with its workflow and skips workflows the provider does not
-  support yet.
+  support.

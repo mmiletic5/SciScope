@@ -5,8 +5,9 @@ instructions, a strict output schema built from the allowed chunk IDs, and a
 parser that turns model content into a grounded outcome. All workflows share
 the grounding rules, the delimited passage format, the transport, retries and
 the time budget. ``research_question``, ``evidence_comparison`` and
-``conflicting_evidence`` are implemented; any other workflow fails with a
-sanitized ``WORKFLOW_NOT_IMPLEMENTED`` before any network call.
+``conflicting_evidence`` and ``research_gap`` are implemented; any other
+workflow fails with a sanitized ``WORKFLOW_NOT_IMPLEMENTED`` before any
+network call.
 """
 
 from __future__ import annotations
@@ -48,6 +49,9 @@ from sciscope.question_service.contracts import (
     DependencyFailure,
     DependencyFailureCode,
     Evidence,
+    GapAnalysisPayload,
+    GapItem,
+    Hypothesis,
     ProviderOutcome,
     ProviderOutcomeStatus,
     Workflow,
@@ -56,6 +60,7 @@ from sciscope.question_service.validation import ResponseContractFailure
 from sciscope.question_service.workflow_validation import (
     MAX_COMPARISON_SUBJECTS,
     MAX_CONFLICT_ITEMS,
+    MAX_HYPOTHESES,
     MIN_COMPARISON_ITEM_DOIS,
     MIN_COMPARISON_SUBJECTS,
     MIN_CONFLICT_POSITIONS,
@@ -81,6 +86,10 @@ _COMPARISON_KEYS: Final = frozenset(
 )
 _CONFLICT_KEYS: Final = frozenset({"status", "answer", "items"})
 _CONFLICT_ITEM_KEYS: Final = frozenset({"topic", "summary", "positions"})
+_GAP_KEYS: Final = frozenset({"status", "answer", "gaps", "hypotheses"})
+_HYPOTHESIS_KEYS: Final = frozenset(
+    {"text", "rationale", "based_on_gap_numbers", "citation_chunk_ids"}
+)
 
 GROUNDING_RULES: Final = """\
 You answer questions about scientific literature using ONLY the passages \
@@ -198,6 +207,27 @@ def research_question_schema(
     }
 
 
+RESEARCH_GAP_TASK: Final = """\
+Task: identify research gaps stated in the supplied passages with respect to \
+the question, and suggest hypotheses to test.
+A gap is a limitation, an open question, or something the authors say \
+remains untested or unresolved, AS STATED IN THE PASSAGES. Never invent a \
+gap and never infer one the passages do not state.
+When status is "answered":
+- "answer" is a short overview of the gaps found.
+- "gaps" has at least 1 entry. Each has a "text" restating one gap and \
+"citation_chunk_ids" naming the passages that state it.
+- "hypotheses" has 0 to 4 entries. Each is a suggestion to test, phrased \
+tentatively (for example "may" or "could be tested"), never as a finding. \
+Each has "text", a "rationale", "based_on_gap_numbers" (the 1-based \
+positions of the gaps in your own "gaps" list that it builds on, at least \
+one) and "citation_chunk_ids" naming the supporting passages.
+- Make no new factual claims beyond what the passages state.
+If the passages state no gap, return status "insufficient_evidence" with \
+answer null and empty "gaps" and "hypotheses" lists. Never output ids of \
+your own; only chunk_id citations and gap numbers."""
+
+
 def _cited_array(chunk_ids: Sequence[str]) -> dict[str, object]:
     """Return the schema of a citation list restricted to ``chunk_ids``."""
     return {
@@ -299,6 +329,56 @@ def conflicting_evidence_schema(
             },
             "answer": {"type": ["string", "null"]},
             "items": {"type": "array", "items": item},
+        },
+    }
+
+
+def research_gap_schema(chunk_ids: Sequence[str]) -> dict[str, object]:
+    """Return the strict output schema for ``research_gap``.
+
+    The model supplies no IDs; the server assigns ``gap-N``/``hyp-N`` and
+    resolves 1-based ``based_on_gap_numbers``.
+
+    Args:
+        chunk_ids: Unique chunk IDs of the supplied evidence, in order.
+
+    Returns:
+        A JSON schema object following OpenAI strict mode.
+    """
+    hypothesis: dict[str, object] = {
+        "type": "object",
+        "additionalProperties": False,
+        "required": [
+            "text",
+            "rationale",
+            "based_on_gap_numbers",
+            "citation_chunk_ids",
+        ],
+        "properties": {
+            "text": {"type": "string"},
+            "rationale": {"type": "string"},
+            "based_on_gap_numbers": {
+                "type": "array",
+                "items": {"type": "integer"},
+            },
+            "citation_chunk_ids": _cited_array(chunk_ids),
+        },
+    }
+    return {
+        "type": "object",
+        "additionalProperties": False,
+        "required": ["status", "answer", "gaps", "hypotheses"],
+        "properties": {
+            "status": {
+                "type": "string",
+                "enum": ["answered", "insufficient_evidence"],
+            },
+            "answer": {"type": ["string", "null"]},
+            "gaps": {
+                "type": "array",
+                "items": _cited_object("text", chunk_ids),
+            },
+            "hypotheses": {"type": "array", "items": hypothesis},
         },
     }
 
@@ -605,6 +685,127 @@ def _parse_conflicting_evidence(
     )
 
 
+def _hypothesis_rows(
+    value: object,
+) -> tuple[tuple[str, str, tuple[int, ...], tuple[str, ...]], ...]:
+    """Strictly parse the ``hypotheses`` list of a gap answer.
+
+    Raises:
+        ResponseContractFailure: For wrong types or unknown/missing fields.
+    """
+    if not isinstance(value, list):
+        raise ResponseContractFailure()
+    parsed = []
+    for entry in value:
+        if not isinstance(entry, dict) or set(entry) != _HYPOTHESIS_KEYS:
+            raise ResponseContractFailure()
+        text = entry["text"]
+        rationale = entry["rationale"]
+        numbers = entry["based_on_gap_numbers"]
+        ids = entry["citation_chunk_ids"]
+        if (
+            not isinstance(text, str)
+            or not isinstance(rationale, str)
+            or not isinstance(numbers, list)
+            or not all(
+                isinstance(n, int) and not isinstance(n, bool) for n in numbers
+            )
+            or not isinstance(ids, list)
+            or not all(isinstance(chunk_id, str) for chunk_id in ids)
+        ):
+            raise ResponseContractFailure()
+        parsed.append(
+            (
+                text,
+                rationale,
+                tuple(cast(list[int], numbers)),
+                tuple(cast(list[str], ids)),
+            )
+        )
+    return tuple(parsed)
+
+
+def _parse_research_gap(
+    content: str, evidence: Sequence[Evidence]
+) -> ProviderOutcome | None:
+    """Parse and ground ``research_gap`` model content.
+
+    The server assigns ``gap-N`` and ``hyp-N``, maps 1-based gap numbers to
+    gap IDs and marks hypotheses speculative. Output the model could fix
+    (unknown citations, empty text, too many hypotheses, a hypothesis whose
+    gap numbers are empty, duplicated or out of range) returns None. An
+    answered output with no gaps is passed on with an empty payload: shared
+    validation downgrades it to ``insufficient_evidence``.
+    """
+    value = _strict_json_object(content, _GAP_KEYS)
+    status = value["status"]
+    answer = value["answer"]
+    gaps = _statements(value["gaps"], "text")
+    hypotheses = _hypothesis_rows(value["hypotheses"])
+    if status not in ("answered", "insufficient_evidence") or not (
+        answer is None or isinstance(answer, str)
+    ):
+        raise ResponseContractFailure()
+    if status == "insufficient_evidence":
+        if answer is not None or gaps or hypotheses:
+            return None
+        return ProviderOutcome(
+            status=ProviderOutcomeStatus.INSUFFICIENT_EVIDENCE,
+            answer=None,
+            claims=(),
+            metadata=_REAL_METADATA,
+            workflow="research_gap",
+        )
+    if answer is None or not answer.strip() or len(hypotheses) > MAX_HYPOTHESES:
+        return None
+    by_id = {item.chunk_id: item for item in evidence}
+    gap_rows = _resolved_rows(gaps, by_id)
+    hyp_rows = _resolved_rows(
+        [(text, ids) for text, _, _, ids in hypotheses], by_id
+    )
+    if (
+        gap_rows is None
+        or hyp_rows is None
+        or not all(text.strip() for text, _ in gap_rows)
+    ):
+        return None
+    built_hypotheses: list[Hypothesis] = []
+    for index, ((text, ids), (_, rationale, numbers, _)) in enumerate(
+        zip(hyp_rows, hypotheses, strict=True), start=1
+    ):
+        if (
+            not text.strip()
+            or not rationale.strip()
+            or not numbers
+            or len(set(numbers)) != len(numbers)
+            or not all(1 <= n <= len(gap_rows) for n in numbers)
+        ):
+            return None
+        built_hypotheses.append(
+            Hypothesis(
+                f"hyp-{index}",
+                text,
+                rationale,
+                tuple(f"gap-{n}" for n in numbers),
+                ids,
+            )
+        )
+    return ProviderOutcome(
+        status=ProviderOutcomeStatus.ANSWERED,
+        answer=answer,
+        claims=(),
+        metadata=_REAL_METADATA,
+        workflow="research_gap",
+        payload=GapAnalysisPayload(
+            gaps=tuple(
+                GapItem(f"gap-{number}", text, ids)
+                for number, (text, ids) in enumerate(gap_rows, start=1)
+            ),
+            hypotheses=tuple(built_hypotheses),
+        ),
+    )
+
+
 def _resolved_rows(
     rows: Sequence[tuple[str, tuple[str, ...]]],
     by_id: Mapping[str, Evidence],
@@ -681,6 +882,12 @@ WORKFLOW_PROMPTS: Final[Mapping[Workflow, WorkflowPrompt]] = MappingProxyType(
             task_instructions=CONFLICTING_EVIDENCE_TASK,
             schema=conflicting_evidence_schema,
             parse=_parse_conflicting_evidence,
+        ),
+        "research_gap": WorkflowPrompt(
+            schema_name="research_gap_answer",
+            task_instructions=RESEARCH_GAP_TASK,
+            schema=research_gap_schema,
+            parse=_parse_research_gap,
         ),
     }
 )

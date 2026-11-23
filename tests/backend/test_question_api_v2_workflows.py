@@ -426,44 +426,17 @@ _OPENAI_ENV = {
 }
 
 
-def test_openai_health_lists_only_implemented_workflows() -> None:
-    """Health reflects the configured provider, not the contract."""
+def test_openai_health_lists_all_four_workflows() -> None:
+    """Health reflects the configured provider."""
     body = TestClient(create_server_app(_OPENAI_ENV)).get("/api/health").json()
 
     assert body["workflows"] == [
         "research_question",
         "evidence_comparison",
         "conflicting_evidence",
+        "research_gap",
     ]
     assert FAKE_KEY not in str(body)
-
-
-@pytest.mark.parametrize("workflow", ["research_gap"])
-def test_openai_unimplemented_workflow_is_a_sanitized_503(
-    workflow: str,
-) -> None:
-    """Fail with provider_unavailable before any network call."""
-    client = TestClient(
-        create_server_app(_OPENAI_ENV), raise_server_exceptions=False
-    )
-
-    response = _ask(client, workflow)
-
-    assert response.status_code == 503
-    body = response.json()
-    ErrorResponseV2.model_validate(body)
-    assert body["error"] == {
-        "code": "provider_unavailable",
-        "message": "The requested dependency is currently unavailable.",
-        "retryable": True,
-    }
-    assert body["metadata"]["answer_provider"] == {
-        "configured_origin": "real",
-        "executed": True,
-        "is_test_data": False,
-    }
-    assert FAKE_KEY not in response.text
-    assert workflow not in response.text
 
 
 def test_composition_requires_settings_for_every_workflow() -> None:

@@ -317,9 +317,9 @@ def test_review_note_is_the_fixed_server_constant() -> None:
 # 3.4 research_gap.
 
 
-def test_gap_analysis_needs_a_gap() -> None:
-    """>= 1 gap when answered (fails closed, not a downgrade)."""
-    _fails(GAPS, _gaps(gaps=(), hypotheses=()))
+def test_gap_analysis_without_gaps_is_insufficient() -> None:
+    """An answered research_gap with zero gaps becomes a decline."""
+    assert _check(GAPS, _gaps(gaps=(), hypotheses=())) is None
 
 
 def test_hypotheses_are_optional_and_at_most_four() -> None:

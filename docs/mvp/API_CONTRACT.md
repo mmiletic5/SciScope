@@ -64,6 +64,12 @@ Common fields: `api_version: "v2"`, `request_id`, `workflow` (echo), `status`, `
 - For `conflicting_evidence`, no potential difference identified -> `insufficient_evidence`
   (UI text: "No potential differences were identified in the retrieved passages. This does not
   show that none exist.").
+- For `research_gap`, no gap identified in the retrieved passages -> `insufficient_evidence`
+  (never `answered` with an empty `gaps` list).
+- Within one response, all `item_id`, `subject_id`, `position_id`, `gap_id` and `hypothesis_id`
+  values are unique.
+- For `evidence_comparison`, the server derives each subject's `doi` and `paper_title` from the
+  cited evidence; the model never supplies them.
 
 ### Metadata (truthful, per component)
 
@@ -178,3 +184,4 @@ currently has enabled; the frontend disables the others. No secrets are ever ret
 
 - 2026-11-23: initial freeze (v2 + three workflows + health).
 - 2026-11-23 (rev 2): badge rule ignores `executed`; tolerant reader; health.workflows semantics; added research_question insufficient_evidence fixture.
+- 2026-11-23 (rev 3): research_gap with no gaps -> insufficient_evidence; ids unique per response; server derives subject doi/title.

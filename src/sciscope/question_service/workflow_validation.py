@@ -5,7 +5,7 @@ and ``research_gap``) return a typed payload instead of provider claims. This
 module checks a payload against ``docs/mvp/API_CONTRACT.md`` sections 3.2-3.5
 and derives the flat, server-owned ``claims`` list from it.
 
-Every rule violation raises ``ResponseContractFailure``. Two contract rules
+Every rule violation raises ``ResponseContractFailure``. Three contract rules
 instead turn an otherwise valid answer into ``insufficient_evidence``; for
 those, ``validate_payload_answer`` returns None.
 """
@@ -98,6 +98,8 @@ def validate_payload_answer(
             return None
         validate_conflicts(provider.payload)
     elif isinstance(provider.payload, GapAnalysisPayload):
+        if not provider.payload.gaps:
+            return None
         validate_gap_analysis(provider.payload)
     return claims
 
