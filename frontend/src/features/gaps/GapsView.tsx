@@ -1,6 +1,7 @@
 import type { AnsweredResponse } from '../../api/types'
 import { CitedText } from '../../components/CitedText'
 import { EvidenceSources } from '../../components/EvidenceSources'
+import { stripChunkIds } from '../../lib/stripChunkIds'
 import { resolveCitations } from '../../lib/citations'
 import { useSourceHighlight } from '../../lib/useSourceHighlight'
 
@@ -28,7 +29,7 @@ export function GapsView({ response }: { response: GapsAnswered }) {
     <div className="answer-view gaps-view">
       <section aria-labelledby="gap-answer-title">
         <h2 id="gap-answer-title">Summary</h2>
-        <p>{response.answer}</p>
+        <p>{stripChunkIds(response.answer)}</p>
       </section>
       <section aria-labelledby="gap-gaps-title">
         <h2 id="gap-gaps-title">Gaps in the retrieved evidence</h2>
@@ -66,7 +67,7 @@ export function GapsView({ response }: { response: GapsAnswered }) {
                   numberById={numberById}
                   onActivate={activateSource}
                 />
-                <p className="hypothesis-rationale"><strong>Rationale:</strong> {hypothesis.rationale}</p>
+                <p className="hypothesis-rationale"><strong>Rationale:</strong> {stripChunkIds(hypothesis.rationale)}</p>
                 <p className="hypothesis-gaps">
                   Based on:{' '}
                   {hypothesis.based_on_gap_ids.map((gapId, linkIndex) => (

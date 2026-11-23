@@ -1,6 +1,7 @@
 import type { AnsweredResponse } from '../../api/types'
 import { CitedText } from '../../components/CitedText'
 import { EvidenceSources } from '../../components/EvidenceSources'
+import { stripChunkIds } from '../../lib/stripChunkIds'
 import { resolveCitations } from '../../lib/citations'
 import { useSourceHighlight } from '../../lib/useSourceHighlight'
 
@@ -28,15 +29,15 @@ export function ConflictsView({ response }: { response: ConflictsAnswered }) {
       </aside>
       <section aria-labelledby="cfl-answer-title">
         <h2 id="cfl-answer-title">Summary</h2>
-        <p>{response.answer}</p>
+        <p>{stripChunkIds(response.answer)}</p>
       </section>
       <section aria-labelledby="cfl-items-title">
         <h2 id="cfl-items-title">Potential differences for review</h2>
         <div className="conflict-list">
           {items.map((item) => (
             <article className="conflict-card" key={item.item_id} aria-labelledby={`cfl-${item.item_id}-title`}>
-              <h3 id={`cfl-${item.item_id}-title`}>{item.topic}</h3>
-              <p>{item.summary}</p>
+              <h3 id={`cfl-${item.item_id}-title`}>{stripChunkIds(item.topic)}</h3>
+              <p>{stripChunkIds(item.summary)}</p>
               <div className="conflict-positions">
                 {item.positions.map((position, index) => (
                   <section

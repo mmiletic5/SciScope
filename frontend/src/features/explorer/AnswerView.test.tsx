@@ -66,3 +66,16 @@ describe('AnswerView', () => {
     expect(screen.getByText('synthetic-digest-not-a-real-corpus')).toBeTruthy()
   })
 })
+
+describe('AnswerView leaked ids', () => {
+  it('does not render chunk ids in the answer or in claim texts', () => {
+    const id = 'cd'.repeat(32)
+    const leaked = {
+      ...answeredFixture,
+      answer: `${answeredFixture.answer} [${id}]`,
+      claims: answeredFixture.claims.map((claim) => ({ ...claim, text: `${claim.text} [${id}]` })),
+    }
+    render(<AnswerView response={leaked} />)
+    expect(document.body.textContent).not.toContain(id)
+  })
+})

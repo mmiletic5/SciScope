@@ -145,3 +145,39 @@ describe.each(SCREENS)('$name screen', ({ element, textbox, examples, workflow }
     expect(document.querySelector('[data-highlighted="true"]')).toBeNull()
   })
 })
+
+describe.each(SCREENS)('$name corpus version footer', ({ element, textbox, workflow }) => {
+  async function submitAndWait(body: unknown) {
+    stubFetch(body)
+    render(element())
+    const user = userEvent.setup()
+    await user.type(screen.getByRole('textbox', { name: textbox }), 'A question about bees?')
+    await user.click(screen.getByRole('button', { name: 'Search' }))
+  }
+
+  it('shows the corpus version after a no_results response', async () => {
+    const answered = answeredFixtureByWorkflow[workflow]
+    const body = {
+      ...answered,
+      status: 'no_results',
+      answer: null,
+      claims: [],
+      evidence: [],
+      metadata: { ...answered.metadata, answer_provider: { ...answered.metadata.answer_provider, executed: false } },
+    }
+    for (const key of ['comparison', 'conflicts', 'gap_analysis']) Reflect.deleteProperty(body, key)
+    await submitAndWait(body)
+    await vi.waitFor(() => {
+      expect(document.querySelector('.corpus-note code')?.textContent).toBe(body.corpus.corpus_version)
+    })
+  })
+
+  it('shows the corpus version after an insufficient_evidence response', async () => {
+    const body = { ...answeredFixtureByWorkflow[workflow], status: 'insufficient_evidence', answer: null, claims: [] }
+    for (const key of ['comparison', 'conflicts', 'gap_analysis']) Reflect.deleteProperty(body, key)
+    await submitAndWait(body)
+    await vi.waitFor(() => {
+      expect(document.querySelector('.corpus-note code')?.textContent).toBe(body.corpus.corpus_version)
+    })
+  })
+})

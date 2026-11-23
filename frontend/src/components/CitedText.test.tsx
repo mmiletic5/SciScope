@@ -26,3 +26,12 @@ describe('CitedText', () => {
     expect(screen.queryAllByRole('button')).toHaveLength(0)
   })
 })
+
+describe('CitedText leaked ids', () => {
+  it('never renders raw chunk ids found in the text', () => {
+    const id = 'ab'.repeat(32)
+    render(<CitedText text={`No difference. [${id}]`} citationChunkIds={['a']} numberById={new Map([['a', 1]])} onActivate={vi.fn()} />)
+    expect(document.body.textContent).not.toContain(id)
+    expect(screen.getByText(/No difference\./)).toBeTruthy()
+  })
+})

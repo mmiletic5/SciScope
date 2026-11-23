@@ -1,6 +1,7 @@
 import type { AnsweredResponse } from '../../api/types'
 import { CitedText } from '../../components/CitedText'
 import { EvidenceSources } from '../../components/EvidenceSources'
+import { stripChunkIds } from '../../lib/stripChunkIds'
 import { resolveCitations } from '../../lib/citations'
 import { useSourceHighlight } from '../../lib/useSourceHighlight'
 
@@ -29,7 +30,7 @@ export function ComparisonView({ response }: { response: ComparisonAnswered }) {
     <div className="answer-view comparison-view">
       <section aria-labelledby="cmp-answer-title">
         <h2 id="cmp-answer-title">Answer</h2>
-        <p>{response.answer}</p>
+        <p>{stripChunkIds(response.answer)}</p>
       </section>
       <section aria-labelledby="cmp-papers-title">
         <h2 id="cmp-papers-title">Papers compared</h2>

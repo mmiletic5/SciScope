@@ -1,6 +1,7 @@
 import type { AnsweredResponse } from '../../api/types'
 import { CitationMarker } from '../../components/CitationMarker'
 import { EvidenceSources } from '../../components/EvidenceSources'
+import { stripChunkIds } from '../../lib/stripChunkIds'
 import { resolveCitations } from '../../lib/citations'
 import { useSourceHighlight } from '../../lib/useSourceHighlight'
 
@@ -17,7 +18,7 @@ export function AnswerView({ response }: AnswerViewProps) {
     <div className="answer-view">
       <section aria-labelledby="answer-title">
         <h2 id="answer-title">Answer</h2>
-        <p>{response.answer}</p>
+        <p>{stripChunkIds(response.answer)}</p>
       </section>
       <section aria-labelledby="claims-title">
         <h2 id="claims-title">Claims</h2>
@@ -33,7 +34,7 @@ export function AnswerView({ response }: AnswerViewProps) {
               .map((chunkId) => ({ chunkId, number: numberById.get(chunkId)! }))
             return (
               <li key={claim.claim_id}>
-                <p>{claim.text}</p>
+                <p>{stripChunkIds(claim.text)}</p>
                 {citationNumbers.map(({ chunkId, number }) => (
                   <CitationMarker key={chunkId} number={number} onActivate={() => activateSource(chunkId)} />
                 ))}
