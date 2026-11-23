@@ -185,7 +185,7 @@ def _validate_retrieval_metadata(
 def _normalized_filters(
     filters: RetrievalFilters | None,
 ) -> RetrievalFilters | None:
-    """Treat ``None`` and an all-empty filter object as the same (no filters)."""
+    """Treat ``None`` and an all-empty filter object as the same."""
     if filters is None or filters == RetrievalFilters():
         return None
     return filters

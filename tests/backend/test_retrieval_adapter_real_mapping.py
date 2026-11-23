@@ -17,8 +17,13 @@ from sciscope.question_service.retrieval_adapter import (
 )
 from sciscope.question_service.validation import ResponseContractFailure
 from sciscope.retrieval import RetrievalFilters, RetrievalService
-from sciscope.retrieval._core import _Corpus, _EmbeddingConfig, _Hit, _Response
-from sciscope.retrieval._core import _Score
+from sciscope.retrieval._core import (
+    _Corpus,
+    _EmbeddingConfig,
+    _Hit,
+    _Response,
+    _Score,
+)
 from sciscope.retrieval._validation import InternalFilters
 
 
@@ -140,7 +145,9 @@ def test_empty_filters_accept_empty_applied_filters() -> None:
 
 def test_non_empty_settings_filters_reject_empty_applied_filters() -> None:
     """A requested filter that the response did not apply is rejected."""
-    adapter = _adapter(RetrievalFilters(journals=("PLOS ONE",)), InternalFilters())
+    adapter = _adapter(
+        RetrievalFilters(journals=("PLOS ONE",)), InternalFilters()
+    )
 
     with pytest.raises(ResponseContractFailure):
         adapter.retrieve("q", "req-1")
