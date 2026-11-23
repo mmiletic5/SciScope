@@ -1,5 +1,5 @@
 import type { HealthResponse, QuestionMetadataV2 } from '../api/types.v2'
-import { isLiveMode } from '../api/types.v2'
+import { isLiveHealth, isLiveMode } from '../api/types.v2'
 
 export type ModeBadge = { kind: 'live' | 'demo' | 'offline'; label: string }
 
@@ -12,7 +12,7 @@ function demoBadge(answerProviderOrigin: string): ModeBadge {
   }
 }
 
-/** Badge for a question response: Live only when `isLiveMode` says so (contract rule). */
+/** Badge for a question response: Live only when `isLiveMode` says so (rev 2: `executed` is ignored). */
 export function badgeFromMetadata(metadata: QuestionMetadataV2): ModeBadge {
   if (isLiveMode(metadata)) return { kind: 'live', label: 'Live' }
   return demoBadge(metadata.answer_provider.configured_origin)
@@ -20,9 +20,6 @@ export function badgeFromMetadata(metadata: QuestionMetadataV2): ModeBadge {
 
 /** Badge before any question: health only reports configured origins. */
 export function badgeFromHealth(health: HealthResponse): ModeBadge {
-  const { retrieval, answer_provider: provider } = health.components
-  if (retrieval.configured_origin === 'real' && provider.configured_origin === 'real') {
-    return { kind: 'live', label: 'Live' }
-  }
-  return demoBadge(provider.configured_origin)
+  if (isLiveHealth(health)) return { kind: 'live', label: 'Live' }
+  return demoBadge(health.components.answer_provider.configured_origin)
 }

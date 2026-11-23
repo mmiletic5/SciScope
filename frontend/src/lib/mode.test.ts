@@ -10,7 +10,7 @@ function metadata(retrieval: Partial<ComponentMetadata>, provider: Partial<Compo
 }
 
 describe('badgeFromMetadata', () => {
-  it('is Live only when both components are real, executed and not test data', () => {
+  it('is Live when both components are real and not test data', () => {
     expect(badgeFromMetadata(metadata({}, {}))).toEqual({ kind: 'live', label: 'Live' })
   })
 
@@ -23,10 +23,16 @@ describe('badgeFromMetadata', () => {
   it.each([
     ['synthetic retrieval', metadata({ configured_origin: 'synthetic' }, {})],
     ['retrieval test data', metadata({ is_test_data: true }, {})],
-    ['real provider that did not execute', metadata({}, { executed: false })],
-    ['retrieval that did not execute', metadata({ executed: false }, {})],
+    ['provider test data', metadata({}, { is_test_data: true })],
   ])('shows Demo (synthetic data) and never Live for %s', (_name, value) => {
     expect(badgeFromMetadata(value)).toEqual({ kind: 'demo', label: 'Demo (synthetic data)' })
+  })
+})
+
+describe('badgeFromMetadata ignores executed (rev 2)', () => {
+  it('shows Live for no_results with real components and an unexecuted provider', () => {
+    expect(badgeFromMetadata(metadata({}, { executed: false }))).toEqual({ kind: 'live', label: 'Live' })
+    expect(badgeFromMetadata(metadata({ executed: false }, { executed: false })).kind).toBe('live')
   })
 })
 

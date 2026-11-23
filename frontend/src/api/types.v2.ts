@@ -223,9 +223,17 @@ export type HealthResponse = {
 
 // ---- helpers (semantics fixed by the contract) ----
 
-/** 'live' only if both components are real, executed and not test data; otherwise 'demo'. */
+/** Live iff both components are real and not test data. `executed` is ignored. */
 export function isLiveMode(m: QuestionMetadataV2): boolean {
   return [m.retrieval, m.answer_provider].every(
-    (c) => c.configured_origin === 'real' && c.executed && !c.is_test_data,
+    (c) => c.configured_origin === 'real' && !c.is_test_data,
+  )
+}
+
+/** Live iff both configured origins are real (health carries no is_test_data). */
+export function isLiveHealth(h: HealthResponse): boolean {
+  return (
+    h.components.retrieval.configured_origin === 'real' &&
+    h.components.answer_provider.configured_origin === 'real'
   )
 }

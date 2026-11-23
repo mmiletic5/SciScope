@@ -36,8 +36,9 @@ function isRecord(value: unknown): value is Rec {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-function hasExactKeys(value: Rec, keys: string[]): boolean {
-  return Object.keys(value).length === keys.length && keys.every((key) => key in value)
+/** Tolerant reader: required keys must exist; unknown additional keys are ignored. */
+function hasKeys(value: Rec, keys: string[]): boolean {
+  return keys.every((key) => key in value)
 }
 
 function isNonEmptyString(value: unknown): value is string {
@@ -54,7 +55,7 @@ function isRequestId(value: unknown): value is string {
 
 function isComponent(value: unknown): boolean {
   return isRecord(value)
-    && hasExactKeys(value, ['configured_origin', 'executed', 'is_test_data'])
+    && hasKeys(value, ['configured_origin', 'executed', 'is_test_data'])
     && typeof value.configured_origin === 'string'
     && ORIGINS.includes(value.configured_origin)
     && typeof value.executed === 'boolean'
@@ -63,14 +64,14 @@ function isComponent(value: unknown): boolean {
 
 export function isMetadataV2(value: unknown): value is QuestionMetadataV2 {
   return isRecord(value)
-    && hasExactKeys(value, ['retrieval', 'answer_provider'])
+    && hasKeys(value, ['retrieval', 'answer_provider'])
     && isComponent(value.retrieval)
     && isComponent(value.answer_provider)
 }
 
 function isEvidence(value: unknown): value is Evidence {
   return isRecord(value)
-    && hasExactKeys(value, ['chunk_id', 'doi', 'source_locator', 'passage', 'paper_title'])
+    && hasKeys(value, ['chunk_id', 'doi', 'source_locator', 'passage', 'paper_title'])
     && allNonEmpty(value, ['chunk_id', 'doi', 'source_locator', 'passage', 'paper_title'])
 }
 
@@ -89,17 +90,17 @@ function distinctDois(ids: string[], evidenceById: EvidenceIndex): number {
 
 function validCitedItem(item: unknown, idKey: string, evidenceById: EvidenceIndex): item is Rec {
   return isRecord(item)
-    && hasExactKeys(item, [idKey, 'text', 'citation_chunk_ids'])
+    && hasKeys(item, [idKey, 'text', 'citation_chunk_ids'])
     && allNonEmpty(item, [idKey, 'text'])
     && validCitations(item.citation_chunk_ids, evidenceById)
 }
 
 function validComparison(value: unknown, evidenceById: EvidenceIndex): boolean {
-  if (!isRecord(value) || !hasExactKeys(value, ['subjects', 'similarities', 'differences'])) return false
+  if (!isRecord(value) || !hasKeys(value, ['subjects', 'similarities', 'differences'])) return false
   const { subjects, similarities, differences } = value
   if (!Array.isArray(subjects) || subjects.length < 2 || subjects.length > 6) return false
   const subjectsValid = subjects.every((subject) => isRecord(subject)
-    && hasExactKeys(subject, ['subject_id', 'doi', 'paper_title', 'summary', 'citation_chunk_ids'])
+    && hasKeys(subject, ['subject_id', 'doi', 'paper_title', 'summary', 'citation_chunk_ids'])
     && allNonEmpty(subject, ['subject_id', 'doi', 'paper_title', 'summary'])
     && validCitations(subject.citation_chunk_ids, evidenceById)
     && subject.citation_chunk_ids.every((id) => evidenceById.get(id)?.doi === subject.doi))
@@ -111,11 +112,11 @@ function validComparison(value: unknown, evidenceById: EvidenceIndex): boolean {
 }
 
 function validConflicts(value: unknown, evidenceById: EvidenceIndex): boolean {
-  if (!isRecord(value) || !hasExactKeys(value, ['review_note', 'items'])) return false
+  if (!isRecord(value) || !hasKeys(value, ['review_note', 'items'])) return false
   if (!isNonEmptyString(value.review_note)) return false
   const { items } = value
   return Array.isArray(items) && items.length >= 1 && items.length <= 5 && items.every((item) => isRecord(item)
-    && hasExactKeys(item, ['item_id', 'topic', 'summary', 'positions'])
+    && hasKeys(item, ['item_id', 'topic', 'summary', 'positions'])
     && allNonEmpty(item, ['item_id', 'topic', 'summary'])
     && Array.isArray(item.positions)
     && item.positions.length >= 2
@@ -123,14 +124,14 @@ function validConflicts(value: unknown, evidenceById: EvidenceIndex): boolean {
 }
 
 function validGapAnalysis(value: unknown, evidenceById: EvidenceIndex): boolean {
-  if (!isRecord(value) || !hasExactKeys(value, ['gaps', 'hypotheses'])) return false
+  if (!isRecord(value) || !hasKeys(value, ['gaps', 'hypotheses'])) return false
   const { gaps, hypotheses } = value
   if (!Array.isArray(gaps) || gaps.length < 1) return false
   if (!gaps.every((gap) => validCitedItem(gap, 'gap_id', evidenceById))) return false
   if (!Array.isArray(hypotheses) || hypotheses.length > 4) return false
   const gapIds = new Set(gaps.map((gap) => (gap as Rec).gap_id))
   return hypotheses.every((hyp) => isRecord(hyp)
-    && hasExactKeys(hyp, ['hypothesis_id', 'text', 'rationale', 'based_on_gap_ids', 'citation_chunk_ids', 'is_speculative'])
+    && hasKeys(hyp, ['hypothesis_id', 'text', 'rationale', 'based_on_gap_ids', 'citation_chunk_ids', 'is_speculative'])
     && allNonEmpty(hyp, ['hypothesis_id', 'text', 'rationale'])
     && Array.isArray(hyp.based_on_gap_ids)
     && hyp.based_on_gap_ids.length >= 1
@@ -148,7 +149,7 @@ export function isSuccessV2(value: unknown, expectedWorkflow?: WorkflowV2): valu
     || (expectedWorkflow !== undefined && value.workflow !== expectedWorkflow)
     || !isMetadataV2(value.metadata)
     || !isRecord(value.corpus)
-    || !hasExactKeys(value.corpus, ['corpus_version', 'source_contract_version', 'delivery_digest'])
+    || !hasKeys(value.corpus, ['corpus_version', 'source_contract_version', 'delivery_digest'])
     || !Object.values(value.corpus).every(isNonEmptyString)
     || !Array.isArray(value.claims)
     || !Array.isArray(value.evidence)
@@ -159,14 +160,16 @@ export function isSuccessV2(value: unknown, expectedWorkflow?: WorkflowV2): valu
   const workflow = value.workflow as WorkflowV2
   const payloadKey = PAYLOAD_KEY[workflow]
   const answered = value.status === 'answered'
-  if (!hasExactKeys(value, answered && payloadKey ? [...BASE_KEYS, payloadKey] : BASE_KEYS)) return false
+  if (!hasKeys(value, answered && payloadKey ? [...BASE_KEYS, payloadKey] : BASE_KEYS)) return false
+  // Invariant: the workflow payload is absent unless the response is answered.
+  if (!answered && payloadKey && payloadKey in value) return false
 
   const evidence = value.evidence as Evidence[]
   const evidenceById: EvidenceIndex = new Map(evidence.map((item) => [item.chunk_id, item]))
   if (evidenceById.size !== evidence.length) return false
 
   const claimsValid = value.claims.every((claim) => isRecord(claim)
-    && hasExactKeys(claim, ['claim_id', 'text', 'citation_chunk_ids'])
+    && hasKeys(claim, ['claim_id', 'text', 'citation_chunk_ids'])
     && allNonEmpty(claim, ['claim_id', 'text'])
     && validCitations(claim.citation_chunk_ids, evidenceById))
   if (!claimsValid) return false
@@ -194,11 +197,9 @@ export function isErrorV2(value: unknown): value is ErrorResponseV2 {
     || value.api_version !== 'v2'
     || !isRequestId(value.request_id)
     || !isRecord(value.error)
-    || !hasExactKeys(value.error, ['code', 'message', 'retryable'])) {
+    || !hasKeys(value.error, ['code', 'message', 'retryable'])) {
     return false
   }
-  const allowed = ['api_version', 'request_id', 'error', 'metadata']
-  if (!Object.keys(value).every((key) => allowed.includes(key))) return false
   if ('metadata' in value && !isMetadataV2(value.metadata)) return false
   return ERROR_CODES.includes(value.error.code as string)
     && isNonEmptyString(value.error.message)
@@ -207,21 +208,21 @@ export function isErrorV2(value: unknown): value is ErrorResponseV2 {
 
 export function isHealthV2(value: unknown): value is HealthResponse {
   if (!isRecord(value)
-    || !hasExactKeys(value, ['status', 'api_versions', 'workflows', 'components'])
+    || !hasKeys(value, ['status', 'api_versions', 'workflows', 'components'])
     || value.status !== 'ok'
     || !Array.isArray(value.api_versions)
     || !value.api_versions.every(isNonEmptyString)
     || !Array.isArray(value.workflows)
     || !value.workflows.every((w) => (WORKFLOWS_V2 as readonly string[]).includes(w as string))
     || !isRecord(value.components)
-    || !hasExactKeys(value.components, ['retrieval', 'answer_provider'])) {
+    || !hasKeys(value.components, ['retrieval', 'answer_provider'])) {
     return false
   }
   const components = value.components
   return ['retrieval', 'answer_provider'].every((key) => {
     const component = components[key]
     return isRecord(component)
-      && hasExactKeys(component, ['configured_origin'])
+      && hasKeys(component, ['configured_origin'])
       && ORIGINS.includes(component.configured_origin as string)
   })
 }
