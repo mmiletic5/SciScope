@@ -1,0 +1,95 @@
+{
+  "api_version": "v2",
+  "request_id": "fixture-gap-001",
+  "workflow": "research_gap",
+  "status": "answered",
+  "answer": "Synthetic summary: the retrieved passages leave two gaps open and suggest one hypothesis to test.",
+  "claims": [
+    {
+      "claim_id": "gap-1",
+      "text": "The synthetic experiments were limited to one season and one site.",
+      "citation_chunk_ids": [
+        "9544c5fffd45b88e732418c3a68b8586c4629db2c4262445af930899412f2570"
+      ]
+    },
+    {
+      "claim_id": "gap-2",
+      "text": "Long-term effects of treatment X were not examined.",
+      "citation_chunk_ids": [
+        "7d253570ff2b018b6dda034b9aec58efd463302c3d22771bd338856f31b4cb61"
+      ]
+    },
+    {
+      "claim_id": "hyp-1",
+      "text": "Treatment X effects may differ across seasons.",
+      "citation_chunk_ids": [
+        "9544c5fffd45b88e732418c3a68b8586c4629db2c4262445af930899412f2570"
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "chunk_id": "9544c5fffd45b88e732418c3a68b8586c4629db2c4262445af930899412f2570",
+      "doi": "10.0000/synthetic.0001",
+      "source_locator": "jats:v1:/article/body/sec[4]/p[3]",
+      "passage": "Synthetic passage A2. The authors state that the synthetic experiment was limited to a single season and a single site. Invented for UI tests.",
+      "paper_title": "Synthetic paper A (not a publication)"
+    },
+    {
+      "chunk_id": "7d253570ff2b018b6dda034b9aec58efd463302c3d22771bd338856f31b4cb61",
+      "doi": "10.0000/synthetic.0002",
+      "source_locator": "jats:v1:/article/body/sec[5]/p[1]",
+      "passage": "Synthetic passage B2. The synthetic study B did not examine long-term effects. Invented for UI tests.",
+      "paper_title": "Synthetic paper B (not a publication)"
+    }
+  ],
+  "corpus": {
+    "corpus_version": "synthetic-fixture-v2",
+    "source_contract_version": "synthetic-contract-v2",
+    "delivery_digest": "synthetic-digest-not-a-real-corpus"
+  },
+  "metadata": {
+    "retrieval": {
+      "configured_origin": "fake",
+      "executed": true,
+      "is_test_data": true
+    },
+    "answer_provider": {
+      "configured_origin": "fake",
+      "executed": true,
+      "is_test_data": true
+    }
+  },
+  "gap_analysis": {
+    "gaps": [
+      {
+        "gap_id": "gap-1",
+        "text": "The synthetic experiments were limited to one season and one site.",
+        "citation_chunk_ids": [
+          "9544c5fffd45b88e732418c3a68b8586c4629db2c4262445af930899412f2570"
+        ]
+      },
+      {
+        "gap_id": "gap-2",
+        "text": "Long-term effects of treatment X were not examined.",
+        "citation_chunk_ids": [
+          "7d253570ff2b018b6dda034b9aec58efd463302c3d22771bd338856f31b4cb61"
+        ]
+      }
+    ],
+    "hypotheses": [
+      {
+        "hypothesis_id": "hyp-1",
+        "text": "Treatment X effects may differ across seasons.",
+        "rationale": "Paper A covers a single season, so seasonal variation is untested.",
+        "based_on_gap_ids": [
+          "gap-1"
+        ],
+        "citation_chunk_ids": [
+          "9544c5fffd45b88e732418c3a68b8586c4629db2c4262445af930899412f2570"
+        ],
+        "is_speculative": true
+      }
+    ]
+  }
+}

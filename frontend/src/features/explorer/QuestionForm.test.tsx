@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
+import { noResultsFixture } from '../../api/fixtures'
 import { QuestionForm } from './QuestionForm'
 import { ExplorerPage } from './ExplorerPage'
 
@@ -89,20 +90,6 @@ describe('ExplorerPage', () => {
     expect(results).toHaveProperty('ariaBusy', 'true')
     expect(results.textContent).toContain('Retrieving passages and checking citations…')
 
-    resolveRequest?.(new Response(JSON.stringify({
-      api_version: 'v1',
-      request_id: 'test-page-001',
-      workflow: 'research_question',
-      status: 'no_results',
-      answer: null,
-      claims: [],
-      evidence: [],
-      corpus: {
-        corpus_version: 'synthetic-v1',
-        source_contract_version: 'synthetic-v1',
-        delivery_digest: 'synthetic-only',
-      },
-      metadata: { is_mock: true, is_test_data: true },
-    }), { status: 200 }))
+    resolveRequest?.(new Response(JSON.stringify(noResultsFixture), { status: 200 }))
   })
 })

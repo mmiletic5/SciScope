@@ -1,0 +1,49 @@
+{
+  "api_version": "v2",
+  "request_id": "fixture-rq-001",
+  "workflow": "research_question",
+  "status": "answered",
+  "answer": "Synthetic answer: in the synthetic corpus, treatment X was linked to a lower outcome rate in paper A [1].",
+  "claims": [
+    {
+      "claim_id": "claim-1",
+      "text": "Treatment X was linked to a lower outcome rate in paper A.",
+      "citation_chunk_ids": [
+        "197dd6e17c18af1a673084210bf029f58cb8cd64081fbbdb4e753dbd21970c37"
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "chunk_id": "197dd6e17c18af1a673084210bf029f58cb8cd64081fbbdb4e753dbd21970c37",
+      "doi": "10.0000/synthetic.0001",
+      "source_locator": "jats:v1:/article/body/sec[2]/p[1]",
+      "passage": "Synthetic passage A1. Colonies in the synthetic experiment showed a lower rate of the measured outcome under treatment X. This text is invented for UI tests and is not a scientific finding.",
+      "paper_title": "Synthetic paper A (not a publication)"
+    },
+    {
+      "chunk_id": "9544c5fffd45b88e732418c3a68b8586c4629db2c4262445af930899412f2570",
+      "doi": "10.0000/synthetic.0001",
+      "source_locator": "jats:v1:/article/body/sec[4]/p[3]",
+      "passage": "Synthetic passage A2. The authors state that the synthetic experiment was limited to a single season and a single site. Invented for UI tests.",
+      "paper_title": "Synthetic paper A (not a publication)"
+    }
+  ],
+  "corpus": {
+    "corpus_version": "synthetic-fixture-v2",
+    "source_contract_version": "synthetic-contract-v2",
+    "delivery_digest": "synthetic-digest-not-a-real-corpus"
+  },
+  "metadata": {
+    "retrieval": {
+      "configured_origin": "fake",
+      "executed": true,
+      "is_test_data": true
+    },
+    "answer_provider": {
+      "configured_origin": "fake",
+      "executed": true,
+      "is_test_data": true
+    }
+  }
+}

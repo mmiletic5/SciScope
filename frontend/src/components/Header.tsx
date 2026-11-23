@@ -1,15 +1,10 @@
-import type { MockMetadata } from '../api/types'
+import type { ModeBadge } from '../lib/mode'
 
 type HeaderProps = {
-  metadata?: MockMetadata | null
+  badge?: ModeBadge | null
 }
 
-export function Header({ metadata }: HeaderProps) {
-  const showMockBadge = metadata === undefined
-    || metadata === null
-    || metadata.is_mock
-    || metadata.is_test_data
-
+export function Header({ badge }: HeaderProps) {
   return (
     <header className="app-header">
       <a className="brand" href="/" aria-label="SciScope home">
@@ -19,7 +14,7 @@ export function Header({ metadata }: HeaderProps) {
         </svg>
         <span>SciScope</span>
       </a>
-      {showMockBadge && <span className="mock-badge">MOCK · test data</span>}
+      {badge && <span className={`mock-badge mode-badge mode-badge--${badge.kind}`}>{badge.label}</span>}
     </header>
   )
 }

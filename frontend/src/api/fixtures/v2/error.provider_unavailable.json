@@ -1,0 +1,21 @@
+{
+  "api_version": "v2",
+  "request_id": "fixture-err-001",
+  "error": {
+    "code": "provider_unavailable",
+    "message": "The requested dependency is currently unavailable.",
+    "retryable": true
+  },
+  "metadata": {
+    "retrieval": {
+      "configured_origin": "fake",
+      "executed": true,
+      "is_test_data": true
+    },
+    "answer_provider": {
+      "configured_origin": "fake",
+      "executed": true,
+      "is_test_data": true
+    }
+  }
+}

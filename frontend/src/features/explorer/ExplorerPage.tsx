@@ -2,14 +2,13 @@ import { useState } from 'react'
 import { submitQuestion } from '../../api/client'
 import { QuestionClientError } from '../../api/client'
 import { createRequestId } from '../../lib/requestId'
-import type { MockMetadata, QuestionSuccess } from '../../api/types'
-import { MockNotice } from '../../components/MockNotice'
+import type { QuestionMetadataV2, QuestionSuccess } from '../../api/types'
 import { AnswerView } from './AnswerView'
 import { QuestionForm } from './QuestionForm'
 import { ResultStates } from './ResultStates'
 
 type ExplorerPageProps = {
-  onMetadataChange?: (metadata: MockMetadata) => void
+  onMetadataChange?: (metadata: QuestionMetadataV2) => void
 }
 
 export function ExplorerPage({ onMetadataChange }: ExplorerPageProps) {
@@ -17,7 +16,6 @@ export function ExplorerPage({ onMetadataChange }: ExplorerPageProps) {
   const [response, setResponse] = useState<QuestionSuccess | null>(null)
   const [clientError, setClientError] = useState<QuestionClientError | null>(null)
   const [question, setQuestion] = useState('')
-  const [dismissedNoticeFor, setDismissedNoticeFor] = useState<string | null>(null)
 
   async function handleSubmit(question: string) {
     setIsPending(true)
@@ -37,14 +35,11 @@ export function ExplorerPage({ onMetadataChange }: ExplorerPageProps) {
           createRequestId(),
         )
       setClientError(requestError)
-      if (requestError.response) onMetadataChange?.(requestError.response.metadata)
+      if (requestError.response?.metadata) onMetadataChange?.(requestError.response.metadata)
     } finally {
       setIsPending(false)
     }
   }
-
-  const latestMetadata = response?.metadata ?? clientError?.response?.metadata ?? null
-  const latestResponseId = response?.request_id ?? clientError?.requestId ?? null
 
   return (
     <div className="explorer-page" id="research-question">
@@ -65,13 +60,6 @@ export function ExplorerPage({ onMetadataChange }: ExplorerPageProps) {
         aria-busy={isPending}
       >
         <h2 id="results-title">Your results</h2>
-        {latestMetadata && latestResponseId && (
-          <MockNotice
-            metadata={latestMetadata}
-            dismissed={dismissedNoticeFor === latestResponseId}
-            onDismiss={() => setDismissedNoticeFor(latestResponseId)}
-          />
-        )}
         {isPending ? (
           <div className="results-loading" aria-live="polite">
             <p>Retrieving passages and checking citations…</p>
