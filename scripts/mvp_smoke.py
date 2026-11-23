@@ -11,6 +11,8 @@ Run (PowerShell)::
     uv run --locked --env-file .env python scripts/mvp_smoke.py
 """
 
+# ruff: noqa: E402
+
 from __future__ import annotations
 
 import json
@@ -19,6 +21,9 @@ import time
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
 
 GOLDEN_PATH = Path("evals/golden_questions.v0.json")
 OUTPUT_DIR = Path("scratch/mvp_smoke")

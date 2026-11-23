@@ -7,6 +7,7 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
+from sciscope.api.debug_frames import log_failure_frames
 from sciscope.api.http_models import ErrorDetail, ErrorResponse, MockMetadata
 from sciscope.api.http_models_v2 import QuestionMetadataV2
 from sciscope.api.routes import install_question_route
@@ -197,8 +198,9 @@ def install_controlled_failure_handlers(
     @app.exception_handler(ResponseContractFailure)
     async def response_contract_failure_handler(
         request: Request,
-        _exception: ResponseContractFailure,
+        exception: ResponseContractFailure,
     ) -> JSONResponse:
+        log_failure_frames(exception)
         request_id = _request_id_or_generated(request, request_id_factory)
         if is_v2_request(request):
             return error_response_v2(
@@ -245,8 +247,9 @@ def install_controlled_failure_handlers(
     @app.exception_handler(Exception)
     async def unexpected_exception_handler(
         request: Request,
-        _exception: Exception,
+        exception: Exception,
     ) -> JSONResponse:
+        log_failure_frames(exception)
         request_id = _request_id_or_generated(request, request_id_factory)
         if is_v2_request(request):
             return error_response_v2(
