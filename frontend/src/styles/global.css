@@ -139,3 +139,12 @@ h3 { font-size: 17px; font-weight: 600; line-height: 1.4; }
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }
 .explorer-page--wide .results-region { width: min(100%, 1040px); }
+
+.review-note { border: 1px solid #e8d0a9; border-left-width: 4px; border-radius: var(--radius-card); padding: var(--space-4); background: var(--color-honey-tint); color: var(--color-honey-tint-text); }
+.review-note h2 { margin-bottom: var(--space-2); font-size: 1rem; }
+.review-note p { margin: 0; }
+.conflict-list { display: grid; gap: var(--space-6); }
+.conflict-card { min-width: 0; border: 1px solid var(--color-border); border-radius: var(--radius-card); padding: var(--space-4); background: var(--color-surface); overflow-wrap: anywhere; }
+.conflict-positions { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: var(--space-4); }
+.conflict-position { min-width: 0; border: 1px solid var(--color-border); border-radius: var(--radius-button); padding: var(--space-3); background: var(--color-page); }
+.conflict-position h4 { margin: 0 0 var(--space-2); font-size: 0.875rem; color: var(--color-secondary); }

@@ -21,7 +21,7 @@ const UNAVAILABLE_NOTE = 'Not available on this backend yet'
 const ITEMS: Array<{ id: ViewId; label: string }> = [
   { id: 'research-question', label: 'Research question' },
   { id: 'evidence-comparison', label: 'Evidence comparison' },
-  { id: 'conflicting-evidence', label: 'Conflicting evidence' },
+  { id: 'conflicting-evidence', label: 'Potential differences' },
   { id: 'gaps-hypotheses', label: 'Gaps & hypotheses' },
 ]
 

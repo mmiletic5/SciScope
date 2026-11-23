@@ -4,23 +4,6 @@ import { describe, expect, it } from 'vitest'
 import App from '../../App'
 
 describe('static workflow previews', () => {
-  it('opens the conflicting-evidence preview with placeholder-only position and reason cards', async () => {
-    const user = userEvent.setup()
-    render(<App />)
-    await user.click(screen.getByRole('button', { name: 'Conflicting evidence' }))
-
-    expect(screen.getByRole('heading', { name: 'Conflicting evidence' })).toBeTruthy()
-    expect(screen.getByText('Preview — this feature is not connected to the backend yet.')).toBeTruthy()
-    expect(screen.getByRole('heading', { name: 'Position A' })).toBeTruthy()
-    expect(screen.getByRole('heading', { name: 'Position B' })).toBeTruthy()
-    expect(screen.getByRole('heading', { name: 'Possible reasons' })).toBeTruthy()
-    for (const label of ['Experimental conditions', 'Sample', 'Methods']) {
-      expect(screen.getByRole('heading', { name: label })).toBeTruthy()
-    }
-    expect(screen.getAllByText('[placeholder]')).toHaveLength(5)
-    expect(screen.getAllByRole('main')).toHaveLength(1)
-  })
-
   it('opens the gaps preview with the unverified draft and disabled actions', async () => {
     const user = userEvent.setup()
     render(<App />)

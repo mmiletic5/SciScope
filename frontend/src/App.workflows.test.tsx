@@ -27,7 +27,7 @@ describe('workflow availability from /api/health', () => {
     render(<App />)
 
     expect(await screen.findAllByText('Not available on this backend yet')).toHaveLength(2)
-    expect(screen.getByRole('button', { name: 'Conflicting evidence' }).hasAttribute('disabled')).toBe(true)
+    expect(screen.getByRole('button', { name: 'Potential differences' }).hasAttribute('disabled')).toBe(true)
     expect(screen.getByRole('button', { name: 'Gaps & hypotheses' }).hasAttribute('disabled')).toBe(true)
     expect(screen.getByRole('button', { name: 'Evidence comparison' }).hasAttribute('disabled')).toBe(false)
   })
@@ -38,7 +38,7 @@ describe('workflow availability from /api/health', () => {
 
     expect(await screen.findByText('Backend offline')).toBeTruthy()
     expect(screen.queryByText('Not available on this backend yet')).toBeNull()
-    expect(screen.getByRole('button', { name: 'Conflicting evidence' }).hasAttribute('disabled')).toBe(false)
+    expect(screen.getByRole('button', { name: 'Potential differences' }).hasAttribute('disabled')).toBe(false)
   })
 
   it('keeps every entry enabled when health lists every workflow', async () => {

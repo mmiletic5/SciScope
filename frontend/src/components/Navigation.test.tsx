@@ -9,7 +9,7 @@ describe('Navigation availability', () => {
   it('enables every entry when workflows are unknown (fixture mode or health failed)', () => {
     render(<Navigation activeView="research-question" onNavigate={vi.fn()} availableWorkflows={null} />)
     expect(screen.queryByText('Not available on this backend yet')).toBeNull()
-    for (const name of ['Evidence comparison', 'Conflicting evidence', 'Gaps & hypotheses']) {
+    for (const name of ['Evidence comparison', 'Potential differences', 'Gaps & hypotheses']) {
       expect(screen.getByRole('button', { name }).hasAttribute('disabled')).toBe(false)
     }
   })
@@ -29,7 +29,7 @@ describe('Navigation availability', () => {
       />,
     )
 
-    const button = screen.getByRole('button', { name: 'Conflicting evidence' })
+    const button = screen.getByRole('button', { name: 'Potential differences' })
     expect(button.hasAttribute('disabled')).toBe(true)
     expect(button.getAttribute('aria-describedby')).toBeTruthy()
     expect(screen.getAllByText('Not available on this backend yet')).toHaveLength(2)

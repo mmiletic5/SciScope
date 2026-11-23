@@ -5,7 +5,7 @@ import { Header } from './components/Header'
 import { Navigation, type ViewId } from './components/Navigation'
 import { ExplorerPage } from './features/explorer/ExplorerPage'
 import { ComparisonPage } from './features/comparison/ComparisonPage'
-import { ConflictsPreview } from './features/previews/ConflictsPreview'
+import { ConflictsPage } from './features/conflicts/ConflictsPage'
 import { GapsPreview } from './features/previews/GapsPreview'
 import { badgeFromHealth, badgeFromMetadata, OFFLINE_BADGE, type ModeBadge } from './lib/mode'
 
@@ -17,7 +17,7 @@ function App() {
   const pageTitle = {
     'research-question': 'Research question',
     'evidence-comparison': 'Evidence comparison',
-    'conflicting-evidence': 'Conflicting evidence',
+    'conflicting-evidence': 'Potential differences',
     'gaps-hypotheses': 'Gaps & hypotheses',
   }[activeView]
 
@@ -49,7 +49,9 @@ function App() {
         <div className="explorer-view" hidden={activeView !== 'evidence-comparison'}>
           <ComparisonPage onMetadataChange={setMetadata} />
         </div>
-        {activeView === 'conflicting-evidence' && <ConflictsPreview />}
+        <div className="explorer-view" hidden={activeView !== 'conflicting-evidence'}>
+          <ConflictsPage onMetadataChange={setMetadata} />
+        </div>
         {activeView === 'gaps-hypotheses' && <GapsPreview />}
       </main>
       <footer className="app-footer">
