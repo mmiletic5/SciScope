@@ -37,6 +37,15 @@ $env:VITE_API_MODE = 'fixtures'; npm run dev   # PowerShell
 
 In fixture mode no request is sent. After a short fake delay (about 0.4 s) the client returns the answered contract fixture for the requested workflow, validated like a live response, and `/api/health` returns the health fixture. The fixtures are copies of `docs/mvp/fixtures/*.json` in `src/api/fixtures/v2/`; refresh them from `docs/mvp/fixtures/` if the contract changes. The default mode is live.
 
+## Demo readiness (F5)
+
+- Every screen has example-question chips (click fills the form, never submits).
+- While a request runs: elapsed-seconds counter, a "can take up to a minute" note and a Cancel button
+  (aborts the fetch, returns to idle, shows no error). Retryable errors keep "Try again".
+- Evidence cards show the paper title and the DOI as a link to `https://doi.org/<doi>` (new tab,
+  `rel="noopener noreferrer"`). Clicking a citation marker scrolls to its card and highlights it for about 2.5 s.
+- Each screen ends with a corpus note plus the `corpus_version` of the latest response, when present.
+
 ## Checks
 
 Run from `frontend/`:

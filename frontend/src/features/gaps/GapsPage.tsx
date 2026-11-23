@@ -1,13 +1,15 @@
 import { useState } from 'react'
 import type { InsufficientEvidenceResponse, QuestionMetadataV2 } from '../../api/types'
 import { SourceCard } from '../../components/SourceCard'
+import { PendingPanel } from '../../components/PendingPanel'
+import { CorpusNote } from '../../components/CorpusNote'
 import { QuestionForm } from '../explorer/QuestionForm'
 import { ResultStates } from '../explorer/ResultStates'
 import { useWorkflowQuestion } from '../workflow/useWorkflowQuestion'
 import { GapsView } from './GapsView'
 
 const EXAMPLES = [
-  'What is not yet known about Varroa mite effects on honey bee immune gene expression?',
+  'What do the authors say their comparison of virus levels in colonies selected for low and high mite growth cannot settle, and what would they do next?',
 ]
 
 export const NO_GAPS_MESSAGE =
@@ -36,7 +38,7 @@ function NoGapsFound({ response }: { response: InsufficientEvidenceResponse }) {
 
 export function GapsPage({ onMetadataChange }: GapsPageProps) {
   const [question, setQuestion] = useState(EXAMPLES[0])
-  const { isPending, response, error, submit } = useWorkflowQuestion('research_gap', onMetadataChange)
+  const { isPending, elapsedSeconds, response, error, submit, cancel } = useWorkflowQuestion('research_gap', onMetadataChange)
   const retry = () => void submit(question)
 
   return (
@@ -65,10 +67,7 @@ export function GapsPage({ onMetadataChange }: GapsPageProps) {
       >
         <h2 id="gaps-results-title">Gap analysis</h2>
         {isPending ? (
-          <div className="results-loading" aria-live="polite">
-            <p>Looking for research gaps and checking citations. This can take up to a minute…</p>
-            <div className="results-skeleton" aria-hidden="true" />
-          </div>
+          <PendingPanel message="Looking for research gaps and checking citations.…" elapsedSeconds={elapsedSeconds} onCancel={cancel} />
         ) : response?.status === 'answered' && response.workflow === 'research_gap' ? (
           <GapsView response={response} />
         ) : response?.status === 'insufficient_evidence' ? (
@@ -81,6 +80,7 @@ export function GapsPage({ onMetadataChange }: GapsPageProps) {
           <p>Gaps, suggested hypotheses and their source passages will appear here after a search.</p>
         )}
       </section>
+      <CorpusNote corpusVersion={response?.corpus.corpus_version} />
     </div>
   )
 }

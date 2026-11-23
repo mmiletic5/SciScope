@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import type { QuestionMetadataV2 } from '../../api/types'
+import { PendingPanel } from '../../components/PendingPanel'
+import { CorpusNote } from '../../components/CorpusNote'
 import { QuestionForm } from '../explorer/QuestionForm'
 import { ResultStates } from '../explorer/ResultStates'
 import { useWorkflowQuestion } from '../workflow/useWorkflowQuestion'
 import { ComparisonView } from './ComparisonView'
 
 const EXAMPLES = [
-  'How do the retrieved papers differ in their findings on Varroa mite effects on honey bee immune gene expression?',
+  'How does sensitivity to sugar water change in foragers exposed to a toxic mineral versus foragers infected with a virus?',
 ]
 
 type ComparisonPageProps = {
@@ -15,7 +17,7 @@ type ComparisonPageProps = {
 
 export function ComparisonPage({ onMetadataChange }: ComparisonPageProps) {
   const [question, setQuestion] = useState(EXAMPLES[0])
-  const { isPending, response, error, submit } = useWorkflowQuestion('evidence_comparison', onMetadataChange)
+  const { isPending, elapsedSeconds, response, error, submit, cancel } = useWorkflowQuestion('evidence_comparison', onMetadataChange)
   const retry = () => void submit(question)
 
   return (
@@ -41,10 +43,7 @@ export function ComparisonPage({ onMetadataChange }: ComparisonPageProps) {
       >
         <h2 id="comparison-results-title">Comparison results</h2>
         {isPending ? (
-          <div className="results-loading" aria-live="polite">
-            <p>Comparing papers and checking citations. This can take up to a minute…</p>
-            <div className="results-skeleton" aria-hidden="true" />
-          </div>
+          <PendingPanel message="Comparing papers and checking citations.…" elapsedSeconds={elapsedSeconds} onCancel={cancel} />
         ) : response?.status === 'answered' && response.workflow === 'evidence_comparison' ? (
           <ComparisonView response={response} />
         ) : response && response.status !== 'answered' ? (
@@ -55,6 +54,7 @@ export function ComparisonPage({ onMetadataChange }: ComparisonPageProps) {
           <p>Your comparison and source passages will appear here after a search.</p>
         )}
       </section>
+      <CorpusNote corpusVersion={response?.corpus.corpus_version} />
     </div>
   )
 }

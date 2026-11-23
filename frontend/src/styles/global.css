@@ -155,3 +155,7 @@ h3 { font-size: 17px; font-weight: 600; line-height: 1.4; }
 .hypothesis-card { border-style: dashed; border-width: 2px; background: #fafbfc; }
 .speculative-label { display: inline-block; margin: 0 0 var(--space-2); border: 1px solid #e8d0a9; border-radius: 999px; padding: 2px var(--space-3); background: var(--color-honey-tint); color: var(--color-honey-tint-text); font-size: 0.8125rem; font-weight: 700; }
 .hypothesis-rationale, .hypothesis-gaps { margin: var(--space-2) 0 0; }
+.pending-elapsed { font-family: 'IBM Plex Mono', monospace; font-size: 13px; margin-bottom: var(--space-1); }
+.pending-note, .corpus-note { color: var(--color-secondary); font-size: 14px; }
+.corpus-note { grid-column: 1 / -1; margin-top: var(--space-4); border-top: 1px solid var(--color-border); padding-top: var(--space-3); }
+.source-card { transition: box-shadow 0.3s ease, border-color 0.3s ease; }

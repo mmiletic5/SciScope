@@ -88,6 +88,7 @@ export async function submitQuestion(
   question: string,
   requestId: string,
   workflow: WorkflowV2 = 'research_question',
+  signal?: AbortSignal,
 ): Promise<QuestionSuccess> {
   const trimmedQuestion = question.trim()
   if (trimmedQuestion.length < 1 || trimmedQuestion.length > 2000) {
@@ -99,6 +100,8 @@ export async function submitQuestion(
   if (isFixtureMode()) return fixtureQuestion(workflow, requestId)
 
   const controller = new AbortController()
+  if (signal?.aborted) controller.abort()
+  else signal?.addEventListener('abort', () => controller.abort(), { once: true })
   let didTimeout = false
   let timeoutId: ReturnType<typeof setTimeout> | undefined
   const timeout = new Promise<never>((_resolve, reject) => {

@@ -1,13 +1,15 @@
 import { useState } from 'react'
 import type { InsufficientEvidenceResponse, QuestionMetadataV2 } from '../../api/types'
 import { SourceCard } from '../../components/SourceCard'
+import { PendingPanel } from '../../components/PendingPanel'
+import { CorpusNote } from '../../components/CorpusNote'
 import { QuestionForm } from '../explorer/QuestionForm'
 import { ResultStates } from '../explorer/ResultStates'
 import { useWorkflowQuestion } from '../workflow/useWorkflowQuestion'
 import { ConflictsView } from './ConflictsView'
 
 const EXAMPLES = [
-  'Do the retrieved papers report differing findings on Varroa mite effects on honey bee immune gene expression?',
+  'Is the literature consistent on whether Varroa parasitism suppresses or boosts immune gene expression in developing worker bees?',
 ]
 
 export const NO_DIFFERENCES_MESSAGE =
@@ -36,7 +38,7 @@ function NoDifferencesFound({ response }: { response: InsufficientEvidenceRespon
 
 export function ConflictsPage({ onMetadataChange }: ConflictsPageProps) {
   const [question, setQuestion] = useState(EXAMPLES[0])
-  const { isPending, response, error, submit } = useWorkflowQuestion('conflicting_evidence', onMetadataChange)
+  const { isPending, elapsedSeconds, response, error, submit, cancel } = useWorkflowQuestion('conflicting_evidence', onMetadataChange)
   const retry = () => void submit(question)
 
   return (
@@ -65,10 +67,7 @@ export function ConflictsPage({ onMetadataChange }: ConflictsPageProps) {
       >
         <h2 id="conflicts-results-title">Review results</h2>
         {isPending ? (
-          <div className="results-loading" aria-live="polite">
-            <p>Looking for potential differences and checking citations. This can take up to a minute…</p>
-            <div className="results-skeleton" aria-hidden="true" />
-          </div>
+          <PendingPanel message="Looking for potential differences and checking citations.…" elapsedSeconds={elapsedSeconds} onCancel={cancel} />
         ) : response?.status === 'answered' && response.workflow === 'conflicting_evidence' ? (
           <ConflictsView response={response} />
         ) : response?.status === 'insufficient_evidence' ? (
@@ -81,6 +80,7 @@ export function ConflictsPage({ onMetadataChange }: ConflictsPageProps) {
           <p>Potential differences and their source passages will appear here after a search.</p>
         )}
       </section>
+      <CorpusNote corpusVersion={response?.corpus.corpus_version} />
     </div>
   )
 }

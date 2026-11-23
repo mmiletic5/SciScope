@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { submitQuestion } from '../../api/client'
-import { QuestionClientError } from '../../api/client'
-import { createRequestId } from '../../lib/requestId'
-import type { QuestionMetadataV2, QuestionSuccess } from '../../api/types'
+import type { QuestionMetadataV2 } from '../../api/types'
+import { CorpusNote } from '../../components/CorpusNote'
+import { PendingPanel } from '../../components/PendingPanel'
+import { useWorkflowQuestion } from '../workflow/useWorkflowQuestion'
 import { AnswerView } from './AnswerView'
 import { QuestionForm } from './QuestionForm'
 import { ResultStates } from './ResultStates'
@@ -11,35 +11,16 @@ type ExplorerPageProps = {
   onMetadataChange?: (metadata: QuestionMetadataV2) => void
 }
 
-export function ExplorerPage({ onMetadataChange }: ExplorerPageProps) {
-  const [isPending, setIsPending] = useState(false)
-  const [response, setResponse] = useState<QuestionSuccess | null>(null)
-  const [clientError, setClientError] = useState<QuestionClientError | null>(null)
-  const [question, setQuestion] = useState('')
+const EXAMPLES = [
+  'In the experiment where forager bees were injected with a virus and then tracked with tags at the hive entrance, on which days after injection did the proportion of foragers coming back differ significantly from sham-injected controls, and how large was the gap on the first of those days?',
+  'Does exposure to a glyphosate-based herbicide change the composition of the bee gut microbiota?',
+]
 
-  async function handleSubmit(question: string) {
-    setIsPending(true)
-    setResponse(null)
-    setClientError(null)
-    try {
-      const result = await submitQuestion(question, createRequestId())
-      setResponse(result)
-      onMetadataChange?.(result.metadata)
-    } catch (error) {
-      const requestError = error instanceof QuestionClientError
-        ? error
-        : new QuestionClientError(
-          'api_unreachable',
-          'Cannot reach the SciScope API. Is the backend running?',
-          true,
-          createRequestId(),
-        )
-      setClientError(requestError)
-      if (requestError.response?.metadata) onMetadataChange?.(requestError.response.metadata)
-    } finally {
-      setIsPending(false)
-    }
-  }
+export function ExplorerPage({ onMetadataChange }: ExplorerPageProps) {
+  const [question, setQuestion] = useState('')
+  const { isPending, elapsedSeconds, response, error, submit, cancel } =
+    useWorkflowQuestion('research_question', onMetadataChange)
+  const retry = () => void submit(question)
 
   return (
     <div className="explorer-page" id="research-question">
@@ -49,8 +30,9 @@ export function ExplorerPage({ onMetadataChange }: ExplorerPageProps) {
         <QuestionForm
           question={question}
           onQuestionChange={setQuestion}
-          onSubmit={handleSubmit}
+          onSubmit={(value) => void submit(value)}
           isPending={isPending}
+          examples={EXAMPLES}
         />
       </section>
       <section
@@ -61,20 +43,22 @@ export function ExplorerPage({ onMetadataChange }: ExplorerPageProps) {
       >
         <h2 id="results-title">Your results</h2>
         {isPending ? (
-          <div className="results-loading" aria-live="polite">
-            <p>Retrieving passages and checking citations…</p>
-            <div className="results-skeleton" aria-hidden="true" />
-          </div>
+          <PendingPanel
+            message="Retrieving passages and checking citations…"
+            elapsedSeconds={elapsedSeconds}
+            onCancel={cancel}
+          />
         ) : response?.status === 'answered' ? (
           <AnswerView response={response} />
         ) : response ? (
-          <ResultStates response={response} onRetry={() => void handleSubmit(question)} />
-        ) : clientError ? (
-          <ResultStates error={clientError} onRetry={() => void handleSubmit(question)} />
+          <ResultStates response={response} onRetry={retry} />
+        ) : error ? (
+          <ResultStates error={error} onRetry={retry} />
         ) : (
           <p>Your answer and source passages will appear here after a search.</p>
         )}
       </section>
+      <CorpusNote corpusVersion={response?.corpus.corpus_version} />
     </div>
   )
 }
