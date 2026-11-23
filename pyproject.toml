@@ -40,6 +40,9 @@ convention = "google"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+markers = [
+    "live: calls a paid external provider; skipped unless explicitly enabled",
+]
 
 [tool.mypy]
 python_version = "3.12"
