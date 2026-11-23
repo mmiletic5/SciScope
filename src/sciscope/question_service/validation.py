@@ -59,7 +59,7 @@ def validate_answered_outcome(
         raise ResponseContractFailure()
     if not retrieval.evidence or not _is_nonempty_string(provider.answer):
         raise ResponseContractFailure()
-    if not provider.claims:
+    if not provider.claims or provider.payload is not None:
         raise ResponseContractFailure()
     for claim in provider.claims:
         _validate_claim(claim, evidence_ids)
@@ -85,8 +85,37 @@ def validate_insufficient_evidence_outcome(
         or not retrieval.evidence
         or provider.answer is not None
         or provider.claims
+        or provider.payload is not None
     ):
         raise ResponseContractFailure()
+
+
+def validate_retrieval_outcome(outcome: RetrievalOutcome) -> set[str]:
+    """Validate shared retrieval evidence, provenance, and metadata fields.
+
+    Args:
+        outcome: Retrieval dependency output.
+
+    Returns:
+        The set of unique evidence chunk IDs.
+
+    Raises:
+        ResponseContractFailure: If any field is malformed or a chunk ID
+            repeats.
+    """
+    return _validate_retrieval_outcome(outcome)
+
+
+def validate_outcome_metadata(metadata: OutcomeMetadata) -> None:
+    """Validate dependency metadata without coercion.
+
+    Args:
+        metadata: Metadata attached to a retrieval or provider outcome.
+
+    Raises:
+        ResponseContractFailure: If the metadata is malformed.
+    """
+    _validate_metadata(metadata)
 
 
 def _validate_retrieval_outcome(outcome: RetrievalOutcome) -> set[str]:
