@@ -1,0 +1,124 @@
+{
+  "api_version": "v2",
+  "request_id": "fixture-conf-001",
+  "workflow": "conflicting_evidence",
+  "status": "answered",
+  "answer": "Synthetic summary: two potential differences were found in the retrieved passages and are listed for review.",
+  "claims": [
+    {
+      "claim_id": "conf-1-p1",
+      "text": "Paper A reports a lower outcome rate under treatment X.",
+      "citation_chunk_ids": [
+        "197dd6e17c18af1a673084210bf029f58cb8cd64081fbbdb4e753dbd21970c37"
+      ]
+    },
+    {
+      "claim_id": "conf-1-p2",
+      "text": "Paper B reports a higher outcome rate under treatment X.",
+      "citation_chunk_ids": [
+        "e908fa76c0aea5c4aa8f31e426a1e152d092fa38eb464cd7d0f19cdc2d89d920"
+      ]
+    },
+    {
+      "claim_id": "conf-2-p1",
+      "text": "Earlier literature reported no effect of treatment X.",
+      "citation_chunk_ids": [
+        "93edc76563922c6ddc6ec6ce7208af5947d0c8fd036eee644f65060dc208f6b9"
+      ]
+    },
+    {
+      "claim_id": "conf-2-p2",
+      "text": "The present data suggest a small effect.",
+      "citation_chunk_ids": [
+        "93edc76563922c6ddc6ec6ce7208af5947d0c8fd036eee644f65060dc208f6b9"
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "chunk_id": "197dd6e17c18af1a673084210bf029f58cb8cd64081fbbdb4e753dbd21970c37",
+      "doi": "10.0000/synthetic.0001",
+      "source_locator": "jats:v1:/article/body/sec[2]/p[1]",
+      "passage": "Synthetic passage A1. Colonies in the synthetic experiment showed a lower rate of the measured outcome under treatment X. This text is invented for UI tests and is not a scientific finding.",
+      "paper_title": "Synthetic paper A (not a publication)"
+    },
+    {
+      "chunk_id": "e908fa76c0aea5c4aa8f31e426a1e152d092fa38eb464cd7d0f19cdc2d89d920",
+      "doi": "10.0000/synthetic.0002",
+      "source_locator": "jats:v1:/article/body/sec[3]/p[2]",
+      "passage": "Synthetic passage B1. In the synthetic study B, treatment X was associated with a higher rate of the measured outcome. Invented for UI tests.",
+      "paper_title": "Synthetic paper B (not a publication)"
+    },
+    {
+      "chunk_id": "93edc76563922c6ddc6ec6ce7208af5947d0c8fd036eee644f65060dc208f6b9",
+      "doi": "10.0000/synthetic.0003",
+      "source_locator": "jats:v1:/article/body/sec[2]/p[4]",
+      "passage": "Synthetic passage C1. Earlier synthetic literature reported no effect of treatment X, whereas the present synthetic data suggest a small effect. Invented for UI tests.",
+      "paper_title": "Synthetic paper C (not a publication)"
+    }
+  ],
+  "corpus": {
+    "corpus_version": "synthetic-fixture-v2",
+    "source_contract_version": "synthetic-contract-v2",
+    "delivery_digest": "synthetic-digest-not-a-real-corpus"
+  },
+  "metadata": {
+    "retrieval": {
+      "configured_origin": "fake",
+      "executed": true,
+      "is_test_data": true
+    },
+    "answer_provider": {
+      "configured_origin": "fake",
+      "executed": true,
+      "is_test_data": true
+    }
+  },
+  "conflicts": {
+    "review_note": "These are potential differences between statements in the retrieved passages, flagged for human review. They are not verified contradictions.",
+    "items": [
+      {
+        "item_id": "conf-1",
+        "topic": "Effect of treatment X on the measured outcome",
+        "summary": "Passages A1 and B1 point in opposite directions.",
+        "positions": [
+          {
+            "position_id": "conf-1-p1",
+            "text": "Paper A reports a lower outcome rate under treatment X.",
+            "citation_chunk_ids": [
+              "197dd6e17c18af1a673084210bf029f58cb8cd64081fbbdb4e753dbd21970c37"
+            ]
+          },
+          {
+            "position_id": "conf-1-p2",
+            "text": "Paper B reports a higher outcome rate under treatment X.",
+            "citation_chunk_ids": [
+              "e908fa76c0aea5c4aa8f31e426a1e152d092fa38eb464cd7d0f19cdc2d89d920"
+            ]
+          }
+        ]
+      },
+      {
+        "item_id": "conf-2",
+        "topic": "Prior literature versus present data (within one paper)",
+        "summary": "Paper C contrasts its own data with earlier reports.",
+        "positions": [
+          {
+            "position_id": "conf-2-p1",
+            "text": "Earlier literature reported no effect of treatment X.",
+            "citation_chunk_ids": [
+              "93edc76563922c6ddc6ec6ce7208af5947d0c8fd036eee644f65060dc208f6b9"
+            ]
+          },
+          {
+            "position_id": "conf-2-p2",
+            "text": "The present data suggest a small effect.",
+            "citation_chunk_ids": [
+              "93edc76563922c6ddc6ec6ce7208af5947d0c8fd036eee644f65060dc208f6b9"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

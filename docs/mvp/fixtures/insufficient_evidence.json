@@ -1,0 +1,34 @@
+{
+  "api_version": "v2",
+  "request_id": "fixture-ins-001",
+  "workflow": "evidence_comparison",
+  "status": "insufficient_evidence",
+  "answer": null,
+  "claims": [],
+  "evidence": [
+    {
+      "chunk_id": "9544c5fffd45b88e732418c3a68b8586c4629db2c4262445af930899412f2570",
+      "doi": "10.0000/synthetic.0001",
+      "source_locator": "jats:v1:/article/body/sec[4]/p[3]",
+      "passage": "Synthetic passage A2. The authors state that the synthetic experiment was limited to a single season and a single site. Invented for UI tests.",
+      "paper_title": "Synthetic paper A (not a publication)"
+    }
+  ],
+  "corpus": {
+    "corpus_version": "synthetic-fixture-v2",
+    "source_contract_version": "synthetic-contract-v2",
+    "delivery_digest": "synthetic-digest-not-a-real-corpus"
+  },
+  "metadata": {
+    "retrieval": {
+      "configured_origin": "fake",
+      "executed": true,
+      "is_test_data": true
+    },
+    "answer_provider": {
+      "configured_origin": "fake",
+      "executed": true,
+      "is_test_data": true
+    }
+  }
+}
