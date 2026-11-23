@@ -10,6 +10,7 @@ import healthJson from './fixtures/v2/health.json'
 import insufficientEvidenceJson from './fixtures/v2/insufficient_evidence.json'
 import noResultsJson from './fixtures/v2/no_results.json'
 import researchGapJson from './fixtures/v2/research_gap.answered.json'
+import researchQuestionInsufficientJson from './fixtures/v2/research_question.insufficient_evidence.json'
 import researchQuestionJson from './fixtures/v2/research_question.answered.json'
 import type {
   AnsweredResponse,
@@ -21,11 +22,7 @@ import type { HealthResponse, QuestionSuccessV2, WorkflowV2 } from './types.v2'
 
 export const answeredFixture = researchQuestionJson as unknown as Extract<AnsweredResponse, { workflow: 'research_question' }>
 export const noResultsFixture = noResultsJson as unknown as NoResultsResponse
-/** The shipped insufficient_evidence file is an evidence_comparison example; this is its research_question variant. */
-export const insufficientEvidenceFixture = {
-  ...insufficientEvidenceJson,
-  workflow: 'research_question',
-} as unknown as InsufficientEvidenceResponse
+export const insufficientEvidenceFixture = researchQuestionInsufficientJson as unknown as InsufficientEvidenceResponse
 export const questionErrorFixture = errorProviderUnavailableJson as unknown as QuestionErrorResponse
 export const invalidRequestErrorFixture = errorInvalidRequestJson as unknown as QuestionErrorResponse
 export const healthFixture = healthJson as unknown as HealthResponse
@@ -38,4 +35,5 @@ export const answeredFixtureByWorkflow: Record<WorkflowV2, QuestionSuccessV2> = 
   research_gap: researchGapJson as unknown as QuestionSuccessV2,
 }
 
+/** The shipped insufficient_evidence.json is an evidence_comparison example. */
 export const insufficientEvidenceComparisonFixture = insufficientEvidenceJson as unknown as QuestionSuccessV2

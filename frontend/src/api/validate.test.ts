@@ -14,6 +14,10 @@ import { isErrorV2, isHealthV2, isSuccessV2 } from './validate'
 
 type Json = Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
 
+function answerWorkflow(workflow: (typeof WORKFLOWS_V2)[number]) {
+  return answeredFixtureByWorkflow[workflow]
+}
+
 function clone(value: unknown): Json {
   return structuredClone(value) as Json
 }
@@ -34,6 +38,39 @@ describe('contract fixtures', () => {
     expect(isErrorV2(invalidRequestErrorFixture)).toBe(true)
     expect('metadata' in invalidRequestErrorFixture).toBe(false)
     expect(isHealthV2(healthFixture)).toBe(true)
+  })
+})
+
+describe('tolerant reader (rev 2)', () => {
+  it('accepts unknown additional fields at every level', () => {
+    const body = clone(answerWorkflow('evidence_comparison'))
+    body.future_field = 1
+    body.claims[0].extra = 'x'
+    body.evidence[0].extra = 'x'
+    body.metadata.retrieval.extra = true
+    body.corpus.extra = 'x'
+    body.comparison.extra = []
+    body.comparison.subjects[0].extra = 'x'
+    body.comparison.similarities[0].extra = 'x'
+    expect(isSuccessV2(body, 'evidence_comparison')).toBe(true)
+  })
+
+  it('accepts extra fields in error and health payloads', () => {
+    expect(isErrorV2({ ...clone(questionErrorFixture), extra: 1, error: { ...clone(questionErrorFixture).error, hint: 'x' } })).toBe(true)
+    expect(isHealthV2({ ...clone(healthFixture), build: 'x' })).toBe(true)
+  })
+
+  it('still rejects a broken citation id inside a payload with extra fields', () => {
+    const body = clone(answerWorkflow('evidence_comparison'))
+    body.future_field = 1
+    body.comparison.similarities[0].citation_chunk_ids = ['not-in-evidence']
+    expect(isSuccessV2(body, 'evidence_comparison')).toBe(false)
+  })
+
+  it('still rejects a missing required field', () => {
+    const body = clone(answeredFixture)
+    delete body.corpus
+    expect(isSuccessV2(body)).toBe(false)
   })
 })
 
