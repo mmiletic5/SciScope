@@ -6,7 +6,7 @@ import { Navigation, type ViewId } from './components/Navigation'
 import { ExplorerPage } from './features/explorer/ExplorerPage'
 import { ComparisonPage } from './features/comparison/ComparisonPage'
 import { ConflictsPage } from './features/conflicts/ConflictsPage'
-import { GapsPreview } from './features/previews/GapsPreview'
+import { GapsPage } from './features/gaps/GapsPage'
 import { badgeFromHealth, badgeFromMetadata, OFFLINE_BADGE, type ModeBadge } from './lib/mode'
 
 function App() {
@@ -18,7 +18,7 @@ function App() {
     'research-question': 'Research question',
     'evidence-comparison': 'Evidence comparison',
     'conflicting-evidence': 'Potential differences',
-    'gaps-hypotheses': 'Gaps & hypotheses',
+    'gaps-hypotheses': 'Research Gaps & Hypotheses',
   }[activeView]
 
   useEffect(() => {
@@ -52,7 +52,7 @@ function App() {
         <div className="explorer-view" hidden={activeView !== 'conflicting-evidence'}>
           <ConflictsPage onMetadataChange={setMetadata} />
         </div>
-        {activeView === 'gaps-hypotheses' && <GapsPreview />}
+        <div className="explorer-view" hidden={activeView !== 'gaps-hypotheses'}><GapsPage onMetadataChange={setMetadata} /></div>
       </main>
       <footer className="app-footer">
         SciScope is a research aid and does not replace reading the original papers.
