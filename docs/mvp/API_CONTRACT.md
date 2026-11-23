@@ -19,6 +19,8 @@ backend (`mvp-be`) and frontend (`mvp-fe`) owners and a note at the bottom of th
    closed with `response_contract_failure` (HTTP 500).
 4. Server owns retrieval configuration; the request never carries retrieval settings.
 5. Corpus is 17 PLOS ONE honey bee papers. The UI must not imply broader coverage.
+6. Clients MUST ignore unknown additional fields (tolerant reader). The server only adds
+   fields, never renames or removes them.
 
 ## 2. Endpoints
 
@@ -73,9 +75,11 @@ Common fields: `api_version: "v2"`, `request_id`, `workflow` (echo), `status`, `
 ```
 
 `configured_origin`: `real | fake | synthetic`. Frontend mode badge rule (also `isLiveMode()` in
-the TS file): **Live** only if both components are `real`, `executed` and not `is_test_data`;
-anything else is shown as **Demo (fake provider)** or **Demo (synthetic data)**. Never show
-"Live" otherwise.
+the TS file): **Live** iff BOTH components have `configured_origin` `"real"` AND `is_test_data`
+is `false`. `executed` is ignored for the badge (e.g. `no_results` leaves the provider
+unexecuted but the mode is still Live). From `GET /api/health` the same rule applies to
+`configured_origin` only (`isLiveHealth()`). Otherwise show **Demo (fake provider)** or
+**Demo (synthetic data)**.
 
 ### 3.1 `research_question` (unchanged)
 
@@ -158,7 +162,8 @@ Messages are sanitized (no provider text, no keys, no SQL). Examples: `fixtures/
 ## 5. Health
 
 `GET /api/health` -> `fixtures/health.json`. `components.*.configured_origin` drives the
-header badge before any question is asked. No secrets are ever returned.
+header badge before any question is asked. `workflows` lists the workflows the backend
+currently has enabled; the frontend disables the others. No secrets are ever returned.
 
 ## 6. Server behavior the frontend can rely on
 
@@ -172,3 +177,4 @@ header badge before any question is asked. No secrets are ever returned.
 ## 7. Changelog
 
 - 2026-11-23: initial freeze (v2 + three workflows + health).
+- 2026-11-23 (rev 2): badge rule ignores `executed`; tolerant reader; health.workflows semantics; added research_question insufficient_evidence fixture.
