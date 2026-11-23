@@ -24,15 +24,18 @@ from sciscope.question_service.contracts import (
     Evidence,
     ProviderOutcomeStatus,
     RetrievalOutcome,
+    Workflow,
 )
 from sciscope.question_service.openai_provider import (
     MAX_EVIDENCE_CHARS,
+    WORKFLOW_PROMPTS,
     AnswerProviderConfigError,
     EvidenceTooLarge,
     OpenAIAnswerProvider,
     build_research_question_messages,
     chat_completions_url,
     passage_boundary,
+    research_question_schema,
 )
 from sciscope.question_service.service import (
     AnsweredQuestionOutcome,
@@ -713,3 +716,70 @@ def test_invalid_configuration_is_rejected(
 def test_chat_completions_url(base: str, expected: str) -> None:
     """The endpoint suffix is appended exactly once."""
     assert chat_completions_url(base) == expected
+
+
+# Per-workflow dispatch.
+
+
+def _walk_objects(schema: object) -> Iterator[dict[str, object]]:
+    """Yield every object schema nested in ``schema``."""
+    if isinstance(schema, dict):
+        if schema.get("type") == "object":
+            yield schema
+        for value in schema.values():
+            yield from _walk_objects(value)
+    elif isinstance(schema, list):
+        for value in schema:
+            yield from _walk_objects(value)
+
+
+def test_registry_lists_only_implemented_workflows() -> None:
+    """Only research_question has a prompt entry for now."""
+    assert tuple(WORKFLOW_PROMPTS) == ("research_question",)
+    assert OpenAIAnswerProvider.supported_workflows == ("research_question",)
+
+
+def test_research_question_schema_restricts_citations_to_evidence() -> None:
+    """Citation items carry an enum of the supplied chunk IDs, in order."""
+    instance, transport, _ = provider([completion(INSUFFICIENT)])
+
+    ask(instance)
+
+    json_schema = transport.calls[0].payload["response_format"]["json_schema"]  # type: ignore[index]
+    assert json_schema["name"] == "research_question_answer"
+    claims = json_schema["schema"]["properties"]["claims"]
+    citation_items = claims["items"]["properties"]["citation_chunk_ids"][
+        "items"
+    ]
+    assert citation_items == {"type": "string", "enum": ["chunk-b", "chunk-a"]}
+
+
+def test_research_question_schema_follows_strict_mode_rules() -> None:
+    """Every object forbids extra keys and requires all of its properties."""
+    schema = research_question_schema(["chunk-a"])
+    objects = list(_walk_objects(schema))
+
+    assert len(objects) == 2
+    for value in objects:
+        assert value["additionalProperties"] is False
+        required = value["required"]
+        properties = value["properties"]
+        assert isinstance(required, list) and isinstance(properties, dict)
+        assert set(required) == set(properties)
+
+
+@pytest.mark.parametrize(
+    "workflow", ["evidence_comparison", "conflicting_evidence", "research_gap"]
+)
+def test_unimplemented_workflow_fails_before_any_network_call(
+    workflow: Workflow,
+) -> None:
+    """A sanitized controlled failure, never a guessed prompt."""
+    instance, transport, _ = provider([])
+
+    with pytest.raises(DependencyFailure) as raised:
+        instance.answer(QUESTION, EVIDENCE, CORPUS, "req-1", workflow=workflow)
+
+    assert raised.value.code is DependencyFailureCode.WORKFLOW_NOT_IMPLEMENTED
+    assert transport.calls == []
+    assert QUESTION not in str(raised.value)

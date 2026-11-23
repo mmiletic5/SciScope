@@ -1,9 +1,12 @@
 """Grounded OpenAI chat-completions answer provider.
 
-Only the ``research_question`` workflow is supported. Prompt construction is
-kept in pure functions so later workflows can supply their own task
-instructions and output schema while sharing the grounding rules and the
-delimited passage format.
+Each supported workflow has one entry in ``WORKFLOW_PROMPTS``: task
+instructions, a strict output schema built from the allowed chunk IDs, and a
+parser that turns model content into a grounded outcome. All workflows share
+the grounding rules, the delimited passage format, the transport, retries and
+the time budget. Only ``research_question`` is implemented; any other
+workflow fails with a sanitized ``WORKFLOW_NOT_IMPLEMENTED`` before any
+network call.
 """
 
 from __future__ import annotations
@@ -15,6 +18,7 @@ import re
 import time
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
+from types import MappingProxyType
 from typing import Final, cast
 
 from sciscope.embedding.config import DEFAULT_BASE_URL, EmbeddingConfigError
@@ -31,6 +35,7 @@ from sciscope.embedding.openai_client import (
     read_base_url,
 )
 from sciscope.question_service.contracts import (
+    DEFAULT_WORKFLOW,
     Claim,
     ComponentMetadata,
     CorpusProvenance,
@@ -39,6 +44,7 @@ from sciscope.question_service.contracts import (
     Evidence,
     ProviderOutcome,
     ProviderOutcomeStatus,
+    Workflow,
 )
 from sciscope.question_service.validation import ResponseContractFailure
 
@@ -85,33 +91,52 @@ When status is "answered", "answer" is a concise synthesis of a few sentences \
 and "claims" lists each distinct factual statement that supports the answer, \
 each with the chunk_ids of the passages that state it."""
 
-RESEARCH_QUESTION_SCHEMA: Final[Mapping[str, object]] = {
-    "type": "object",
-    "additionalProperties": False,
-    "required": ["status", "answer", "claims"],
-    "properties": {
-        "status": {
-            "type": "string",
-            "enum": ["answered", "insufficient_evidence"],
-        },
-        "answer": {"type": ["string", "null"]},
-        "claims": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "additionalProperties": False,
-                "required": ["text", "citation_chunk_ids"],
-                "properties": {
-                    "text": {"type": "string"},
-                    "citation_chunk_ids": {
-                        "type": "array",
-                        "items": {"type": "string"},
+
+def research_question_schema(
+    chunk_ids: Sequence[str],
+) -> dict[str, object]:
+    """Return the strict output schema for ``research_question``.
+
+    Citation items are restricted to ``chunk_ids`` with ``enum``. The schema
+    follows OpenAI strict mode: every object sets ``additionalProperties``
+    to false and lists all of its properties as required.
+
+    Args:
+        chunk_ids: Unique chunk IDs of the supplied evidence, in order.
+
+    Returns:
+        A JSON schema object.
+    """
+    return {
+        "type": "object",
+        "additionalProperties": False,
+        "required": ["status", "answer", "claims"],
+        "properties": {
+            "status": {
+                "type": "string",
+                "enum": ["answered", "insufficient_evidence"],
+            },
+            "answer": {"type": ["string", "null"]},
+            "claims": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "additionalProperties": False,
+                    "required": ["text", "citation_chunk_ids"],
+                    "properties": {
+                        "text": {"type": "string"},
+                        "citation_chunk_ids": {
+                            "type": "array",
+                            "items": {
+                                "type": "string",
+                                "enum": list(chunk_ids),
+                            },
+                        },
                     },
                 },
             },
         },
-    },
-}
+    }
 
 
 class AnswerProviderConfigError(ValueError):
@@ -226,6 +251,33 @@ def build_messages(
     )
 
 
+def _parse_research_question(
+    content: str, evidence: Sequence[Evidence]
+) -> ProviderOutcome | None:
+    """Parse and ground ``research_question`` model content."""
+    evidence_ids = frozenset(item.chunk_id for item in evidence)
+    return _grounded_outcome(_parse_answer(content), evidence_ids)
+
+
+@dataclass(frozen=True, slots=True)
+class WorkflowPrompt:
+    """Everything workflow-specific about one provider call.
+
+    Attributes:
+        schema_name: ``json_schema.name`` sent with the request.
+        task_instructions: Appended to ``GROUNDING_RULES``.
+        schema: Builds the strict output schema from allowed chunk IDs.
+        parse: Turns model content into a grounded outcome, returns None
+            when the output is ungrounded (one retry follows), and raises
+            ``ResponseContractFailure`` when it is malformed.
+    """
+
+    schema_name: str
+    task_instructions: str
+    schema: Callable[[Sequence[str]], Mapping[str, object]]
+    parse: Callable[[str, Sequence[Evidence]], ProviderOutcome | None]
+
+
 def build_research_question_messages(
     question: str, evidence: Sequence[Evidence]
 ) -> tuple[dict[str, str], ...]:
@@ -243,6 +295,19 @@ def build_research_question_messages(
         question=question,
         evidence=evidence,
     )
+
+
+WORKFLOW_PROMPTS: Final[Mapping[Workflow, WorkflowPrompt]] = MappingProxyType(
+    {
+        "research_question": WorkflowPrompt(
+            schema_name="research_question_answer",
+            task_instructions=RESEARCH_QUESTION_TASK,
+            schema=research_question_schema,
+            parse=_parse_research_question,
+        ),
+    }
+)
+"""Implemented workflows; later workflows only add entries here."""
 
 
 def chat_completions_url(base: str) -> str:
@@ -279,11 +344,13 @@ class _RawAnswer:
 
 
 class OpenAIAnswerProvider:
-    """Answer ``research_question`` requests from supplied evidence only.
+    """Answer requests of implemented workflows from supplied evidence only.
 
     The provider never reads environment variables. It keeps the API key only
     inside the transport connection, which excludes it from representations.
     """
+
+    supported_workflows: Final[tuple[Workflow, ...]] = tuple(WORKFLOW_PROMPTS)
 
     def __init__(
         self,
@@ -365,6 +432,8 @@ class OpenAIAnswerProvider:
         evidence: tuple[Evidence, ...],
         corpus: CorpusProvenance,
         request_id: str,
+        *,
+        workflow: Workflow = DEFAULT_WORKFLOW,
     ) -> ProviderOutcome:
         """Return a grounded outcome for the supplied evidence.
 
@@ -373,37 +442,53 @@ class OpenAIAnswerProvider:
             evidence: Nonempty ordered retrieval evidence.
             corpus: Corpus provenance, unused by the prompt.
             request_id: Request correlation ID, not sent to the provider.
+            workflow: Requested workflow; must be in ``WORKFLOW_PROMPTS``.
 
         Returns:
             An answered outcome whose citations all resolve to ``evidence``,
             or an insufficient-evidence outcome.
 
         Raises:
-            DependencyFailure: For provider timeouts or unavailability.
+            DependencyFailure: ``WORKFLOW_NOT_IMPLEMENTED`` for a workflow
+                without a prompt entry (raised before any network call), or
+                provider timeouts and unavailability.
             EvidenceTooLarge: If passage text exceeds the prompt cap.
             ResponseContractFailure: If the model output is malformed,
                 refused, truncated, or stays ungrounded after a retry.
         """
         del corpus, request_id
+        prompt = WORKFLOW_PROMPTS.get(workflow)
+        if prompt is None:
+            raise DependencyFailure(
+                DependencyFailureCode.WORKFLOW_NOT_IMPLEMENTED
+            )
         if not evidence:
             raise ResponseContractFailure()
         if sum(len(item.passage) for item in evidence) > MAX_EVIDENCE_CHARS:
             raise EvidenceTooLarge()
-        evidence_ids = frozenset(item.chunk_id for item in evidence)
         payload = self._payload(
-            build_research_question_messages(question, evidence)
+            build_messages(
+                task_instructions=prompt.task_instructions,
+                question=question,
+                evidence=evidence,
+            ),
+            schema_name=prompt.schema_name,
+            schema=prompt.schema([item.chunk_id for item in evidence]),
         )
         deadline = self._monotonic() + TOTAL_BUDGET_SECONDS
         for _ in range(MAX_GROUNDING_ATTEMPTS):
             body = self._complete(payload, deadline)
-            raw = _parse_answer(_message_content(body))
-            outcome = _grounded_outcome(raw, evidence_ids)
+            outcome = prompt.parse(_message_content(body), evidence)
             if outcome is not None:
                 return outcome
         raise ResponseContractFailure()
 
     def _payload(
-        self, messages: tuple[dict[str, str], ...]
+        self,
+        messages: tuple[dict[str, str], ...],
+        *,
+        schema_name: str,
+        schema: Mapping[str, object],
     ) -> dict[str, object]:
         """Build the chat-completions request body."""
         payload: dict[str, object] = {
@@ -412,9 +497,9 @@ class OpenAIAnswerProvider:
             "response_format": {
                 "type": "json_schema",
                 "json_schema": {
-                    "name": "research_question_answer",
+                    "name": schema_name,
                     "strict": True,
-                    "schema": RESEARCH_QUESTION_SCHEMA,
+                    "schema": schema,
                 },
             },
             "max_completion_tokens": self._max_completion_tokens,
