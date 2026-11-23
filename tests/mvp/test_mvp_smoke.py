@@ -7,6 +7,9 @@ import sys
 from pathlib import Path
 from types import ModuleType
 
+import pytest
+from fastapi import FastAPI
+
 _SCRIPT = Path(__file__).parents[2] / "scripts" / "mvp_smoke.py"
 
 
@@ -106,3 +109,106 @@ def test_format_line_insufficient_note() -> None:
     )
     assert "insufficient_evidence" in line
     assert "not pass/fail" in line
+
+
+def test_dev_questions_map_to_workflows() -> None:
+    """Each dev question runs the workflow it was written for."""
+    assert smoke.QUESTION_WORKFLOWS == {
+        "gq-sp-001": "research_question",
+        "gq-cmp-001": "evidence_comparison",
+        "gq-conf-001": "conflicting_evidence",
+        "gq-gap-001": "research_gap",
+        "gq-ins-001": "research_question",
+    }
+    document = {
+        "questions": [
+            {
+                "question_id": "gq-cmp-001",
+                "question": "Q?",
+                "relevant_papers": [],
+            }
+        ]
+    }
+    assert smoke.select_golden(document, ("gq-cmp-001",))[0]["workflow"] == (
+        "evidence_comparison"
+    )
+
+
+def test_skip_line_names_the_workflow() -> None:
+    """Unsupported workflows are reported as skipped, not as failures."""
+    line = smoke.skip_line("gq-gap-001", "research_gap")
+    assert "SKIPPED" in line
+    assert "workflow=research_gap" in line
+
+
+def test_format_line_shows_workflow() -> None:
+    """The summary line names the workflow when given."""
+    line = smoke.format_line(
+        "gq-cmp-001", 200, {"status": "answered"}, 1.0, None, False, "x_wf"
+    )
+    assert "workflow=x_wf" in line
+
+
+def test_main_skips_workflows_the_provider_does_not_support(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Offline: a provider enabling only research_question skips the rest."""
+    import json
+
+    from sciscope.api import server
+    from sciscope.api.app import create_app
+    from sciscope.question_service.contracts import (
+        ComponentMetadata,
+        QuestionMetadata,
+    )
+    from sciscope.question_service.fakes import (
+        ComponentFakeAnswerProvider,
+        ComponentFakeRetrieval,
+    )
+
+    def fake_server_app(environ: object) -> FastAPI:
+        metadata = QuestionMetadata(
+            ComponentMetadata("synthetic", executed=False, is_test_data=True),
+            ComponentMetadata("fake", executed=False, is_test_data=True),
+        )
+        app = create_app(
+            retrieval=ComponentFakeRetrieval(),
+            provider=ComponentFakeAnswerProvider(),
+            v2_metadata=metadata,
+        )
+        server._health_route(app, metadata, ("research_question",))
+        return app
+
+    golden = tmp_path / "golden.json"
+    golden.write_text(
+        json.dumps(
+            {
+                "questions": [
+                    {
+                        "question_id": qid,
+                        "question": f"Synthetic {qid}?",
+                        "relevant_papers": [],
+                    }
+                    for qid in smoke.QUESTION_IDS
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(server, "create_server_app", fake_server_app)
+    monkeypatch.setattr(smoke, "GOLDEN_PATH", golden)
+    monkeypatch.setattr(smoke, "OUTPUT_DIR", tmp_path / "out")
+
+    assert smoke.main(_LIVE) == 0
+
+    out = capsys.readouterr().out
+    for qid in ("gq-cmp-001", "gq-conf-001", "gq-gap-001"):
+        assert f"{qid} | workflow=" in out
+    assert out.count("SKIPPED") == 3
+    assert "gq-sp-001 | workflow=research_question | http=200" in out
+    summary = json.loads((tmp_path / "out" / "summary.json").read_text())
+    assert [row["workflow"] for row in summary] == list(
+        smoke.QUESTION_WORKFLOWS.values()
+    )

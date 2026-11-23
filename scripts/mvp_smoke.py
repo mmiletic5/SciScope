@@ -1,9 +1,11 @@
 """Live smoke run of the MVP backend over five dev golden questions.
 
 Builds the app with ``create_server_app()`` from the process environment and
-calls ``POST /api/v2/questions`` through the FastAPI ``TestClient``. Refuses to
-start unless the live opt-in is explicit. Messages name variables, never
-values; no key or URL is printed or written.
+calls ``POST /api/v2/questions`` through the FastAPI ``TestClient``, one
+workflow per question (``QUESTION_WORKFLOWS``). Workflows that the configured
+provider does not support yet (per ``GET /api/health``) are skipped with a
+message. Refuses to start unless the live opt-in is explicit. Messages name
+variables, never values; no key or URL is printed or written.
 
 Run (PowerShell)::
 
@@ -27,13 +29,14 @@ sys.path.insert(0, str(ROOT / "src"))
 
 GOLDEN_PATH = Path("evals/golden_questions.v0.json")
 OUTPUT_DIR = Path("scratch/mvp_smoke")
-QUESTION_IDS = (
-    "gq-sp-001",
-    "gq-cmp-001",
-    "gq-conf-001",
-    "gq-gap-001",
-    "gq-ins-001",
-)
+QUESTION_WORKFLOWS: dict[str, str] = {
+    "gq-sp-001": "research_question",
+    "gq-cmp-001": "evidence_comparison",
+    "gq-conf-001": "conflicting_evidence",
+    "gq-gap-001": "research_gap",
+    "gq-ins-001": "research_question",
+}
+QUESTION_IDS = tuple(QUESTION_WORKFLOWS)
 INSUFFICIENT_EXPECTED_ID = "gq-ins-001"
 _REQUIRED_ENV = (
     ("AI_PROVIDER", "openai"),
@@ -68,8 +71,8 @@ def select_golden(
         ids: Question ids to keep, in output order.
 
     Returns:
-        One dict per id with ``id``, ``question``, ``relevant_dois`` and
-        ``expect_insufficient``.
+        One dict per id with ``id``, ``workflow``, ``question``,
+        ``relevant_dois`` and ``expect_insufficient``.
 
     Raises:
         KeyError: If an id is missing from the document.
@@ -85,6 +88,9 @@ def select_golden(
         selected.append(
             {
                 "id": question_id,
+                "workflow": QUESTION_WORKFLOWS.get(
+                    question_id, "research_question"
+                ),
                 "question": record["question"],
                 "relevant_dois": sorted(
                     {paper["doi"] for paper in record["relevant_papers"]}
@@ -133,6 +139,14 @@ def analyze(
     }
 
 
+def skip_line(question_id: str, workflow: str) -> str:
+    """Build the summary line for a question whose workflow is skipped."""
+    return (
+        f"{question_id} | workflow={workflow} | SKIPPED: the configured "
+        "provider does not support this workflow yet (see /api/health)"
+    )
+
+
 def format_line(
     question_id: str,
     http_status: int,
@@ -140,11 +154,14 @@ def format_line(
     latency: float,
     facts: Mapping[str, Any] | None,
     expect_insufficient: bool,
+    workflow: str | None = None,
 ) -> str:
     """Build the one-line summary for a question."""
     status = body.get("status", "error")
-    parts = [
-        question_id,
+    parts = [question_id]
+    if workflow is not None:
+        parts.append(f"workflow={workflow}")
+    parts += [
         f"http={http_status}",
         f"status={status}",
         f"{latency:.1f}s",
@@ -219,12 +236,23 @@ def main(environ: Mapping[str, str] | None = None) -> int:
     reviews: list[tuple[str, list[str]]] = []
     exit_code = 0
     with TestClient(app, raise_server_exceptions=False) as client:
+        enabled = set(client.get("/api/health").json().get("workflows", []))
         for item in questions:
+            if item["workflow"] not in enabled:
+                print(skip_line(item["id"], item["workflow"]))
+                summary.append(
+                    {
+                        "id": item["id"],
+                        "workflow": item["workflow"],
+                        "skipped": "workflow not supported by provider",
+                    }
+                )
+                continue
             started = time.perf_counter()
             response = client.post(
                 "/api/v2/questions",
                 json={
-                    "workflow": "research_question",
+                    "workflow": item["workflow"],
                     "question": item["question"],
                 },
             )
@@ -244,6 +272,7 @@ def main(environ: Mapping[str, str] | None = None) -> int:
                     latency,
                     facts,
                     item["expect_insufficient"],
+                    item["workflow"],
                 )
             )
             if ok:
@@ -254,6 +283,7 @@ def main(environ: Mapping[str, str] | None = None) -> int:
             summary.append(
                 {
                     "id": item["id"],
+                    "workflow": item["workflow"],
                     "http_status": response.status_code,
                     "response_status": body.get("status"),
                     "latency_seconds": round(latency, 2),

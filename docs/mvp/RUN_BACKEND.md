@@ -69,15 +69,31 @@ curl.exe -X POST http://127.0.0.1:8000/api/v2/questions `
 
 ## Known limits
 
-- Only `research_question` is implemented; `/api/health` lists only implemented
-  workflows (the fixture lists all four until the other workflows land).
-- Retrieval profile is fixed: `retrieval.v2`, `top_k` 5, no filters. The
-  candidate pool of 50 applies in hybrid mode only, because the retrieval
-  contract rejects ranking options for lexical mode.
+- `/api/health` `workflows` lists the workflows of the configured provider:
+  all four with `AI_PROVIDER=fake`; only `research_question` with
+  `AI_PROVIDER=openai` (the OpenAI prompts and schemas for
+  `evidence_comparison`, `conflicting_evidence` and `research_gap` are not
+  written yet). Asking the OpenAI provider for one of those three returns
+  503 `provider_unavailable` (retryable per the contract table) after
+  retrieval ran, without any OpenAI call; with empty retrieval it returns
+  200 `no_results` because the provider is never invoked.
+- The fake provider answers all four workflows from synthetic evidence of
+  three synthetic papers (`10.0000/synthetic.*`, `is_test_data: true`). Its
+  text is placeholder, not a finding.
+- Retrieval profile per workflow: `retrieval.v2`, no filters, `top_k` 5 for
+  `research_question` and 10 for the other three (one adapter per workflow).
+  The candidate pool of 50 applies in hybrid mode only, because the retrieval
+  contract rejects ranking options for lexical mode. Fake retrieval ignores
+  the profile.
+- Payload workflows are validated server-side (citations, subject DOIs,
+  item and hypothesis rules); a comparison citing fewer than two papers or a
+  conflicts answer without items is returned as `insufficient_evidence`.
 - `/api/v1/questions` returns a 500 `internal_error` when the server uses
   component metadata (all server modes); use v2.
 - Fake mode reports retrieval origin `synthetic` and provider origin `fake`,
   both `is_test_data: true`.
 - Health reports configured origins only; it does not probe the DB or OpenAI.
 - Live OpenAI and Postgres paths are unit-tested offline only; they have not been
-  verified end to end by this change.
+  verified end to end by this change. `scripts/mvp_smoke.py` runs each dev
+  question with its workflow and skips workflows the provider does not
+  support yet.
