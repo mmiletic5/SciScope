@@ -19,23 +19,17 @@ describe('ExplorerPage answered flow', () => {
     expect(screen.getByRole('heading', { name: /Source 1:/ })).toBeTruthy()
   })
 
-  it('restores the synthetic-data notice for each new response after dismissal', async () => {
+  it('reports the response metadata so the app can drive the mode badge', async () => {
     const user = userEvent.setup()
-    const secondResponse = { ...answeredFixture, request_id: 'synthetic-second-response' }
-    vi.stubGlobal('fetch', vi.fn()
-      .mockResolvedValueOnce(new Response(JSON.stringify(answeredFixture), { status: 200 }))
-      .mockResolvedValueOnce(new Response(JSON.stringify(secondResponse), { status: 200 })))
-    render(<ExplorerPage />)
-    const field = screen.getByRole('textbox', { name: 'Research question' })
-    await user.type(field, 'Test question')
+    const onMetadataChange = vi.fn()
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify(answeredFixture), { status: 200 })))
+    render(<ExplorerPage onMetadataChange={onMetadataChange} />)
+
+    await user.type(screen.getByRole('textbox', { name: 'Research question' }), 'Test question')
     await user.click(screen.getByRole('button', { name: 'Search' }))
 
-    const notice = await screen.findByText('Responses are synthetic test data from the fake backend, not real literature.')
-    await user.click(screen.getByRole('button', { name: 'Dismiss' }))
-    expect(notice.isConnected).toBe(false)
-
-    await user.click(screen.getByRole('button', { name: 'Search' }))
-    expect(await screen.findByText('Responses are synthetic test data from the fake backend, not real literature.')).toBeTruthy()
+    await screen.findByText(answeredFixture.answer)
+    expect(onMetadataChange).toHaveBeenCalledWith(answeredFixture.metadata)
   })
 
   it('retains the editable question and retries an API-unreachable request', async () => {

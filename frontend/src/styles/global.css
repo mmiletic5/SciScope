@@ -53,6 +53,8 @@ h3 { font-size: 17px; font-weight: 600; line-height: 1.4; }
 
 .brand { display: inline-flex; align-items: center; gap: var(--space-2); color: var(--color-text); font-size: 21px; font-weight: 600; text-decoration: none; }
 .brand__mark { width: 32px; height: 32px; fill: none; stroke: var(--color-honey); stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
+.mode-badge--live { border-color: #a9d3b8; background: #e8f5ed; color: #1d5a35; }
+.mode-badge--offline { border-color: #e0b4b4; background: #fbeaea; color: #8a1f1f; }
 .mock-badge { border: 1px solid #e8d0a9; border-radius: 999px; padding: 4px 10px; background: var(--color-honey-tint); color: var(--color-honey-tint-text); font-size: 13px; font-weight: 600; line-height: 1.5; }
 
 .primary-navigation { display: flex; flex-wrap: wrap; gap: var(--space-2); border-bottom: 1px solid var(--color-border); padding-block: var(--space-3); }
@@ -81,9 +83,6 @@ h3 { font-size: 17px; font-weight: 600; line-height: 1.4; }
 .results-region > p, .results-loading > p { color: var(--color-secondary); }
 .results-skeleton { width: 100%; height: 86px; border-radius: 10px; background: #f0f2f5; }
 
-.mock-notice { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-6); border: 1px solid #e8d0a9; border-radius: 10px; padding: var(--space-3) var(--space-4); background: var(--color-honey-tint); color: var(--color-honey-tint-text); }
-.mock-notice p { margin: 0; font-size: 14px; font-weight: 500; }
-.mock-notice button { flex: 0 0 auto; border-color: #d9b680; background: #fffaf1; color: var(--color-honey-tint-text); }
 
 .answer-view, .empty-result, .insufficient-result, .status-panel { display: grid; gap: var(--space-6); min-width: 0; }
 .answer-view section, .insufficient-result > div { min-width: 0; }
@@ -128,8 +127,7 @@ h3 { font-size: 17px; font-weight: 600; line-height: 1.4; }
   .app-shell { width: min(100% - 32px, 1200px); padding-top: var(--space-4); }
   .primary-navigation { gap: var(--space-1); }
   .primary-navigation a, .primary-navigation button { flex: 1 1 auto; padding-inline: 8px; text-align: center; }
-  .mock-notice { align-items: flex-start; flex-direction: column; }
-  .provenance dl { grid-template-columns: 1fr; gap: var(--space-1); }
+    .provenance dl { grid-template-columns: 1fr; gap: var(--space-1); }
   .provenance dd { margin-bottom: var(--space-2); }
   .preview-card-grid, .preview-card-grid--three { grid-template-columns: 1fr; }
   .comparison-table { font-size: 12px; }

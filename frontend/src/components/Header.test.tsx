@@ -2,23 +2,14 @@ import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { Header } from './Header'
 
-describe('Header test-data badge', () => {
-  it('shows the badge by default', () => {
+describe('Header mode badge', () => {
+  it('shows no badge until a mode is known', () => {
     render(<Header />)
-    expect(screen.getByText('MOCK · test data')).toBeTruthy()
+    expect(document.querySelector('.mode-badge')).toBeNull()
   })
 
-  it.each([
-    [{ is_mock: true, is_test_data: false }],
-    [{ is_mock: false, is_test_data: true }],
-    [{ is_mock: true, is_test_data: true }],
-  ])('shows the badge when either metadata flag is true', (metadata) => {
-    render(<Header metadata={metadata} />)
-    expect(screen.getByText('MOCK · test data')).toBeTruthy()
-  })
-
-  it('hides the badge only when a response explicitly reports both flags false', () => {
-    render(<Header metadata={{ is_mock: false, is_test_data: false }} />)
-    expect(screen.queryByText('MOCK · test data')).toBeNull()
+  it.each(['Live', 'Demo (fake provider)', 'Demo (synthetic data)', 'Backend offline'])('shows the %s badge', (label) => {
+    render(<Header badge={{ kind: 'demo', label }} />)
+    expect(screen.getByText(label)).toBeTruthy()
   })
 })

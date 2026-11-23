@@ -45,23 +45,24 @@ describe('AnswerView', () => {
   it('uses a safe DOI link and discloses source location only in Details', () => {
     render(<AnswerView response={answeredFixture} />)
 
-    const doiLink = screen.getByRole('link', { name: /10\.0000\/test-only/ })
-    expect(doiLink.getAttribute('href')).toBe('https://doi.org/10.0000/test-only')
+    const doiLink = screen.getAllByRole('link', { name: /10\.0000\/synthetic\.0001/ })[0]
+    expect(doiLink.getAttribute('href')).toBe('https://doi.org/10.0000/synthetic.0001')
     expect(doiLink.getAttribute('target')).toBe('_blank')
     expect(doiLink.getAttribute('rel')).toBe('noopener noreferrer')
-    const details = screen.getByText('Details').closest('details')
+    const summary = screen.getAllByText('Details')[0]
+    const details = summary.closest('details')
     expect(details?.open).toBe(false)
-    fireEvent.click(screen.getByText('Details'))
+    fireEvent.click(summary)
     expect(details?.open).toBe(true)
-    expect(screen.getByText('Synthetic locator for offline UI tests.')).toBeTruthy()
+    expect(screen.getByText('jats:v1:/article/body/sec[2]/p[1]')).toBeTruthy()
   })
 
   it('displays corpus provenance in its disclosure', () => {
     render(<AnswerView response={answeredFixture} />)
 
     fireEvent.click(screen.getByText('About this result'))
-    expect(screen.getByText('synthetic-fixture-v1')).toBeTruthy()
-    expect(screen.getByText('synthetic-contract-v1')).toBeTruthy()
+    expect(screen.getByText('synthetic-fixture-v2')).toBeTruthy()
+    expect(screen.getByText('synthetic-contract-v2')).toBeTruthy()
     expect(screen.getByText('synthetic-digest-not-a-real-corpus')).toBeTruthy()
   })
 })
