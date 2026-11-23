@@ -17,7 +17,9 @@ Run (PowerShell)::
 
 from __future__ import annotations
 
+import argparse
 import json
+import re
 import sys
 import time
 from collections.abc import Mapping, Sequence
@@ -38,6 +40,14 @@ QUESTION_WORKFLOWS: dict[str, str] = {
 }
 QUESTION_IDS = tuple(QUESTION_WORKFLOWS)
 INSUFFICIENT_EXPECTED_ID = "gq-ins-001"
+_HEX_ID = re.compile(r"(?<![0-9a-fA-F])[0-9a-fA-F]{64}(?![0-9a-fA-F])")
+_TEXT_KEYS = frozenset({"answer", "text", "summary", "topic", "rationale"})
+_TEXT_CONTAINERS = (
+    "claims",
+    "comparison",
+    "conflicts",
+    "gap_analysis",
+)
 _REQUIRED_ENV = (
     ("AI_PROVIDER", "openai"),
     ("RETRIEVAL_BACKEND", "postgres"),
@@ -103,6 +113,39 @@ def select_golden(
     return selected
 
 
+def _text_values(value: object) -> list[str]:
+    """Collect free-text strings; skip citations, evidence and provenance."""
+    if isinstance(value, list):
+        return [text for item in value for text in _text_values(item)]
+    if not isinstance(value, dict):
+        return []
+    found: list[str] = []
+    for key, child in value.items():
+        if key in _TEXT_KEYS and isinstance(child, str):
+            found.append(child)
+        elif isinstance(child, list | dict):
+            found.extend(_text_values(child))
+    return found
+
+
+def has_ids_in_text(body: Mapping[str, Any]) -> bool:
+    """Return whether any 64-hex id appears in a free-text response field.
+
+    Args:
+        body: Parsed v2 response body.
+
+    Returns:
+        True if the answer, a claim, or any workflow payload text (summaries,
+        similarities, differences, topics, positions, gaps, hypotheses,
+        rationales) contains a 64-hex token. Citation lists, evidence and
+        corpus provenance are not inspected.
+    """
+    texts = _text_values({"answer": body.get("answer")})
+    for key in _TEXT_CONTAINERS:
+        texts.extend(_text_values(body.get(key)))
+    return any(_HEX_ID.search(text) for text in texts)
+
+
 def analyze(
     body: Mapping[str, Any], relevant_dois: Sequence[str]
 ) -> dict[str, Any]:
@@ -129,6 +172,7 @@ def analyze(
         "evidence_count": len(evidence),
         "claim_count": len(claims),
         "citations_valid": all(chunk_id in evidence_ids for chunk_id in cited),
+        "ids_in_text": has_ids_in_text(body),
         "relevant_doi_hit": any(
             item.get("doi") in relevant for item in evidence
         ),
@@ -174,6 +218,7 @@ def format_line(
             f"citations_in_evidence={facts['citations_valid']}",
             f"golden_doi_in_evidence={facts['relevant_doi_hit']}",
             f"origins={origins['retrieval']}/{origins['answer_provider']}",
+            f"ids_in_text={str(facts['ids_in_text']).lower()}",
         ]
     if expect_insufficient:
         parts.append("expectation=insufficient_evidence (not pass/fail)")
@@ -197,11 +242,35 @@ def _write_json(path: Path, payload: object) -> None:
     )
 
 
-def main(environ: Mapping[str, str] | None = None) -> int:
+def parse_args(argv: Sequence[str]) -> argparse.Namespace:
+    """Parse the optional ``--only`` and ``--repeat`` arguments."""
+    parser = argparse.ArgumentParser(description="MVP live smoke run.")
+    parser.add_argument(
+        "--only",
+        choices=QUESTION_IDS,
+        help="Run only this question id.",
+    )
+    parser.add_argument(
+        "--repeat",
+        type=int,
+        default=1,
+        help="Run each selected question this many times (default 1).",
+    )
+    args = parser.parse_args(list(argv))
+    if args.repeat < 1:
+        parser.error("--repeat must be at least 1")
+    return args
+
+
+def main(
+    environ: Mapping[str, str] | None = None,
+    argv: Sequence[str] | None = None,
+) -> int:
     """Run the smoke test.
 
     Args:
         environ: Mapping to read; defaults to ``os.environ``.
+        argv: Command-line arguments; ``--only <id>`` and ``--repeat <n>``.
 
     Returns:
         Process exit code: 0 when all requests ran, 1 on HTTP errors,
@@ -209,6 +278,7 @@ def main(environ: Mapping[str, str] | None = None) -> int:
     """
     import os
 
+    args = parse_args(argv or ())
     env = os.environ if environ is None else environ
     missing = check_live_opt_in(env)
     if missing:
@@ -224,7 +294,9 @@ def main(environ: Mapping[str, str] | None = None) -> int:
     from sciscope.api.server import ServerConfigError, create_server_app
 
     golden = json.loads(GOLDEN_PATH.read_text(encoding="utf-8"))
-    questions = select_golden(golden)
+    questions = select_golden(
+        golden, (args.only,) if args.only else QUESTION_IDS
+    )
     try:
         app = create_server_app(env)
     except ServerConfigError as error:
@@ -237,8 +309,14 @@ def main(environ: Mapping[str, str] | None = None) -> int:
     exit_code = 0
     with TestClient(app, raise_server_exceptions=False) as client:
         enabled = set(client.get("/api/health").json().get("workflows", []))
-        for item in questions:
+        for item, run in (
+            (item, run)
+            for item in questions
+            for run in range(1, args.repeat + 1)
+        ):
             if item["workflow"] not in enabled:
+                if run > 1:
+                    continue
                 print(skip_line(item["id"], item["workflow"]))
                 summary.append(
                     {
@@ -261,7 +339,8 @@ def main(environ: Mapping[str, str] | None = None) -> int:
                 body = response.json()
             except ValueError:
                 body = {"error": {"code": "non_json_response"}}
-            _write_json(OUTPUT_DIR / f"{item['id']}.json", body)
+            suffix = f".run{run}" if args.repeat > 1 else ""
+            _write_json(OUTPUT_DIR / f"{item['id']}{suffix}.json", body)
             ok = response.status_code == 200
             facts = analyze(body, item["relevant_dois"]) if ok else None
             print(
@@ -276,13 +355,14 @@ def main(environ: Mapping[str, str] | None = None) -> int:
                 )
             )
             if ok:
-                reviews.append((item["id"], format_review(body)))
+                reviews.append((f"{item['id']}{suffix}", format_review(body)))
             else:
                 exit_code = 1
                 print(f"  error: {json.dumps(body.get('error'))}")
             summary.append(
                 {
                     "id": item["id"],
+                    "run": run,
                     "workflow": item["workflow"],
                     "http_status": response.status_code,
                     "response_status": body.get("status"),
@@ -302,4 +382,4 @@ def main(environ: Mapping[str, str] | None = None) -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main(argv=sys.argv[1:]))

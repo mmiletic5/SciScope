@@ -212,3 +212,137 @@ def test_main_skips_workflows_the_provider_does_not_support(
     assert [row["workflow"] for row in summary] == list(
         smoke.QUESTION_WORKFLOWS.values()
     )
+
+
+_ID = "ab" * 32
+
+
+def test_ids_in_text_flags_every_text_field_but_not_citations() -> None:
+    """A 64-hex id in free text is flagged; citations and evidence are not."""
+    clean = {
+        "answer": "Fine.",
+        "claims": [{"text": "ok", "citation_chunk_ids": [_ID]}],
+        "evidence": [{"chunk_id": _ID, "passage": _ID}],
+        "corpus": {"delivery_digest": _ID},
+        "comparison": {
+            "subjects": [{"summary": "s", "citation_chunk_ids": [_ID]}]
+        },
+    }
+    assert smoke.has_ids_in_text(clean) is False
+    leaks = [
+        {**clean, "answer": f"x [{_ID}]"},
+        {**clean, "claims": [{"text": f"x {_ID.upper()}"}]},
+        {
+            **clean,
+            "comparison": {"subjects": [{"summary": f"({_ID})"}]},
+        },
+        {
+            **clean,
+            "conflicts": {
+                "items": [
+                    {
+                        "topic": "t",
+                        "summary": "s",
+                        "positions": [{"text": f"[{_ID}]"}],
+                    }
+                ]
+            },
+        },
+        {
+            **clean,
+            "gap_analysis": {
+                "gaps": [],
+                "hypotheses": [{"text": "h", "rationale": f"[{_ID}]"}],
+            },
+        },
+    ]
+    assert all(smoke.has_ids_in_text(body) for body in leaks)
+
+
+def test_analyze_and_line_report_ids_in_text() -> None:
+    """The flag is part of the facts and of the printed line."""
+    facts = smoke.analyze({"answer": f"[{_ID}]", "evidence": []}, [])
+    assert facts["ids_in_text"] is True
+    line = smoke.format_line(
+        "q", 200, {"status": "answered"}, 1.0, facts, False
+    )
+    assert "ids_in_text=true" in line
+
+
+def test_parse_args_only_and_repeat() -> None:
+    """Defaults run everything once; options are validated."""
+    defaults = smoke.parse_args([])
+    assert (defaults.only, defaults.repeat) == (None, 1)
+    chosen = smoke.parse_args(["--only", "gq-cmp-001", "--repeat", "3"])
+    assert (chosen.only, chosen.repeat) == ("gq-cmp-001", 3)
+    with pytest.raises(SystemExit):
+        smoke.parse_args(["--only", "nope"])
+    with pytest.raises(SystemExit):
+        smoke.parse_args(["--repeat", "0"])
+
+
+def test_main_only_and_repeat_run_one_question_several_times(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Offline: --only/--repeat select one question and number the runs."""
+    import json
+
+    from sciscope.api import server
+    from sciscope.api.app import create_app
+    from sciscope.question_service.contracts import (
+        ComponentMetadata,
+        QuestionMetadata,
+    )
+    from sciscope.question_service.fakes import (
+        ComponentFakeAnswerProvider,
+        ComponentFakeRetrieval,
+    )
+
+    def fake_server_app(environ: object) -> FastAPI:
+        metadata = QuestionMetadata(
+            ComponentMetadata("synthetic", executed=False, is_test_data=True),
+            ComponentMetadata("fake", executed=False, is_test_data=True),
+        )
+        app = create_app(
+            retrieval=ComponentFakeRetrieval(),
+            provider=ComponentFakeAnswerProvider(),
+            v2_metadata=metadata,
+        )
+        server._health_route(app, metadata, ("research_question",))
+        return app
+
+    golden = tmp_path / "golden.json"
+    golden.write_text(
+        json.dumps(
+            {
+                "questions": [
+                    {
+                        "question_id": qid,
+                        "question": f"Synthetic {qid}?",
+                        "relevant_papers": [],
+                    }
+                    for qid in smoke.QUESTION_IDS
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(server, "create_server_app", fake_server_app)
+    monkeypatch.setattr(smoke, "GOLDEN_PATH", golden)
+    monkeypatch.setattr(smoke, "OUTPUT_DIR", tmp_path / "out")
+
+    argv = ["--only", "gq-sp-001", "--repeat", "2"]
+    assert smoke.main(_LIVE, argv) == 0
+
+    out = capsys.readouterr().out
+    assert out.count("gq-sp-001 | workflow=research_question | http=200") == 2
+    assert "ids_in_text=false" in out
+    assert "gq-cmp-001" not in out
+    summary = json.loads((tmp_path / "out" / "summary.json").read_text())
+    assert [(row["id"], row["run"]) for row in summary] == [
+        ("gq-sp-001", 1),
+        ("gq-sp-001", 2),
+    ]
+    assert (tmp_path / "out" / "gq-sp-001.run2.json").exists()
