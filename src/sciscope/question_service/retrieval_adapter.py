@@ -169,7 +169,8 @@ def _validate_retrieval_metadata(
         type(metadata) is not RetrievalMetadata
         or metadata.mode != settings.mode
         or metadata.top_k != settings.top_k
-        or metadata.applied_filters != settings.filters
+        or _normalized_filters(metadata.applied_filters)
+        != _normalized_filters(settings.filters)
     ):
         raise ResponseContractFailure()
     candidate_pool_size = (
@@ -179,6 +180,15 @@ def _validate_retrieval_metadata(
     )
     if metadata.candidate_pool_size != candidate_pool_size:
         raise ResponseContractFailure()
+
+
+def _normalized_filters(
+    filters: RetrievalFilters | None,
+) -> RetrievalFilters | None:
+    """Treat ``None`` and an all-empty filter object as the same."""
+    if filters is None or filters == RetrievalFilters():
+        return None
+    return filters
 
 
 def _validate_result(result: object) -> None:

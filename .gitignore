@@ -60,3 +60,6 @@ Desktop.ini
 *.swp
 *.swo
 chunk_sample.txt
+
+# Local smoke/scratch output
+scratch/

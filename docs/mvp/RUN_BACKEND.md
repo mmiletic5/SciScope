@@ -6,6 +6,15 @@ never its value. There is no silent fallback to another provider or mode.
 
 ## Start
 
+The project is not installed as a package (`package = false`), so set
+`PYTHONPATH` once per PowerShell session before running `python -m` or uvicorn:
+
+```powershell
+$env:PYTHONPATH = "src"
+```
+
+`scripts/mvp_smoke.py` adds `src` to `sys.path` itself and needs no variable.
+
 ```powershell
 # Zero config: fake retrieval + fake provider, no DB, no network (Demo mode)
 uv run --locked python -m sciscope.api.server
@@ -26,6 +35,11 @@ $env:AI_PROVIDER = "openai"
 # uvicorn directly
 uv run --locked uvicorn sciscope.api.server:create_server_app --factory --port 8000
 ```
+
+Failure diagnostics (off by default): `$env:SCISCOPE_DEBUG_FRAMES = "1"` makes
+the server log, on stderr, only the traceback frames (`path:line function`) and
+the exception class name for `response_contract_failure` and unexpected errors.
+It never logs messages, locals, or request/response content.
 
 Defaults: host `127.0.0.1`, port `8000` (`HOST` / `PORT`).
 
