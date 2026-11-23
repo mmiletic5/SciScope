@@ -5,7 +5,7 @@ description: "Ordered Feature 012 implementation checklist; all approval and dat
 # Tasks: Shared Retrieval Service Integration
 
 **Input**: Design documents in `/specs/012-shared-retrieval-integration/`
-**Status**: APPROVED planning package. T001 is complete; T002–T008 remain incomplete. Person 3 authorized T012-B offline work only on 2026-11-22; each later gate remains explicit.
+**Status**: APPROVED planning package. T001–T005 are complete; T006–T008 remain incomplete. Each later gate remains explicit.
 
 ## Phase 1: Setup and shared contract approval
 
@@ -43,7 +43,7 @@ description: "Ordered Feature 012 implementation checklist; all approval and dat
 
 **Independent Test**: Sentinels show no DB/provider/network/listener initialization during import, factory construction, or fake-only requests; lifecycle tests cover the approved creator/borrower disposal rule.
 
-- [ ] T005 [US4] (012-E) Owner: Person 3. Add RED tests proving API import/app construction and fake-only requests are inert, and creator/borrower Engine disposal rules. Implement an approved explicit composition root that constructs/injects the exported public `RetrievalService`, adapter, and v2 app dependencies. Do not use the private `_compose_private_executor` as a production API; if no approved public service factory exists, record that dependency and stop before real composition. **Dependencies**: T001–T004. **Verification**: `uv run --locked pytest tests/backend/test_app_factory.py tests/backend/test_retrieval_http_integration.py -q`; independent Person 3 lifecycle verification.
+- [x] T005 [US4] (012-E) COMPLETE 2026-11-23 — Owner: Person 3. Person 3 decision: ACCEPTED. Add RED tests proving API import/app construction and fake-only requests are inert, and creator/borrower Engine disposal rules. Implement an approved explicit composition root that constructs/injects the exported public `RetrievalService`, adapter, and v2 app dependencies. Do not use the private `_compose_private_executor` as a production API; if no approved public service factory exists, record that dependency and stop before real composition. **Dependencies**: T001–T004. **Verification**: `uv run --locked pytest tests/backend/test_app_factory.py tests/backend/test_retrieval_composition.py tests/backend/test_application_lifecycle.py tests/backend/test_http_lifecycle.py -q`; `uv run --locked pytest tests/backend -q`; independent Person 3 lifecycle verification.
 
 ## Phase 6: Cross-story offline integration regression
 
