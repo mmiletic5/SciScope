@@ -4,9 +4,9 @@ Each supported workflow has one entry in ``WORKFLOW_PROMPTS``: task
 instructions, a strict output schema built from the allowed chunk IDs, and a
 parser that turns model content into a grounded outcome. All workflows share
 the grounding rules, the delimited passage format, the transport, retries and
-the time budget. ``research_question`` and ``evidence_comparison`` are
-implemented; any other workflow fails with a sanitized
-``WORKFLOW_NOT_IMPLEMENTED`` before any network call.
+the time budget. ``research_question``, ``evidence_comparison`` and
+``conflicting_evidence`` are implemented; any other workflow fails with a
+sanitized ``WORKFLOW_NOT_IMPLEMENTED`` before any network call.
 """
 
 from __future__ import annotations
@@ -41,6 +41,9 @@ from sciscope.question_service.contracts import (
     ComparisonPayload,
     ComparisonSubject,
     ComponentMetadata,
+    ConflictItem,
+    ConflictPosition,
+    ConflictsPayload,
     CorpusProvenance,
     DependencyFailure,
     DependencyFailureCode,
@@ -52,8 +55,10 @@ from sciscope.question_service.contracts import (
 from sciscope.question_service.validation import ResponseContractFailure
 from sciscope.question_service.workflow_validation import (
     MAX_COMPARISON_SUBJECTS,
+    MAX_CONFLICT_ITEMS,
     MIN_COMPARISON_ITEM_DOIS,
     MIN_COMPARISON_SUBJECTS,
+    MIN_CONFLICT_POSITIONS,
 )
 
 DEFAULT_TIMEOUT_SECONDS: Final = 45.0
@@ -74,6 +79,8 @@ _CLAIM_KEYS: Final = frozenset({"text", "citation_chunk_ids"})
 _COMPARISON_KEYS: Final = frozenset(
     {"status", "answer", "subjects", "similarities", "differences"}
 )
+_CONFLICT_KEYS: Final = frozenset({"status", "answer", "items"})
+_CONFLICT_ITEM_KEYS: Final = frozenset({"topic", "summary", "positions"})
 
 GROUNDING_RULES: Final = """\
 You answer questions about scientific literature using ONLY the passages \
@@ -121,6 +128,27 @@ Do not invent a comparison. If the passages do not support comparing at \
 least two papers on the question, return status "insufficient_evidence" with \
 answer null and empty "subjects", "similarities" and "differences" lists. \
 Never output DOIs, titles or ids of your own; only chunk_id citations."""
+
+
+CONFLICTING_EVIDENCE_TASK: Final = """\
+Task: identify potential differences for human review among the supplied \
+passages with respect to the question.
+Look for statements that point in different directions or that are described \
+as mixed or inconsistent. This includes authors who contrast their own data \
+with earlier literature within ONE paper; the passages may all come from a \
+single paper.
+Always use the wording "potential difference". NEVER assert that a \
+contradiction is proven, that a source is wrong, or that one statement \
+refutes another; only point out that the statements differ.
+When status is "answered":
+- "answer" is a short overview of the potential differences found.
+- "items" has at most 5 entries. Each has a "topic", a "summary" of why the \
+statements may differ, and at least 2 "positions".
+- Each position restates what one passage says, nothing more. Its \
+"citation_chunk_ids" name the passages that state it.
+If the passages show no difference, return status "insufficient_evidence" \
+with answer null and an empty "items" list. Never output ids or notes of \
+your own; only chunk_id citations."""
 
 
 def research_question_schema(
@@ -230,6 +258,47 @@ def evidence_comparison_schema(
             },
             "similarities": statements,
             "differences": statements,
+        },
+    }
+
+
+def conflicting_evidence_schema(
+    chunk_ids: Sequence[str],
+) -> dict[str, object]:
+    """Return the strict output schema for ``conflicting_evidence``.
+
+    The model supplies no IDs and no review note; the server adds them.
+
+    Args:
+        chunk_ids: Unique chunk IDs of the supplied evidence, in order.
+
+    Returns:
+        A JSON schema object following OpenAI strict mode.
+    """
+    item: dict[str, object] = {
+        "type": "object",
+        "additionalProperties": False,
+        "required": ["topic", "summary", "positions"],
+        "properties": {
+            "topic": {"type": "string"},
+            "summary": {"type": "string"},
+            "positions": {
+                "type": "array",
+                "items": _cited_object("text", chunk_ids),
+            },
+        },
+    }
+    return {
+        "type": "object",
+        "additionalProperties": False,
+        "required": ["status", "answer", "items"],
+        "properties": {
+            "status": {
+                "type": "string",
+                "enum": ["answered", "insufficient_evidence"],
+            },
+            "answer": {"type": ["string", "null"]},
+            "items": {"type": "array", "items": item},
         },
     }
 
@@ -450,6 +519,92 @@ def _parse_evidence_comparison(
     )
 
 
+def _conflict_items(
+    value: object,
+) -> tuple[tuple[str, str, tuple[tuple[str, tuple[str, ...]], ...]], ...]:
+    """Strictly parse the ``items`` list of a conflicts answer.
+
+    Raises:
+        ResponseContractFailure: For wrong types or unknown/missing fields.
+    """
+    if not isinstance(value, list):
+        raise ResponseContractFailure()
+    parsed = []
+    for entry in value:
+        if not isinstance(entry, dict) or set(entry) != _CONFLICT_ITEM_KEYS:
+            raise ResponseContractFailure()
+        topic = entry["topic"]
+        summary = entry["summary"]
+        if not isinstance(topic, str) or not isinstance(summary, str):
+            raise ResponseContractFailure()
+        parsed.append((topic, summary, _statements(entry["positions"], "text")))
+    return tuple(parsed)
+
+
+def _parse_conflicting_evidence(
+    content: str, evidence: Sequence[Evidence]
+) -> ProviderOutcome | None:
+    """Parse and ground ``conflicting_evidence`` model content.
+
+    The server assigns ``conf-N`` and ``conf-N-pM`` and the fixed review
+    note. Output the model could fix (unknown citations, empty text, too many
+    items, an item with fewer than two positions) returns None. An answered
+    output with no items is passed on with an empty payload: shared
+    validation downgrades it to ``insufficient_evidence``.
+    """
+    value = _strict_json_object(content, _CONFLICT_KEYS)
+    status = value["status"]
+    answer = value["answer"]
+    items = _conflict_items(value["items"])
+    if status not in ("answered", "insufficient_evidence") or not (
+        answer is None or isinstance(answer, str)
+    ):
+        raise ResponseContractFailure()
+    if status == "insufficient_evidence":
+        if answer is not None or items:
+            return None
+        return ProviderOutcome(
+            status=ProviderOutcomeStatus.INSUFFICIENT_EVIDENCE,
+            answer=None,
+            claims=(),
+            metadata=_REAL_METADATA,
+            workflow="conflicting_evidence",
+        )
+    if answer is None or not answer.strip() or len(items) > MAX_CONFLICT_ITEMS:
+        return None
+    by_id = {item.chunk_id: item for item in evidence}
+    built: list[ConflictItem] = []
+    for index, (topic, summary, positions) in enumerate(items, start=1):
+        rows = _resolved_rows(positions, by_id)
+        if (
+            rows is None
+            or len(rows) < MIN_CONFLICT_POSITIONS
+            or not topic.strip()
+            or not summary.strip()
+            or not all(text.strip() for text, _ in rows)
+        ):
+            return None
+        built.append(
+            ConflictItem(
+                f"conf-{index}",
+                topic,
+                summary,
+                tuple(
+                    ConflictPosition(f"conf-{index}-p{number}", text, ids)
+                    for number, (text, ids) in enumerate(rows, start=1)
+                ),
+            )
+        )
+    return ProviderOutcome(
+        status=ProviderOutcomeStatus.ANSWERED,
+        answer=answer,
+        claims=(),
+        metadata=_REAL_METADATA,
+        workflow="conflicting_evidence",
+        payload=ConflictsPayload(items=tuple(built)),
+    )
+
+
 def _resolved_rows(
     rows: Sequence[tuple[str, tuple[str, ...]]],
     by_id: Mapping[str, Evidence],
@@ -520,6 +675,12 @@ WORKFLOW_PROMPTS: Final[Mapping[Workflow, WorkflowPrompt]] = MappingProxyType(
             task_instructions=EVIDENCE_COMPARISON_TASK,
             schema=evidence_comparison_schema,
             parse=_parse_evidence_comparison,
+        ),
+        "conflicting_evidence": WorkflowPrompt(
+            schema_name="conflicting_evidence_answer",
+            task_instructions=CONFLICTING_EVIDENCE_TASK,
+            schema=conflicting_evidence_schema,
+            parse=_parse_conflicting_evidence,
         ),
     }
 )

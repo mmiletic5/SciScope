@@ -735,7 +735,11 @@ def _walk_objects(schema: object) -> Iterator[dict[str, object]]:
 
 def test_registry_lists_only_implemented_workflows() -> None:
     """Only implemented workflows have a prompt entry."""
-    expected = ("research_question", "evidence_comparison")
+    expected = (
+        "research_question",
+        "evidence_comparison",
+        "conflicting_evidence",
+    )
     assert tuple(WORKFLOW_PROMPTS) == expected
     assert OpenAIAnswerProvider.supported_workflows == expected
 
@@ -769,7 +773,7 @@ def test_research_question_schema_follows_strict_mode_rules() -> None:
         assert set(required) == set(properties)
 
 
-@pytest.mark.parametrize("workflow", ["conflicting_evidence", "research_gap"])
+@pytest.mark.parametrize("workflow", ["research_gap"])
 def test_unimplemented_workflow_fails_before_any_network_call(
     workflow: Workflow,
 ) -> None:

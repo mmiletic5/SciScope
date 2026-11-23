@@ -430,11 +430,15 @@ def test_openai_health_lists_only_implemented_workflows() -> None:
     """Health reflects the configured provider, not the contract."""
     body = TestClient(create_server_app(_OPENAI_ENV)).get("/api/health").json()
 
-    assert body["workflows"] == ["research_question", "evidence_comparison"]
+    assert body["workflows"] == [
+        "research_question",
+        "evidence_comparison",
+        "conflicting_evidence",
+    ]
     assert FAKE_KEY not in str(body)
 
 
-@pytest.mark.parametrize("workflow", ["conflicting_evidence", "research_gap"])
+@pytest.mark.parametrize("workflow", ["research_gap"])
 def test_openai_unimplemented_workflow_is_a_sanitized_503(
     workflow: str,
 ) -> None:
