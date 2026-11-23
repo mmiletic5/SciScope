@@ -8,6 +8,47 @@ Research Question Explorer, Evidence Comparison, Conflicting Evidence Finder,
 and Research Gap & Hypothesis Assistant, all using one shared RAG system. See
 [product scope](docs/PRODUCT_SCOPE.md) and [architecture](docs/ARCHITECTURE.md).
 
+## MVP quickstart
+
+The MVP track (lean mode, not ACCEPTED) adds a local backend and a React
+frontend over a 17-paper PLOS ONE honey bee corpus. API:
+[docs/mvp/API_CONTRACT.md](docs/mvp/API_CONTRACT.md). Demo plan:
+[docs/mvp/DEMO_SCRIPT.md](docs/mvp/DEMO_SCRIPT.md).
+
+1. **Database:** follow [docs/mvp/DEMO_DB.md](docs/mvp/DEMO_DB.md) (Docker,
+   `pilot-delivery.zip`, `alembic upgrade head`, `scripts/mvp_import_pilot.py`,
+   `verify_pilot`). Reset: `docker compose down -v`.
+2. **Environment variable names** (values go in the gitignored `.env`, never in git):
+   `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_PORT`,
+   `DATABASE_URL`, `OPENAI_API_KEY`, `OPENAI_ANSWER_MODEL`, `AI_PROVIDER`,
+   `RETRIEVAL_BACKEND`, `RETRIEVAL_MODE`. Full table in
+   [docs/mvp/RUN_BACKEND.md](docs/mvp/RUN_BACKEND.md).
+3. **Backend, live mode** (real retrieval and OpenAI answers):
+   ```powershell
+   $env:PYTHONPATH = "src"
+   $env:RETRIEVAL_BACKEND = "postgres"
+   $env:AI_PROVIDER = "openai"
+   uv run --locked --env-file .env python -m sciscope.api.server
+   ```
+4. **Backend, zero-config fake mode** (no DB, no network; the UI shows a Demo badge):
+   ```powershell
+   $env:PYTHONPATH = "src"
+   uv run --locked python -m sciscope.api.server
+   ```
+5. **Frontend** (proxies `/api` to `http://127.0.0.1:8000`):
+   ```powershell
+   cd frontend
+   npm ci
+   npm run dev
+   # offline, no backend needed:
+   $env:VITE_API_MODE = 'fixtures'; npm run dev
+   ```
+
+Known limits: the corpus is 17 papers; answers are generated from retrieved
+passages and may be wrong; retrieval quality is not verified; only five
+development questions were exercised live. See the "Known limits" sections of
+`docs/mvp/DEMO_DB.md` and `docs/mvp/RUN_BACKEND.md`.
+
 ## Windows PowerShell prerequisites
 
 Install these on **each developer computer**, outside this repository:
