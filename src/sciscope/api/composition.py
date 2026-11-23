@@ -13,10 +13,15 @@ from starlette.middleware.base import RequestResponseEndpoint
 from starlette.responses import Response
 
 from sciscope.api.app import create_app
+from sciscope.question_service.agentic_retrieval import (
+    SearchPlanner,
+    wrap_agentic,
+)
 from sciscope.question_service.contracts import (
     WORKFLOWS,
     AnswerProvider,
     QuestionMetadata,
+    RetrievalService,
     Workflow,
 )
 from sciscope.question_service.retrieval_adapter import (
@@ -106,6 +111,7 @@ def create_application(
     workflow_retrieval_settings: (
         Mapping[Workflow, RetrievalAdapterSettings] | None
     ) = None,
+    agentic_planner: SearchPlanner | None = None,
 ) -> ComposedApplication:
     """Compose the accepted API dependencies without hidden resources.
 
@@ -114,6 +120,8 @@ def create_application(
     ``workflow_retrieval_settings``, when given, must cover every workflow;
     each entry becomes one adapter over the shared retrieval service and
     serves that v2 workflow. ``retrieval_settings`` still serves v1.
+    ``agentic_planner``, when given (it requires the per-workflow settings),
+    wraps the adapters of the agentic workflows in ``AgenticRetrieval``.
     """
     _validate_configuration(
         engine=engine,
@@ -123,6 +131,8 @@ def create_application(
         provider=provider,
         metadata=metadata,
     )
+    if agentic_planner is not None and workflow_retrieval_settings is None:
+        raise ValueError("Agentic retrieval needs per-workflow settings")
     if workflow_retrieval_settings is not None:
         if set(workflow_retrieval_settings) != set(WORKFLOWS):
             raise ValueError("Provide retrieval settings for every workflow")
@@ -150,7 +160,7 @@ def create_application(
             service=service,
             settings=retrieval_settings,
         )
-        workflow_retrievals = (
+        workflow_retrievals: dict[Workflow, RetrievalService] | None = (
             None
             if workflow_retrieval_settings is None
             else {
@@ -160,6 +170,10 @@ def create_application(
                 for workflow, settings in workflow_retrieval_settings.items()
             }
         )
+        if agentic_planner is not None and workflow_retrievals is not None:
+            workflow_retrievals = wrap_agentic(
+                workflow_retrievals, agentic_planner
+            )
         app = create_app(
             retrieval=adapter,
             provider=provider,

@@ -1,7 +1,7 @@
 """Deterministic, offline-only fake dependencies for Feature 011."""
 
 from dataclasses import dataclass, replace
-from typing import ClassVar, Final, Literal
+from typing import TYPE_CHECKING, ClassVar, Final, Literal
 
 from sciscope.question_service.contracts import (
     DEFAULT_WORKFLOW,
@@ -27,6 +27,12 @@ from sciscope.question_service.contracts import (
     Workflow,
     WorkflowPayload,
 )
+
+if TYPE_CHECKING:
+    from sciscope.question_service.agentic_retrieval import AgenticSession
+
+FAKE_PLANNER_QUERY_SUFFIXES: Final = ("", "methods and results")
+"""Two scripted searches: the question itself, then a refined query."""
 
 _SYNTHETIC_CORPUS = CorpusProvenance(
     delivery_digest="synthetic-delivery-digest-v1",
@@ -340,3 +346,31 @@ class ComponentFakeAnswerProvider:
             question, evidence, corpus, request_id, workflow=workflow
         )
         return replace(outcome, metadata=_FAKE_PROVIDER_METADATA)
+
+    def plan_searches(self, question: str, session: "AgenticSession") -> None:
+        """Simulate a stage 1 tool loop deterministically, without network.
+
+        Three simulated model rounds: one search per round for the first
+        ``FAKE_PLANNER_QUERY_SUFFIXES`` entries, then a round that stops.
+        The ``unavailable`` and ``timeout`` modes fail like the real planner,
+        which makes the caller fall back.
+
+        Args:
+            question: Validated question text; each query extends it.
+            session: Budgets, counters and the search tool.
+
+        Raises:
+            DependencyFailure: In the ``unavailable`` and ``timeout`` modes.
+        """
+        session.note_model_call()
+        if self.mode == "unavailable":
+            raise DependencyFailure(DependencyFailureCode.PROVIDER_UNAVAILABLE)
+        if self.mode == "timeout":
+            raise DependencyFailure(DependencyFailureCode.DEPENDENCY_TIMEOUT)
+        for index, suffix in enumerate(FAKE_PLANNER_QUERY_SUFFIXES):
+            if session.remaining_calls <= 0:
+                return
+            if index:
+                session.note_model_call()
+            session.search(f"{question} {suffix}".strip())
+        session.note_model_call()

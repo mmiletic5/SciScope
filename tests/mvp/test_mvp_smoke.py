@@ -346,3 +346,87 @@ def test_main_only_and_repeat_run_one_question_several_times(
         ("gq-sp-001", 2),
     ]
     assert (tmp_path / "out" / "gq-sp-001.run2.json").exists()
+
+
+def test_parse_args_agentic_defaults_off() -> None:
+    """--agentic is opt-in."""
+    assert smoke.parse_args([]).agentic is False
+    assert smoke.parse_args(["--agentic"]).agentic is True
+
+
+def test_format_agentic_reports_counts_and_fallback_reason() -> None:
+    """Counters, fallback flag with reason, and stage 1 latency."""
+    from sciscope.question_service.agentic_retrieval import AgenticStats
+
+    facts = smoke.agentic_facts(
+        AgenticStats("evidence_comparison", 2, 1, 0, True, "empty_union", 1.26)
+    )
+    assert smoke.format_agentic(facts) == (
+        "agentic rounds=2 searches=1 merged=0 fallback=yes(empty_union) "
+        "stage1=1.3s"
+    )
+    assert smoke.format_agentic(smoke.agentic_facts(None)) == "agentic=n/a"
+
+
+@pytest.mark.parametrize("agentic", [False, True])
+def test_main_agentic_sets_the_flag_and_prints_counters(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    agentic: bool,
+) -> None:
+    """Offline (fake mode): the flag is forced on or off for the run."""
+    import json
+
+    from sciscope.api import server
+
+    real_factory = server.create_server_app
+    seen: list[str] = []
+
+    def fake_mode_app(environ: dict[str, str]) -> FastAPI:
+        seen.append(environ["SCISCOPE_AGENTIC_RETRIEVAL"])
+        return real_factory(
+            {
+                "SCISCOPE_AGENTIC_RETRIEVAL": environ[
+                    "SCISCOPE_AGENTIC_RETRIEVAL"
+                ]
+            }
+        )
+
+    golden = tmp_path / "golden.json"
+    golden.write_text(
+        json.dumps(
+            {
+                "questions": [
+                    {
+                        "question_id": qid,
+                        "question": f"Synthetic {qid}?",
+                        "relevant_papers": [],
+                    }
+                    for qid in smoke.QUESTION_IDS
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(server, "create_server_app", fake_mode_app)
+    monkeypatch.setattr(smoke, "GOLDEN_PATH", golden)
+    monkeypatch.setattr(smoke, "OUTPUT_DIR", tmp_path / "out")
+    env = {**_LIVE, "SCISCOPE_AGENTIC_RETRIEVAL": "1"}
+
+    argv = ["--only", "gq-cmp-001"] + (["--agentic"] if agentic else [])
+    assert smoke.main(env, argv) == 0
+
+    out = capsys.readouterr().out
+    assert seen == ["1" if agentic else "0"]
+    suffix = ".agentic" if agentic else ""
+    summary = json.loads(
+        (tmp_path / "out" / f"summary{suffix}.json").read_text()
+    )
+    if agentic:
+        assert "agentic rounds=3 searches=2 merged=4 fallback=no stage1=" in out
+        assert summary[0]["agentic_searches"] == 2
+        assert (tmp_path / "out" / "gq-cmp-001.agentic.json").exists()
+    else:
+        assert "agentic rounds" not in out and "agentic=n/a" not in out
+        assert "agentic" not in summary[0]

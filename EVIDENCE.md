@@ -921,3 +921,49 @@ dependency resolution, and CI remain unverified. Human acceptance: NOT PROVIDED.
 - The owner ran a live smoke of five development questions (one per workflow plus one insufficient-evidence case) through the real database and a real OpenAI model: HTTP 200 and citations inside the returned evidence.
 - The owner manually exercised all four screens in Live mode.
 - **Not done:** held-out evaluation; formal quality metrics; DB-gated test execution on the merged code; security/privacy review.
+
+### Full suite on a disposable Postgres, 2026-11-23
+
+- **Setup:** throwaway container from the same pgvector image digest as `compose.yaml`, different name and host port, no volume. Database `sciscope_test_005`, role `sciscope`, then `alembic upgrade head` (reached `f005_pgvector_foundation`). The demo database was not touched. The URL was set only in the test process environment and the container was removed afterwards.
+- **Command:** `PYTHONPATH=src uv run --locked python -m pytest -q`
+- **Result:** 3360 passed, 1 failed, 16 errors, 3 skipped (3:48). Skips: live OpenAI test (no key), two symlink tests (no Windows symlink privilege).
+- **Failed:** `tests/ingestion/test_replacement.py::test_valid_replacement_prunes_old_corpus_and_keeps_audit`. It asserts `delivery_imports` has 3 rows ("existing inactive fixture plus both successful audits"); an empty database has 2.
+- **Errors (16):** all in `tests/retrieval/` (`test_phase_c_pipeline.py`, `test_postgres_core.py`, `test_postgres_lookup.py`, `test_public_postgres.py`). Fixture preflight requires the preserved active pilot snapshot, which an empty database does not have.
+- **Cause:** the DB-gated tests assume a database that already holds the preserved Phase A pilot data (one active import plus one inactive fixture), not an empty migrated one. These are environment-precondition failures, not shown to be code regressions. The retrieval tests were therefore not exercised against merged code; the pilot data would have to be loaded into a disposable database first.
+- **Not done:** no tests or source edited; not ACCEPTED; no human verification.
+
+- **Amendment, same day (pilot snapshot loaded):** a second throwaway container (same digest, different name, port 55432, no volume; database `sciscope_test_005`, role `sciscope`) was migrated with `alembic upgrade head` and loaded with `scripts/mvp_import_pilot.py` (outcome `imported`: 17 papers, 319 sections, 728 vectors; one active import). The demo database was not touched; the URL was set only in the process environment; the container was removed afterwards.
+  - `tests/retrieval`: **170 passed, 0 failed, 0 errors, 0 skipped** (4.6 s). The 16 earlier errors were therefore the missing-pilot precondition, not code defects.
+  - `tests/ingestion/test_replacement.py`: **2 passed, 1 failed** — `test_valid_replacement_prunes_old_corpus_and_keeps_audit` still fails at the same assertion (`delivery_imports` count is 2, expected 3). With the pilot loaded there is one pre-existing import, not the extra inactive fixture the test comments assume. The only failing assertion observed is that count; no other cause was seen.
+  - Not re-run: the rest of the suite (the 3360 passed above stand from the empty-DB run). No tests or source edited. Not ACCEPTED; no human verification.
+
+### Opt-in agentic retrieval for evidence_comparison, 2026-11-24 (lean mode, not committed)
+
+- **Scope:** new flag `SCISCOPE_AGENTIC_RETRIEVAL` (`0` default, `1` on; any other value stops startup naming the variable). Only `evidence_comparison` honors it (registry `AGENTIC_WORKFLOWS`). No API contract, fixture, type or response-field change.
+- **Design:** `AgenticRetrieval` (new `question_service/agentic_retrieval.py`) wraps the workflow's retrieval and implements the existing `RetrievalService` protocol.
+  - Stage 1: the provider's `plan_searches` runs a tool loop with one function tool, `search_corpus(query)`: at most 3 tool calls in total (parallel calls count; extra ones are not run), a 20 s stage budget, and the same retrieval profile per call (only `query_text` changes). Queries are sanitized (Cc/Cf characters removed, whitespace collapsed, at most 300 characters). Results go back as boundary-delimited passage blocks cut to 700 characters.
+  - Stage 2: the unchanged grounded call receives the round-robin union (at most 12 chunks, at most 60,000 characters).
+  - Fallback: any stage 1 exception, budget overrun, zero tool calls, empty union or corpus change → single-shot retrieval of the original question.
+  - The fake provider simulates stage 1 deterministically (two scripted searches).
+  - Logs: counts, reason code and latency only.
+  - `scripts/mvp_smoke.py --agentic` prints rounds, searches, merged count, fallback (with reason) and stage 1 latency.
+- **Live finding and fix:** the first live runs fell back 3/3 (`error:DependencyFailure`, HTTP 400). The configured answer model rejects function tools on `/v1/chat/completions` unless `reasoning_effort` is `none` (OpenAI error text). Stage 1 now always sends `reasoning_effort: "none"`; stage 2 is unchanged.
+- **Offline checks (commands run):**
+  - `ruff check .`: passed. `ruff format --check .`: 380 files formatted.
+  - `mypy src scripts/mvp_smoke.py`: no issues.
+  - `mypy .`: 286 errors, against 284 on a clean `HEAD` export. The 2 new errors are `backend` import-not-found in the new test file, the same as every sibling `test_openai_provider_*` file.
+  - `python -m pytest -q`: 3382 passed, 3 skipped, 36 errors. Baseline before the change: 3341 passed, 3 skipped, 36 errors. The 36 errors are the DB-gated ingestion/retrieval tests without `SCISCOPE_TEST_DATABASE_URL`, the same set before and after.
+  - 41 new tests in `tests/backend/test_agentic_retrieval.py`, `tests/backend/test_agentic_server.py` and `tests/mvp/test_mvp_smoke.py`. After the `reasoning_effort` fix, `tests/backend` + `tests/mvp` gave 490 passed, 1 skipped.
+  - Tests were written after the implementation (not test-first). Three mutation checks (limit removed, empty-union fallback removed, sanitizer bypassed) each made tests fail.
+- **Live smoke, `gq-cmp-001`, `--repeat 3`** (real DB + OpenAI; `SCISCOPE_LIVE_OPENAI=1` set by the agent for the command, per the owner's request):
+
+  | Run set | Latency (s) | Evidence | Stage 1 | Golden DOIs in evidence | Subjects |
+  | --- | --- | --- | --- | --- | --- |
+  | baseline A | 8.6 / 7.0 / 6.8 | 10 | — | 2/2 | 2 |
+  | agentic before fix | 7.6 / 7.4 / 7.7 | 10 | fallback 3/3, 0.6–0.9 s | 2/2 | 2 |
+  | agentic after fix | 8.9 / 10.3 / 11.8 | 12 | rounds 2, searches 3/2/3, merged 12, no fallback, 3.2–3.6 s | 2/2 | 2 |
+  | baseline B | 8.3 / 7.2 / 5.6 | 10 | — | 2/2 | 2 |
+
+  - All runs: HTTP 200, `answered`, citations in evidence, `ids_in_text=false`.
+  - Agentic found the same 2 papers as the baseline (the 2 extra chunks come from them). Its answers are equivalent in substance, with 1 difference item each, against 1–2 in the baseline. Mean latency: 10.3 s agentic against 7.3 s baseline (about +3 s). There is no quality gain on this question.
+- **Not done:** no other questions or workflows; no held-out evaluation; no human review of answers; not ACCEPTED; no human verification.

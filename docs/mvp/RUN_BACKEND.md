@@ -56,6 +56,44 @@ Defaults: host `127.0.0.1`, port `8000` (`HOST` / `PORT`).
 | `DATABASE_URL` | required for `postgres` |
 | `CORS_ORIGINS` | comma list; default `http://localhost:5173,http://127.0.0.1:5173` |
 | `HOST`, `PORT` | `127.0.0.1`, `8000` |
+| `SCISCOPE_AGENTIC_RETRIEVAL` | `0` (default) or `1`; opt-in agentic retrieval for `evidence_comparison` only |
+
+## Agentic retrieval (opt-in, `evidence_comparison` only)
+
+`$env:SCISCOPE_AGENTIC_RETRIEVAL = "1"` adds a stage before the normal
+grounded answer call of `evidence_comparison`. With the flag unset or `0`
+nothing changes. The API contract, fixtures and response fields stay the same.
+
+1. **Stage 1 (tool loop):** the configured answer provider gets one function
+   tool, `search_corpus(query)`. It may make at most 3 tool calls in total
+   (parallel calls count; extra ones are not run) within a 20 s stage budget.
+   Each call runs the workflow's own retrieval profile (same mode, `top_k`
+   10, candidate pool, no filters); only the query text changes. Model
+   queries are untrusted: control and format characters are removed,
+   whitespace is collapsed, and the length is cut to 300 characters. Results
+   go back to the model as boundary-delimited passage blocks, cut to 700
+   characters each.
+2. **Stage 2 (unchanged):** the per-search rankings are merged round-robin
+   into a unique union of at most 12 chunks (and at most 60,000 passage
+   characters, the provider's evidence cap). The union becomes the evidence
+   of the existing grounded answer call: same schema enum of allowed
+   chunk_ids, same validation, same sanitizer. The response `evidence` is the
+   union, so citations can only name chunks that were actually retrieved.
+3. **Fallback:** any stage 1 error, a budget overrun, zero tool calls, an
+   empty union or a corpus change between searches falls back to today's
+   single-shot retrieval of the original question.
+
+With `AI_PROVIDER=fake`, stage 1 is a deterministic simulation: two scripted
+searches, no network. With the synthetic retrieval, the answer is the same
+as with the flag off.
+
+The server logs one line per agentic request on stderr, with counts only:
+`agentic_retrieval workflow=... rounds=... searches=... merged=...
+fallback=yes|no reason=... latency_ms=...`. It never logs queries,
+passages, prompts or keys.
+
+Live comparison: `scripts/mvp_smoke.py --only gq-cmp-001 --repeat 3
+--agentic` (without `--agentic` the script forces the flag to `0`).
 
 ## Try it
 
@@ -90,6 +128,28 @@ curl.exe -X POST http://127.0.0.1:8000/api/v2/questions `
 - Fake mode reports retrieval origin `synthetic` and provider origin `fake`,
   both `is_test_data: true`.
 - Health reports configured origins only; it does not probe the DB or OpenAI.
+- Agentic retrieval (`SCISCOPE_AGENTIC_RETRIEVAL=1`):
+  - Stage 2 keeps its own 60 s provider budget, so the worst case is
+    about 20 s (stage 1) plus 60 s (stage 2) plus retrieval time. That is
+    more than the 60 s the frontend allows.
+  - Every search is a full retrieval (a query embedding plus a DB query in
+    hybrid mode), and there are up to 3 searches plus up to 3 extra model
+    calls.
+  - On fallback, the original retrieval runs after the time stage 1 already
+    spent.
+  - If the fallback retrieval itself fails, the error response reports the
+    answer provider as not executed, although stage 1 did call the model.
+  - The union can hold up to 12 chunks, so `evidence` can be longer than
+    the 10 of the normal profile.
+  - Stage 1 sees passages cut to 700 characters.
+  - Stage 1 always sends `reasoning_effort: "none"`, because the configured
+    reasoning model accepts function tools on chat completions only with
+    that value (the provider's own reasoning effort applies to stage 2
+    only). A model that rejects `reasoning_effort` makes stage 1 fail, so
+    every request falls back.
+  - In the first live check (`gq-cmp-001` ×3) agentic found the same two
+    papers as the single-shot path and took about 3 s longer.
+  - The other three workflows ignore the flag.
 - Live OpenAI and Postgres paths are unit-tested offline only; they have not been
   verified end to end by this change. `scripts/mvp_smoke.py` runs each dev
   question with its workflow and skips workflows the provider does not

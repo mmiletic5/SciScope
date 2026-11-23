@@ -11,6 +11,12 @@ Run (PowerShell)::
 
     $env:SCISCOPE_LIVE_OPENAI="1"
     uv run --locked --env-file .env python scripts/mvp_smoke.py
+
+``--agentic`` sets ``SCISCOPE_AGENTIC_RETRIEVAL=1`` for the run (otherwise
+it is forced to ``0``, so a comparison is never mixed up) and appends the
+stage 1 counters of the agentic workflows to each line: model rounds,
+searches, merged chunks, fallback (with reason) and retrieval-step latency.
+Outputs then get an ``.agentic`` suffix.
 """
 
 # ruff: noqa: E402
@@ -19,6 +25,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import re
 import sys
 import time
@@ -48,6 +55,8 @@ _TEXT_CONTAINERS = (
     "conflicts",
     "gap_analysis",
 )
+AGENTIC_FLAG = "SCISCOPE_AGENTIC_RETRIEVAL"
+AGENTIC_LOGGER = "sciscope.agentic_retrieval"
 _REQUIRED_ENV = (
     ("AI_PROVIDER", "openai"),
     ("RETRIEVAL_BACKEND", "postgres"),
@@ -183,6 +192,59 @@ def analyze(
     }
 
 
+class AgenticCapture(logging.Handler):
+    """Collect the content-free stats of agentic retrieval log records."""
+
+    def __init__(self) -> None:
+        """Start with no records."""
+        super().__init__(logging.INFO)
+        self.stats: list[Any] = []
+
+    def emit(self, record: logging.LogRecord) -> None:
+        """Keep the stats object attached to the record, if any."""
+        stats = getattr(record, "agentic_stats", None)
+        if stats is not None:
+            self.stats.append(stats)
+
+
+def agentic_facts(stats: Any | None) -> dict[str, Any]:
+    """Return the agentic counters of one request for the summary.
+
+    Args:
+        stats: ``AgenticStats`` of the request, or None when its workflow is
+            not agentic.
+
+    Returns:
+        Counters only; ``agentic`` is False when no stats were logged.
+    """
+    if stats is None:
+        return {"agentic": False}
+    return {
+        "agentic": True,
+        "agentic_rounds": stats.rounds,
+        "agentic_searches": stats.searches,
+        "agentic_merged_chunks": stats.merged_chunks,
+        "agentic_fallback": stats.fallback,
+        "agentic_fallback_reason": stats.reason,
+        "agentic_latency_seconds": round(stats.latency_seconds, 2),
+    }
+
+
+def format_agentic(facts: Mapping[str, Any]) -> str:
+    """Build the agentic part of a summary line."""
+    if not facts.get("agentic"):
+        return "agentic=n/a"
+    fallback = "yes" if facts["agentic_fallback"] else "no"
+    if facts["agentic_fallback_reason"]:
+        fallback += f"({facts['agentic_fallback_reason']})"
+    return (
+        f"agentic rounds={facts['agentic_rounds']} "
+        f"searches={facts['agentic_searches']} "
+        f"merged={facts['agentic_merged_chunks']} fallback={fallback} "
+        f"stage1={facts['agentic_latency_seconds']:.1f}s"
+    )
+
+
 def skip_line(question_id: str, workflow: str) -> str:
     """Build the summary line for a question whose workflow is skipped."""
     return (
@@ -243,7 +305,7 @@ def _write_json(path: Path, payload: object) -> None:
 
 
 def parse_args(argv: Sequence[str]) -> argparse.Namespace:
-    """Parse the optional ``--only`` and ``--repeat`` arguments."""
+    """Parse ``--only``, ``--repeat`` and ``--agentic``."""
     parser = argparse.ArgumentParser(description="MVP live smoke run.")
     parser.add_argument(
         "--only",
@@ -255,6 +317,11 @@ def parse_args(argv: Sequence[str]) -> argparse.Namespace:
         type=int,
         default=1,
         help="Run each selected question this many times (default 1).",
+    )
+    parser.add_argument(
+        "--agentic",
+        action="store_true",
+        help=f"Run with {AGENTIC_FLAG}=1 and print stage 1 counters.",
     )
     args = parser.parse_args(list(argv))
     if args.repeat < 1:
@@ -270,7 +337,8 @@ def main(
 
     Args:
         environ: Mapping to read; defaults to ``os.environ``.
-        argv: Command-line arguments; ``--only <id>`` and ``--repeat <n>``.
+        argv: Command-line arguments; ``--only <id>``, ``--repeat <n>``
+            and ``--agentic``.
 
     Returns:
         Process exit code: 0 when all requests ran, 1 on HTTP errors,
@@ -279,7 +347,7 @@ def main(
     import os
 
     args = parse_args(argv or ())
-    env = os.environ if environ is None else environ
+    env = dict(os.environ if environ is None else environ)
     missing = check_live_opt_in(env)
     if missing:
         print(
@@ -297,6 +365,12 @@ def main(
     questions = select_golden(
         golden, (args.only,) if args.only else QUESTION_IDS
     )
+    env[AGENTIC_FLAG] = "1" if args.agentic else "0"
+    mode_suffix = ".agentic" if args.agentic else ""
+    capture = AgenticCapture()
+    agentic_logger = logging.getLogger(AGENTIC_LOGGER)
+    agentic_logger.setLevel(logging.INFO)
+    agentic_logger.addHandler(capture)
     try:
         app = create_server_app(env)
     except ServerConfigError as error:
@@ -326,6 +400,7 @@ def main(
                     }
                 )
                 continue
+            capture.stats.clear()
             started = time.perf_counter()
             response = client.post(
                 "/api/v2/questions",
@@ -339,21 +414,27 @@ def main(
                 body = response.json()
             except ValueError:
                 body = {"error": {"code": "non_json_response"}}
-            suffix = f".run{run}" if args.repeat > 1 else ""
+            suffix = mode_suffix + (f".run{run}" if args.repeat > 1 else "")
             _write_json(OUTPUT_DIR / f"{item['id']}{suffix}.json", body)
             ok = response.status_code == 200
             facts = analyze(body, item["relevant_dois"]) if ok else None
-            print(
-                format_line(
-                    item["id"],
-                    response.status_code,
-                    body,
-                    latency,
-                    facts,
-                    item["expect_insufficient"],
-                    item["workflow"],
-                )
+            extra = (
+                agentic_facts(capture.stats[-1] if capture.stats else None)
+                if args.agentic
+                else {}
             )
+            line = format_line(
+                item["id"],
+                response.status_code,
+                body,
+                latency,
+                facts,
+                item["expect_insufficient"],
+                item["workflow"],
+            )
+            if args.agentic:
+                line += " | " + format_agentic(extra)
+            print(line)
             if ok:
                 reviews.append((f"{item['id']}{suffix}", format_review(body)))
             else:
@@ -369,9 +450,11 @@ def main(
                     "latency_seconds": round(latency, 2),
                     "expect_insufficient": item["expect_insufficient"],
                     **(facts or {}),
+                    **extra,
                 }
             )
-    _write_json(OUTPUT_DIR / "summary.json", summary)
+    agentic_logger.removeHandler(capture)
+    _write_json(OUTPUT_DIR / f"summary{mode_suffix}.json", summary)
 
     print("\n=== Review ===")
     for question_id, lines in reviews:

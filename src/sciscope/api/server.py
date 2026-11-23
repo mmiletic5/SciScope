@@ -10,7 +10,9 @@ There is no silent fallback between providers or retrieval modes.
 
 from __future__ import annotations
 
+import logging
 import os
+import sys
 from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Literal, cast
@@ -37,6 +39,11 @@ from sciscope.embedding.openai_client import (
     read_base_url,
 )
 from sciscope.embedding.query_embedder import OpenAIQueryEmbedder
+from sciscope.question_service.agentic_retrieval import (
+    AGENTIC_FLAG_ENV,
+    LOGGER_NAME,
+    wrap_agentic,
+)
 from sciscope.question_service.contracts import (
     WORKFLOWS,
     ComponentMetadata,
@@ -94,13 +101,15 @@ class ServerConfig:
     openai_base_url: str | None
     openai_answer_model: str | None
     openai_timeout_seconds: float
+    agentic_retrieval: bool = False
 
     def __repr__(self) -> str:
         """Describe non-secret selections only."""
         return (
             f"ServerConfig(ai_provider={self.ai_provider!r}, "
             f"retrieval_backend={self.retrieval_backend!r}, "
-            f"retrieval_mode={self.retrieval_mode!r})"
+            f"retrieval_mode={self.retrieval_mode!r}, "
+            f"agentic_retrieval={self.agentic_retrieval!r})"
         )
 
     @classmethod
@@ -131,6 +140,7 @@ class ServerConfig:
             _choice(env, "RETRIEVAL_MODE", ("hybrid", "lexical"), "hybrid"),
         )
         cors = _cors_origins(env)
+        agentic = _choice(env, AGENTIC_FLAG_ENV, ("0", "1"), "0") == "1"
 
         database_settings: DatabaseSettings | None = None
         if backend == "postgres":
@@ -194,6 +204,7 @@ class ServerConfig:
             openai_base_url=base_url,
             openai_answer_model=model,
             openai_timeout_seconds=timeout,
+            agentic_retrieval=agentic,
         )
 
 
@@ -362,10 +373,19 @@ def create_server_app(
             ),
             answer_provider=provider_metadata,
         )
+        fake_retrieval = cast(RetrievalService, ComponentFakeRetrieval())
         app = create_app(
-            retrieval=cast(RetrievalService, ComponentFakeRetrieval()),
+            retrieval=fake_retrieval,
             provider=provider,
             v2_metadata=metadata,
+            workflow_retrievals=(
+                wrap_agentic(
+                    {workflow: fake_retrieval for workflow in WORKFLOWS},
+                    provider,
+                )
+                if config.agentic_retrieval
+                else None
+            ),
         )
     else:
         assert config.database_settings is not None
@@ -395,11 +415,24 @@ def create_server_app(
             provider=provider,
             metadata=metadata,
             workflow_retrieval_settings=workflow_settings,
+            agentic_planner=provider if config.agentic_retrieval else None,
         )
         app = composed.app
     _health_route(app, metadata, provider.supported_workflows)
     _add_cors(app, config.cors_origins)
+    if config.agentic_retrieval:
+        _enable_agentic_log()
     return app
+
+
+def _enable_agentic_log() -> None:
+    """Send the content-free agentic retrieval lines to stderr, once."""
+    logger = logging.getLogger(LOGGER_NAME)
+    logger.setLevel(logging.INFO)
+    if not logger.handlers:
+        handler = logging.StreamHandler(sys.stderr)
+        handler.setFormatter(logging.Formatter("%(levelname)s %(message)s"))
+        logger.addHandler(handler)
 
 
 def main() -> None:
