@@ -1,0 +1,35 @@
+:root {
+  font-family: 'IBM Plex Sans', sans-serif;
+  color: #1b1f24;
+  background: #f6f7f9;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  --color-text: #1b1f24;
+  --color-secondary: #5b6470;
+  --color-page: #f6f7f9;
+  --color-surface: #fff;
+  --color-border: #dde1e6;
+  --color-input-border: #c9ced5;
+  --color-honey: #b45309;
+  --color-honey-hover: #92400e;
+  --color-honey-tint: #fef3e2;
+  --color-honey-tint-text: #7c3a06;
+  --color-blue: #1d4ed8;
+  --color-blue-tint: #e8effe;
+  --color-blue-dark: #1e3a8a;
+  --color-error-surface: #fff8f4;
+  --color-error-border: #f3c4ae;
+  --color-error-title: #9a3412;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --radius-card: 14px;
+  --radius-button: 10px;
+  --focus-ring: 2px solid #1d4ed8;
+}

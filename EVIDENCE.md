@@ -679,3 +679,236 @@ dependency resolution, and CI remain unverified. Human acceptance: NOT PROVIDED.
 
 - **Commit:** `caf3c578ceaf99ffbcf1923c9d396e0510a3b442` — `feat: compose retrieval application with safe lifecycle`.
 - **State:** T001–T005 are ACCEPTED; T006–T008 are PENDING; Feature 012 / P4-09 remains IN PROGRESS. The preceding “commit hash: PENDING” wording describes the pre-commit acceptance checkpoint and is retained as historical evidence. No new test result, reviewer approval, CI outcome, database authorization, provider operation, or retrieval-mode activation is asserted here.
+### Feature 012 — Frontend Research Question Explorer
+
+- **Owner:** Person 4 (Frontend & Integration).
+- **Date:** 2026-11-22.
+- **Artifacts:** Approved specification, plan, and eight-task list, UI data model, question
+  service contract summary, quickstart validation guide, and
+  requirements-quality checklist in [`specs/012-frontend-explorer`](specs/012-frontend-explorer).
+- **Current state:** IN_PROGRESS — the project owner explicitly approved the
+  specification and supplied three corrections on 2026-11-22. Those
+  corrections are applied in `spec.md`: mock notice dismissal is scoped to the
+  current result, the header badge follows the latest response metadata, and
+  requests time out after 30 seconds with an abort and retryable message. The
+  plan and task list are approved; implementation is authorized through T008.
+  T001 through T006 are automated-validated. T007's implementation, all four
+  required checks, and the Explorer walkthrough are accepted. T008 is now
+  implemented and automated-validated; feature-owner review remains pending. The owner also
+  approved the ESLint and `@eslint/js` v9 alignment.
+- **Research:** Read the constitution, development workflow, team ownership,
+  product scope, architecture, data model, Phase 5 backlog, integration
+  handoff, Feature 011 API source/models/fakes, Golden Questions v0, and current
+  frontend starter. Verified the closed fake-only contract and separated its
+  facts from the unsupported local launcher. Compared state-driven navigation
+  with a router, Vitest/Testing Library with Jest, and checked the JSX
+  accessibility plugin's maintained flat-config support. External findings
+  and unavailable package-registry checks are recorded in `research.md`.
+- **Plan decisions:** Use app state instead of a router; use Vitest with
+  Testing Library, user-event, and jsdom for offline mocked behavior tests; use
+  response-local mock-notice dismissal; abort pending requests after 30
+  seconds; propose an independent frontend CI job without changing Python CI.
+  Optional Playwright tests remain out of scope unless separately approved.
+- **Task sequencing:** T001–T006 cover setup, User Story 1, and User Story 2;
+  T007's four automated checks and owner-reported Explorer walkthrough passed;
+  T008 implements User Story 3 previews. The task list records T007 accepted.
+- **Proxy-response correction:** The owner clarified that a stopped backend
+  can yield HTTP 5xx with an HTML/non-envelope proxy body. The specification,
+  plan, data model, and service contract now classify any 5xx without a valid
+  API error envelope as retryable API-unreachable; malformed HTTP 200/4xx
+  bodies remain generic nonretryable errors. Client tests for both paths are
+  required by the task list.
+- **T001 evidence:** The IBM Plex Fontsource packages and approved development
+  dependencies installed without peer overrides; npm reported zero
+  vulnerabilities. npm also warned that resolved `eslint@9.39.5` is no longer
+  supported; this is the resolved v9 major required by the approved
+  `eslint-plugin-jsx-a11y` peer range. `npm.cmd run lint`, `npm.cmd run typecheck`, and
+  `npm.cmd run build` all passed. The Vite `/api` proxy remains configured for
+  `http://127.0.0.1:8000`. T001 is AUTO_VALIDATED; no manual acceptance is
+  implied. Setup-only RED: N/A because T001 defines no application behavior;
+  baseline inspection confirmed that the starter had no test script.
+- **Dependency compatibility finding:** `eslint-plugin-jsx-a11y` 6.10.2
+  declares ESLint peer support through major 9. T001 applied the approved
+  alignment to `eslint` and `@eslint/js` 9 and enabled the recommended flat
+  config without peer overrides. npm warned that resolved `eslint@9.39.5` is
+  no longer supported; the installed version is recorded in the T001 evidence.
+- **Template workflow:** The composed Spec Kit template was resolved with the
+  repository script after the machine's default PowerShell execution policy
+  blocked its initial invocation. The resolved template was used to create the
+  draft spec. The requirements checklist was reviewed against the draft; it
+  records specification quality only and is not implementation approval.
+- **Automated verification:** T001–T008 implementation checks passed. T008
+  RED/GREEN and final checks are recorded in its task entry below.
+- **Manual verification:** T007 Explorer walkthrough was performed by Milena
+  (Person 4) on 2026-11-22 and ACCEPTED; preview walkthrough is not part of the
+  Explorer gate.
+- **Backlog state:** P5 backlog items remain unchecked; the Phase 5 note in
+  `PROJECT_TODO.md` reflects approved specification, plan, and task list plus
+  the accepted T007 Explorer gate.
+- **Runtime compatibility input:** The project owner reports Node.js
+  `v24.20.0`. Official Vite guidance requires Node `20.19+` or `22.12+`;
+  Vitest 5 requires Node `22.12+` and Vite `6.4+`. The reported Node and
+  installed Vite `8.3.8` satisfy those minima. The local `node --version`
+  command returned `v24.20.0`.
+- **Open questions and limits:** The handoff does not establish an official
+  backend launcher, evidence has no author/year/section fields, filters are not
+  part of the request contract, and real retrieval (P4-09) and Gemini (P4-10)
+  remain separate work. A separate frontend CI job appears only as a proposal
+  in the plan. The local demo command is treated as owner-provided, not officially
+  supported.
+- **Next gate:** Owner review of the completed T008 previews; no further task is
+  authorized in this implementation run.
+
+### T002 — Frontend question-service types and fixtures
+
+- **Owner:** Person 4
+- **Feature specification and plan:** Approved Feature 012 `spec.md` and `plan.md`; approved `tasks.md`.
+- **Current state:** AUTO_VALIDATED
+- **Files changed:** `frontend/src/api/types.ts`, `frontend/src/api/fixtures.ts`, `frontend/src/api/types.test.ts`, `specs/012-frontend-explorer/research.md`, `specs/012-frontend-explorer/tasks.md`, `PROJECT_TODO.md`, `EVIDENCE.md`.
+- **Tests created or updated:** `frontend/src/api/types.test.ts`.
+- **RED result:** `npm.cmd run test -- src/api/types.test.ts` failed as expected before implementation: Vitest could not resolve the not-yet-created `./fixtures` module.
+- **GREEN result:** The same command passed: 1 test file, 3 tests passed.
+- **Other automated checks:** `npm.cmd run typecheck` — PASS.
+- **Known issues and prior attempts:** Fixture text and DOI are explicitly synthetic and must not be presented as a real scientific source. TypeScript types alone do not validate network JSON; T003 covers runtime envelope validation.
+- **Awaiting human confirmation:** Yes.
+
+#### Human evidence
+
+- **Verifier:** NOT PROVIDED
+- **Verification date:** NOT PROVIDED
+- **Exact manual commands or actions:** NOT RUN
+- **Observed outcome:** NOT PROVIDED
+- **Explicit decision:** NOT PROVIDED
+- **Final status:** AUTO_VALIDATED; human verification pending.
+
+### T003 — Question API client and request IDs
+
+- **Owner:** Person 4
+- **Feature specification and plan:** Approved Feature 012 `spec.md` and `plan.md`; approved `tasks.md`; accepted Person 3 HTTP handoff.
+- **Current state:** AUTO_VALIDATED
+- **Files changed:** `frontend/src/api/client.ts`, `frontend/src/api/client.test.ts`, `frontend/src/lib/requestId.ts`, `frontend/src/lib/requestId.test.ts`, `specs/012-frontend-explorer/tasks.md`, `PROJECT_TODO.md`, `EVIDENCE.md`.
+- **Tests created or updated:** API-client tests for the three success states, six known error codes, fetch rejection, 5xx HTML/empty/malformed/success-shaped bodies, malformed 200/4xx bodies, request serialization and 30-second abort; request-ID validation tests.
+- **RED result:** `npm.cmd run test -- src/api/client.test.ts src/lib/requestId.test.ts` failed before implementation because `client.ts` and `requestId.ts` did not exist.
+- **GREEN result:** The same command passed: 2 files, 28 tests passed. HTTP 5xx without a valid API error envelope is retryable API-unreachable; malformed HTTP 200/4xx is generic nonretryable. Timeout aborts and retains the generated request reference.
+- **Other automated checks:** `npm.cmd run typecheck` — PASS; `npm.cmd run lint` — PASS.
+- **Known issues and prior attempts:** Initial assertions for valid server error envelopes expected the client-generated ID; corrected them to assert the returned server request ID, matching the contract. All client failures use sanitized messages; raw body/error text is not displayed. No backend contract changes.
+- **Awaiting human confirmation:** Yes.
+
+#### Human evidence
+
+- **Verifier:** NOT PROVIDED
+- **Verification date:** NOT PROVIDED
+- **Exact manual commands or actions:** NOT RUN
+- **Observed outcome:** NOT PROVIDED
+- **Explicit decision:** NOT PROVIDED
+- **Final status:** AUTO_VALIDATED; human verification pending.
+
+### T004 — Research question form and initial/loading view
+
+- **Owner:** Person 4
+- **Feature specification and plan:** Approved Feature 012 `spec.md` and `plan.md`; approved `tasks.md`.
+- **Current state:** AUTO_VALIDATED
+- **Files changed:** `frontend/src/features/explorer/QuestionForm.tsx`, `frontend/src/features/explorer/QuestionForm.test.tsx`, `frontend/src/features/explorer/ExplorerPage.tsx`, `specs/012-frontend-explorer/tasks.md`, `PROJECT_TODO.md`, `EVIDENCE.md`.
+- **Tests created or updated:** Form validation/count/examples/submission/pending tests and initial/loading Explorer results-area tests.
+- **RED result:** `npm.cmd run test -- src/features/explorer/QuestionForm.test.tsx` failed before implementation because `QuestionForm.tsx` did not exist.
+- **GREEN result:** The same command passed: 1 file, 8 tests passed. It verifies trimmed 1–2,000 character validation, example fill without submit, trimmed submit, duplicate-submit prevention, loading announcement, initial state, and busy results region.
+- **Other automated checks:** `npm.cmd run typecheck` — PASS; `npm.cmd run lint` — PASS.
+- **Known issues and prior attempts:** Initial long-input tests used simulated keystrokes and exceeded the test timeout; switched to direct input-change events for boundary values. ESLint first reported a redundant explicit `region` role on a section; removed the redundant role and reran lint successfully.
+- **Awaiting human confirmation:** Yes.
+
+#### Human evidence
+
+- **Verifier:** NOT PROVIDED
+- **Verification date:** NOT PROVIDED
+- **Exact manual commands or actions:** NOT RUN
+- **Observed outcome:** NOT PROVIDED
+- **Explicit decision:** NOT PROVIDED
+- **Final status:** AUTO_VALIDATED; human verification pending.
+
+### T005 — Answer, citation, source, and provenance rendering
+
+- **Owner:** Person 4
+- **Feature specification and plan:** Approved Feature 012 `spec.md` and `plan.md`; approved `tasks.md`; accepted question-service contract.
+- **Current state:** AUTO_VALIDATED
+- **Files changed:** `frontend/src/lib/citations.ts`, `frontend/src/lib/citations.test.ts`, `frontend/src/features/explorer/AnswerView.tsx`, `frontend/src/features/explorer/AnswerView.test.tsx`, `frontend/src/features/explorer/ExplorerPage.tsx`, `frontend/src/features/explorer/ExplorerPage.test.tsx`, `frontend/src/components/SourceCard.tsx`, `frontend/src/components/CitationMarker.tsx`, `specs/012-frontend-explorer/plan.md`, `specs/012-frontend-explorer/spec.md`, `specs/012-frontend-explorer/tasks.md`, `PROJECT_TODO.md`, `EVIDENCE.md`.
+- **Tests created or updated:** Citation resolution ordering/deduplication/unknown/uncited cases; answer rendering, citation navigation/highlighting, DOI link safety, source locator disclosure, provenance; answered flow integration.
+- **RED result:** `npm.cmd run test -- src/features/explorer/AnswerView.test.tsx src/lib/citations.test.ts` failed before implementation because `citations.ts` and `AnswerView.tsx` did not exist. The integration test then demonstrated the page still showed only “Response received” rather than its answer.
+- **GREEN result:** `npm.cmd run test -- src/features/explorer/AnswerView.test.tsx src/lib/citations.test.ts src/features/explorer/ExplorerPage.test.tsx` passed: 3 files, 7 tests.
+- **Other automated checks:** `npm.cmd run typecheck` — PASS; `npm.cmd run lint` — PASS.
+- **Known issues and prior attempts:** An integration assertion initially expected the unprefixed title; corrected it to assert the accessible “Source 1” heading. DOI uses the fixed HTTPS doi.org origin with slash-preserving path encoding and safe new-tab attributes. Fixture source details remain synthetic.
+- **Awaiting human confirmation:** Yes.
+
+#### Human evidence
+
+- **Verifier:** NOT PROVIDED
+- **Verification date:** NOT PROVIDED
+- **Exact manual commands or actions:** NOT RUN
+- **Observed outcome:** NOT PROVIDED
+- **Explicit decision:** NOT PROVIDED
+- **Final status:** AUTO_VALIDATED; human verification pending.
+
+### T006 — Empty, error, synthetic-data, badge, and timeout states
+
+- **Owner:** Person 4
+- **Feature specification and plan:** Approved Feature 012 `spec.md` and `plan.md`; approved `tasks.md`; approved HTTP 5xx classification correction.
+- **Current state:** AUTO_VALIDATED
+- **Files changed:** `frontend/src/features/explorer/ResultStates.tsx`, `frontend/src/features/explorer/ResultStates.test.tsx`, `frontend/src/features/explorer/ExplorerPage.tsx`, `frontend/src/features/explorer/ExplorerPage.test.tsx`, `frontend/src/components/MockNotice.tsx`, `frontend/src/components/Header.tsx`, `frontend/src/components/Header.test.tsx`, `specs/012-frontend-explorer/tasks.md`, `PROJECT_TODO.md`, `EVIDENCE.md`.
+- **Tests created or updated:** Result-state tests for empty, insufficient evidence, six known errors, retry/reference, reachability, malformed response, and timeout; header default/either-true/both-false metadata tests; Explorer tests for response-scoped notice dismissal, retained editable question/retry, and client timeout integration.
+- **RED result:** `npm.cmd run test -- src/features/explorer/ResultStates.test.tsx src/components/Header.test.tsx` failed before implementation because the components did not exist. Explorer integration tests also failed before page wiring: the mock notice did not appear and API-unreachable errors displayed only a generic placeholder.
+- **GREEN result:** `npm.cmd run test -- src/features/explorer/ResultStates.test.tsx src/components/Header.test.tsx src/features/explorer/ExplorerPage.test.tsx` passed: 3 files, 20 tests. The 30-second test confirms the request aborts, exact timeout text and retry appear, and the entered question remains editable.
+- **Other automated checks:** `npm.cmd run typecheck` — PASS; `npm.cmd run lint` — PASS.
+- **Known issues and prior attempts:** Result presentation is implemented in `ResultStates.tsx`; the task's optional `StatusPanel.tsx` path was not needed. Header is implemented and tested independently; T007 will place it in the app shell and wire latest response metadata.
+- **Awaiting human confirmation:** Yes.
+
+#### Human evidence
+
+- **Verifier:** NOT PROVIDED
+- **Verification date:** NOT PROVIDED
+- **Exact manual commands or actions:** NOT RUN
+- **Observed outcome:** NOT PROVIDED
+- **Explicit decision:** NOT PROVIDED
+- **Final status:** AUTO_VALIDATED; human verification pending.
+
+### T007 — Explorer shell and demo-ready gate
+
+- **Owner:** Person 4
+- **Feature specification and plan:** Approved Feature 012 `spec.md` and `plan.md`; approved `tasks.md`.
+- **Current state:** DONE
+- **Files changed:** `frontend/src/App.tsx`, `frontend/src/App.test.tsx`, `frontend/src/components/Header.tsx`, `frontend/src/components/Navigation.tsx`, `frontend/src/features/explorer/ExplorerPage.tsx`, `frontend/src/features/explorer/QuestionForm.tsx`, `frontend/src/features/explorer/QuestionForm.test.tsx`, `frontend/src/features/explorer/AnswerView.tsx`, `frontend/src/styles/tokens.css`, `frontend/src/styles/global.css`, `frontend/src/index.css`, `frontend/index.html`, `frontend/README.md`, `specs/012-frontend-explorer/plan.md`, `EVIDENCE.md`, `PROJECT_TODO.md`, `specs/012-frontend-explorer/tasks.md`.
+- **Tests created or updated:** `frontend/src/App.test.tsx` checks semantic app landmarks, default mock badge, active-page announcement, polite result announcements, and absence of preview content. `frontend/src/features/explorer/QuestionForm.test.tsx` additionally verifies that Golden Questions are visible as their full accessible button labels and grouped accessibly.
+- **RED result:** `npm.cmd run test -- src/App.test.tsx` failed before implementation: the starter had no banner, navigation, main, footer, mock badge, or Research Question Explorer.
+- **GREEN result:** `npm.cmd run test -- src/App.test.tsx` passed: 1 file, 2 tests.
+- **Other automated checks:** `npm.cmd run lint` — PASS; `npm.cmd run typecheck` — PASS; `npm.cmd run test` — PASS (10 files, 67 tests); `npm.cmd run build` — PASS; `npm.cmd ls --depth=0` — PASS with no peer overrides. The build bundles IBM Plex Sans and IBM Plex Mono locally. Computed contrast ratios: primary button 5.02:1, secondary text 6.00:1, honey notice text 7.76:1, error title 6.95:1, blue link 10.36:1.
+- **Known issues and prior attempts:** The original starter screen was replaced. Additional RED checks found that example prompts were hidden behind generic aria-labels and the results region lacked a polite live announcement; the accessible full prompts, group role, and `aria-live="polite"` region are now in place. The `/api` Vite proxy remains pointed at `http://127.0.0.1:8000`. Preview navigation labels are present but disabled until T008; no preview screen was implemented. Automated checks do not verify 390 px browser layout or the live fake-backend walkthrough.
+- **Awaiting human confirmation:** No; Milena (Person 4) accepted the Explorer walkthrough.
+
+#### Human evidence
+
+- **Verifier:** Milena (Person 4)
+- **Verification date:** 2026-11-22
+- **Exact manual commands or actions:** Started `scratch/serve_fake.py` and `npm run dev`; exercised the default response, documented fake modes, backend-stopped proxy path, validation, keyboard navigation, focus, and 390 px viewport.
+- **Observed outcome:** Answered flow, citation scroll/highlight, Details and About this result disclosures, DOI link, mock notice dismissal/reappearance, and header badge were OK. Retrieval-empty, insufficient-evidence, provider-unavailable, retrieval-timeout, and stopped-backend scenarios produced expected states/retry rules. Whitespace and >2,000-character validation passed. Keyboard navigation and visible focus were OK; no horizontal overflow at 390 px.
+- **Explicit decision:** ACCEPTED.
+- **Final status:** DONE. T007 is accepted and T008 is authorized after the requested pre-task fixes.
+
+### T008 — Static workflow previews
+
+- **Owner:** Person 4
+- **Feature specification and plan:** Approved Feature 012 `spec.md` and `plan.md`; approved `tasks.md`; T007 Explorer gate accepted by Milena on 2026-11-22.
+- **Current state:** AUTO_VALIDATED
+- **Files changed:** `frontend/src/App.tsx`, `frontend/src/App.test.tsx`, `frontend/src/components/Navigation.tsx`, `frontend/src/features/explorer/ExplorerPage.tsx`, `frontend/src/features/explorer/ExplorerPage.test.tsx`, `frontend/src/features/explorer/QuestionForm.tsx`, `frontend/src/features/previews/PreviewBanner.tsx`, `frontend/src/features/previews/ComparisonPreview.tsx`, `frontend/src/features/previews/ConflictsPreview.tsx`, `frontend/src/features/previews/GapsPreview.tsx`, `frontend/src/features/previews/Previews.test.tsx`, `frontend/src/styles/global.css`, `specs/012-frontend-explorer/tasks.md`, `PROJECT_TODO.md`, `EVIDENCE.md`.
+- **Tests created or updated:** Preview navigation and content tests cover all three placeholder views, exact preview notice and draft copy, disabled actions, comparison rows, and exactly one `<main>` landmark per view. Explorer regression test ensures retry submits the currently edited question.
+- **RED result:** `npm.cmd run test -- src/features/previews/Previews.test.tsx` failed as expected before preview implementation: all three tests could not navigate because preview controls were disabled and preview screens did not exist. `npm.cmd run test -- src/features/explorer/ExplorerPage.test.tsx` also failed before the retry fix: retry submitted the original question after the field had been edited.
+- **GREEN result:** `npm.cmd run test -- src/features/previews/Previews.test.tsx src/App.test.tsx` passed: 2 files, 5 tests. After finding the duplicate `research-question` DOM ID, added a regression assertion; `npm.cmd run test -- src/App.test.tsx src/features/explorer/QuestionForm.test.tsx` passed: 2 files, 10 tests after assigning the textarea a distinct ID. The retry regression passed with `npm.cmd run test -- src/features/explorer/ExplorerPage.test.tsx src/features/explorer/QuestionForm.test.tsx`: 2 files, 13 tests.
+- **Other automated checks:** From `frontend/`, `npm.cmd run lint` — PASS; `npm.cmd run typecheck` — PASS; `npm.cmd run test` — PASS (11 files, 71 tests); `npm.cmd run build` — PASS (Vite 8.3.8 production build).
+- **Known issues and prior attempts:** Explorer remains mounted but hidden while another view is active, preserving its question/result state. `App.tsx` owns the single `<main>` landmark shared by Explorer and each preview. No preview content is connected to the backend or makes scientific claims.
+- **Awaiting human confirmation:** Yes.
+
+#### Human evidence
+
+- **Verifier:** NOT PROVIDED
+- **Verification date:** NOT PROVIDED
+- **Exact manual commands or actions:** NOT RUN
+- **Observed outcome:** NOT PROVIDED
+- **Explicit decision:** NOT PROVIDED
+- **Final status:** AUTO_VALIDATED; T008 owner review pending.
