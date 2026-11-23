@@ -1,10 +1,11 @@
 """Deterministic, offline-only fake dependencies for Feature 011."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Literal
 
 from sciscope.question_service.contracts import (
     Claim,
+    ComponentMetadata,
     CorpusProvenance,
     DependencyFailure,
     DependencyFailureCode,
@@ -128,3 +129,46 @@ class FakeAnswerProvider:
                 ),
             ),
         )
+
+
+_FAKE_RETRIEVAL_METADATA = ComponentMetadata(
+    configured_origin="synthetic", executed=True, is_test_data=True
+)
+_FAKE_PROVIDER_METADATA = ComponentMetadata(
+    configured_origin="fake", executed=True, is_test_data=True
+)
+
+
+@dataclass(frozen=True, slots=True)
+class ComponentFakeRetrieval:
+    """Synthetic retrieval that reports truthful v2 component metadata.
+
+    Wraps ``FakeRetrieval`` so v1 behavior and tests stay unchanged.
+    """
+
+    mode: RetrievalMode = "evidence"
+
+    def retrieve(self, question: str, request_id: str) -> RetrievalOutcome:
+        """Return the fake outcome labeled as synthetic test data."""
+        outcome = FakeRetrieval(self.mode).retrieve(question, request_id)
+        return replace(outcome, metadata=_FAKE_RETRIEVAL_METADATA)
+
+
+@dataclass(frozen=True, slots=True)
+class ComponentFakeAnswerProvider:
+    """Fake answer provider that reports truthful v2 component metadata."""
+
+    mode: ProviderMode = "answered"
+
+    def answer(
+        self,
+        question: str,
+        evidence: tuple[Evidence, ...],
+        corpus: CorpusProvenance,
+        request_id: str,
+    ) -> ProviderOutcome:
+        """Return the fake outcome labeled as a fake test-data provider."""
+        outcome = FakeAnswerProvider(self.mode).answer(
+            question, evidence, corpus, request_id
+        )
+        return replace(outcome, metadata=_FAKE_PROVIDER_METADATA)

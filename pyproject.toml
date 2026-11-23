@@ -12,6 +12,7 @@ dependencies = [
     "rank-bm25==0.2.2",
     "sentence-transformers>=6.3.0",
     "sqlalchemy>=2.0.58,<2.1",
+    "uvicorn>=0.30,<1",
 ]
 
 # Development and application dependencies for approved features.
@@ -40,6 +41,9 @@ convention = "google"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+markers = [
+    "live: calls a paid external provider; skipped unless explicitly enabled",
+]
 
 [tool.mypy]
 python_version = "3.12"
