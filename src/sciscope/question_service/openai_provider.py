@@ -4,9 +4,9 @@ Each supported workflow has one entry in ``WORKFLOW_PROMPTS``: task
 instructions, a strict output schema built from the allowed chunk IDs, and a
 parser that turns model content into a grounded outcome. All workflows share
 the grounding rules, the delimited passage format, the transport, retries and
-the time budget. Only ``research_question`` is implemented; any other
-workflow fails with a sanitized ``WORKFLOW_NOT_IMPLEMENTED`` before any
-network call.
+the time budget. ``research_question`` and ``evidence_comparison`` are
+implemented; any other workflow fails with a sanitized
+``WORKFLOW_NOT_IMPLEMENTED`` before any network call.
 """
 
 from __future__ import annotations
@@ -36,7 +36,10 @@ from sciscope.embedding.openai_client import (
 )
 from sciscope.question_service.contracts import (
     DEFAULT_WORKFLOW,
+    CitedItem,
     Claim,
+    ComparisonPayload,
+    ComparisonSubject,
     ComponentMetadata,
     CorpusProvenance,
     DependencyFailure,
@@ -47,6 +50,11 @@ from sciscope.question_service.contracts import (
     Workflow,
 )
 from sciscope.question_service.validation import ResponseContractFailure
+from sciscope.question_service.workflow_validation import (
+    MAX_COMPARISON_SUBJECTS,
+    MIN_COMPARISON_ITEM_DOIS,
+    MIN_COMPARISON_SUBJECTS,
+)
 
 DEFAULT_TIMEOUT_SECONDS: Final = 45.0
 DEFAULT_MAX_COMPLETION_TOKENS: Final = 8192
@@ -63,6 +71,9 @@ _REAL_METADATA: Final = ComponentMetadata(
 )
 _ANSWER_KEYS: Final = frozenset({"status", "answer", "claims"})
 _CLAIM_KEYS: Final = frozenset({"text", "citation_chunk_ids"})
+_COMPARISON_KEYS: Final = frozenset(
+    {"status", "answer", "subjects", "similarities", "differences"}
+)
 
 GROUNDING_RULES: Final = """\
 You answer questions about scientific literature using ONLY the passages \
@@ -90,6 +101,26 @@ Task: answer the research question.
 When status is "answered", "answer" is a concise synthesis of a few sentences \
 and "claims" lists each distinct factual statement that supports the answer, \
 each with the chunk_ids of the passages that state it."""
+
+
+EVIDENCE_COMPARISON_TASK: Final = """\
+Task: compare the papers behind the supplied passages with respect to the \
+question. Compare ONLY what the supplied passages say; do not add anything \
+the passages do not state.
+Each passage header gives the paper's DOI and title; passages with the same \
+DOI belong to the same paper.
+When status is "answered":
+- "answer" is a short overview of the comparison.
+- "subjects" has one entry per paper you actually use, at most 6 and at \
+least 2 papers. "summary" states what that paper's passages report. Its \
+"citation_chunk_ids" must come from passages of that single paper only.
+- "similarities" lists points on which two or more papers agree, and \
+"differences" lists points on which they differ. Each item must cite \
+passages from at least 2 different papers. Either list may be empty.
+Do not invent a comparison. If the passages do not support comparing at \
+least two papers on the question, return status "insufficient_evidence" with \
+answer null and empty "subjects", "similarities" and "differences" lists. \
+Never output DOIs, titles or ids of your own; only chunk_id citations."""
 
 
 def research_question_schema(
@@ -135,6 +166,70 @@ def research_question_schema(
                     },
                 },
             },
+        },
+    }
+
+
+def _cited_array(chunk_ids: Sequence[str]) -> dict[str, object]:
+    """Return the schema of a citation list restricted to ``chunk_ids``."""
+    return {
+        "type": "array",
+        "items": {"type": "string", "enum": list(chunk_ids)},
+    }
+
+
+def _cited_object(text_key: str, chunk_ids: Sequence[str]) -> dict[str, object]:
+    """Return the strict schema of one cited statement."""
+    return {
+        "type": "object",
+        "additionalProperties": False,
+        "required": [text_key, "citation_chunk_ids"],
+        "properties": {
+            text_key: {"type": "string"},
+            "citation_chunk_ids": _cited_array(chunk_ids),
+        },
+    }
+
+
+def evidence_comparison_schema(
+    chunk_ids: Sequence[str],
+) -> dict[str, object]:
+    """Return the strict output schema for ``evidence_comparison``.
+
+    The model supplies no IDs, DOIs or titles; the server derives them.
+
+    Args:
+        chunk_ids: Unique chunk IDs of the supplied evidence, in order.
+
+    Returns:
+        A JSON schema object following OpenAI strict mode.
+    """
+    statements: dict[str, object] = {
+        "type": "array",
+        "items": _cited_object("text", chunk_ids),
+    }
+    return {
+        "type": "object",
+        "additionalProperties": False,
+        "required": [
+            "status",
+            "answer",
+            "subjects",
+            "similarities",
+            "differences",
+        ],
+        "properties": {
+            "status": {
+                "type": "string",
+                "enum": ["answered", "insufficient_evidence"],
+            },
+            "answer": {"type": ["string", "null"]},
+            "subjects": {
+                "type": "array",
+                "items": _cited_object("summary", chunk_ids),
+            },
+            "similarities": statements,
+            "differences": statements,
         },
     }
 
@@ -259,6 +354,121 @@ def _parse_research_question(
     return _grounded_outcome(_parse_answer(content), evidence_ids)
 
 
+def _parse_evidence_comparison(
+    content: str, evidence: Sequence[Evidence]
+) -> ProviderOutcome | None:
+    """Parse and ground ``evidence_comparison`` model content.
+
+    The server assigns ``subj-N``, ``sim-N`` and ``diff-N`` and derives each
+    subject's DOI and title from its cited evidence. Output the model could
+    fix (unknown citations, a subject spanning DOIs, reused or too many
+    subjects, items citing one paper) returns None. Output citing fewer than
+    two distinct papers is passed on unchanged: shared validation downgrades
+    it to ``insufficient_evidence``.
+    """
+    value = _strict_json_object(content, _COMPARISON_KEYS)
+    status = value["status"]
+    answer = value["answer"]
+    subjects = _statements(value["subjects"], "summary")
+    similarities = _statements(value["similarities"], "text")
+    differences = _statements(value["differences"], "text")
+    if status not in ("answered", "insufficient_evidence") or not (
+        answer is None or isinstance(answer, str)
+    ):
+        raise ResponseContractFailure()
+    if status == "insufficient_evidence":
+        if answer is not None or subjects or similarities or differences:
+            return None
+        return ProviderOutcome(
+            status=ProviderOutcomeStatus.INSUFFICIENT_EVIDENCE,
+            answer=None,
+            claims=(),
+            metadata=_REAL_METADATA,
+            workflow="evidence_comparison",
+        )
+    if answer is None or not answer.strip() or not subjects:
+        return None
+    by_id = {item.chunk_id: item for item in evidence}
+    subject_rows = _resolved_rows(subjects, by_id)
+    sim_rows = _resolved_rows(similarities, by_id)
+    diff_rows = _resolved_rows(differences, by_id)
+    if subject_rows is None or sim_rows is None or diff_rows is None:
+        return None
+    subject_dois = [_dois(ids, by_id) for _, ids in subject_rows]
+    if any(len(dois) != 1 for dois in subject_dois):
+        return None
+    cited = set().union(
+        *(
+            _dois(ids, by_id)
+            for _, ids in (*subject_rows, *sim_rows, *diff_rows)
+        )
+    )
+    if len(cited) >= MIN_COMPARISON_ITEM_DOIS and (
+        not MIN_COMPARISON_SUBJECTS
+        <= len(subject_rows)
+        <= MAX_COMPARISON_SUBJECTS
+        or len({next(iter(dois)) for dois in subject_dois}) != len(subject_rows)
+        or any(
+            len(_dois(ids, by_id)) < MIN_COMPARISON_ITEM_DOIS
+            for _, ids in (*sim_rows, *diff_rows)
+        )
+    ):
+        return None
+    if not all(
+        text.strip() for text, _ in (*subject_rows, *sim_rows, *diff_rows)
+    ):
+        return None
+    payload = ComparisonPayload(
+        subjects=tuple(
+            ComparisonSubject(
+                f"subj-{index}",
+                next(iter(dois)),
+                by_id[ids[0]].paper_title,
+                text,
+                ids,
+            )
+            for index, ((text, ids), dois) in enumerate(
+                zip(subject_rows, subject_dois, strict=True), start=1
+            )
+        ),
+        similarities=tuple(
+            CitedItem(f"sim-{index}", text, ids)
+            for index, (text, ids) in enumerate(sim_rows, start=1)
+        ),
+        differences=tuple(
+            CitedItem(f"diff-{index}", text, ids)
+            for index, (text, ids) in enumerate(diff_rows, start=1)
+        ),
+    )
+    return ProviderOutcome(
+        status=ProviderOutcomeStatus.ANSWERED,
+        answer=answer,
+        claims=(),
+        metadata=_REAL_METADATA,
+        workflow="evidence_comparison",
+        payload=payload,
+    )
+
+
+def _resolved_rows(
+    rows: Sequence[tuple[str, tuple[str, ...]]],
+    by_id: Mapping[str, Evidence],
+) -> list[tuple[str, tuple[str, ...]]] | None:
+    """Deduplicate citations per row; None if any row is not grounded."""
+    resolved: list[tuple[str, tuple[str, ...]]] = []
+    for text, ids in rows:
+        unique = tuple(dict.fromkeys(ids))
+        if not unique or not all(chunk_id in by_id for chunk_id in unique):
+            return None
+        resolved.append((text, unique))
+    return resolved
+
+
+def _dois(ids: Sequence[str], by_id: Mapping[str, Evidence]) -> set[str]:
+    """Return the distinct DOIs of the cited evidence."""
+    return {by_id[chunk_id].doi for chunk_id in ids}
+
+
 @dataclass(frozen=True, slots=True)
 class WorkflowPrompt:
     """Everything workflow-specific about one provider call.
@@ -304,6 +514,12 @@ WORKFLOW_PROMPTS: Final[Mapping[Workflow, WorkflowPrompt]] = MappingProxyType(
             task_instructions=RESEARCH_QUESTION_TASK,
             schema=research_question_schema,
             parse=_parse_research_question,
+        ),
+        "evidence_comparison": WorkflowPrompt(
+            schema_name="evidence_comparison_answer",
+            task_instructions=EVIDENCE_COMPARISON_TASK,
+            schema=evidence_comparison_schema,
+            parse=_parse_evidence_comparison,
         ),
     }
 )
@@ -645,6 +861,51 @@ def _parse_answer(content: str) -> _RawAnswer:
             raise ResponseContractFailure()
         parsed.append(_RawClaim(text, tuple(cast(list[str], ids))))
     return _RawAnswer(cast(str, status), answer, tuple(parsed))
+
+
+def _strict_json_object(
+    content: str, keys: frozenset[str]
+) -> dict[str, object]:
+    """Parse model content to a JSON object with exactly ``keys``.
+
+    Raises:
+        ResponseContractFailure: For invalid JSON or any unknown or missing
+            top-level field.
+    """
+    try:
+        value: object = json.loads(content, parse_constant=_reject_constant)
+    except (ValueError, RecursionError):
+        raise ResponseContractFailure() from None
+    if not isinstance(value, dict) or set(value) != keys:
+        raise ResponseContractFailure()
+    return cast(dict[str, object], value)
+
+
+def _statements(
+    value: object, text_key: str
+) -> tuple[tuple[str, tuple[str, ...]], ...]:
+    """Strictly parse a list of ``{text_key, citation_chunk_ids}`` objects.
+
+    Raises:
+        ResponseContractFailure: For wrong types or unknown/missing fields.
+    """
+    if not isinstance(value, list):
+        raise ResponseContractFailure()
+    keys = frozenset({text_key, "citation_chunk_ids"})
+    parsed: list[tuple[str, tuple[str, ...]]] = []
+    for entry in value:
+        if not isinstance(entry, dict) or set(entry) != keys:
+            raise ResponseContractFailure()
+        text = entry[text_key]
+        ids = entry["citation_chunk_ids"]
+        if (
+            not isinstance(text, str)
+            or not isinstance(ids, list)
+            or not all(isinstance(chunk_id, str) for chunk_id in ids)
+        ):
+            raise ResponseContractFailure()
+        parsed.append((text, tuple(cast(list[str], ids))))
+    return tuple(parsed)
 
 
 def _grounded_outcome(
