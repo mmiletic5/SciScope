@@ -1,17 +1,30 @@
 """Feature 012 route and mapping helpers for the separate v2 contract."""
 
-from collections.abc import Callable
-from typing import cast
+from collections.abc import Callable, Mapping
+from dataclasses import replace
+from typing import Literal, TypedDict, cast
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from sciscope.api.http_models import Claim, CorpusProvenance, Evidence
 from sciscope.api.http_models_v2 import (
+    AnsweredComparisonResponseV2,
+    AnsweredConflictsResponseV2,
+    AnsweredGapAnalysisResponseV2,
     AnsweredResponseV2,
+    CitedItemV2,
+    ComparisonPayloadV2,
+    ComparisonSubjectV2,
     ComponentMetadataV2,
+    ConflictItemV2,
+    ConflictPositionV2,
+    ConflictsPayloadV2,
     ErrorDetailV2,
     ErrorResponseV2,
+    GapAnalysisPayloadV2,
+    GapItemV2,
+    HypothesisV2,
     InsufficientEvidenceResponseV2,
     NoResultsResponseV2,
     QuestionMetadataV2,
@@ -19,12 +32,25 @@ from sciscope.api.http_models_v2 import (
     SuccessResponseV2,
 )
 from sciscope.question_service.contracts import (
+    DEFAULT_WORKFLOW,
     AnswerProvider,
+    CitedItem,
+    ComparisonPayload,
     ComponentMetadata,
+    ConflictsPayload,
+    GapAnalysisPayload,
     ProviderOutcome,
     QuestionMetadata,
     RetrievalOutcome,
     RetrievalService,
+    Workflow,
+    invoke_provider,
+)
+from sciscope.question_service.contracts import (
+    CorpusProvenance as PlainCorpusProvenance,
+)
+from sciscope.question_service.contracts import (
+    Evidence as PlainEvidence,
 )
 from sciscope.question_service.service import (
     AnsweredQuestionOutcome,
@@ -33,6 +59,7 @@ from sciscope.question_service.service import (
     QuestionOutcome,
     QuestionService,
 )
+from sciscope.question_service.validation import ResponseContractFailure
 
 
 class _TrackedRetrieval:
@@ -43,9 +70,30 @@ class _TrackedRetrieval:
         self._request = request
 
     def retrieve(self, question: str, request_id: str) -> RetrievalOutcome:
-        """Record invocation before delegating to the injected retrieval."""
+        """Record invocation before delegating to the injected retrieval.
+
+        An empty result that reports only retrieval component metadata gets
+        the configured provider marked as not executed, which the service
+        requires for ``no_results``.
+        """
         self._request.state.v2_retrieval_executed = True
-        return self._dependency.retrieve(question, request_id)
+        outcome = self._dependency.retrieve(question, request_id)
+        configured = self._request.app.state.dependencies.v2_metadata
+        if (
+            not outcome.evidence
+            and type(outcome.metadata) is ComponentMetadata
+            and type(configured) is QuestionMetadata
+        ):
+            return replace(
+                outcome,
+                metadata=QuestionMetadata(
+                    retrieval=outcome.metadata,
+                    answer_provider=replace(
+                        configured.answer_provider, executed=False
+                    ),
+                ),
+            )
+        return outcome
 
 
 class _TrackedProvider:
@@ -58,17 +106,16 @@ class _TrackedProvider:
     def answer(
         self,
         question: str,
-        evidence: tuple[object, ...],
-        corpus: object,
+        evidence: tuple[PlainEvidence, ...],
+        corpus: PlainCorpusProvenance,
         request_id: str,
+        *,
+        workflow: Workflow = DEFAULT_WORKFLOW,
     ) -> ProviderOutcome:
         """Record invocation before delegating to the injected provider."""
         self._request.state.v2_answer_provider_executed = True
-        return self._dependency.answer(
-            question,
-            evidence,  # type: ignore[arg-type]
-            corpus,  # type: ignore[arg-type]
-            request_id,
+        return invoke_provider(
+            self._dependency, question, evidence, corpus, request_id, workflow
         )
 
 
@@ -95,16 +142,50 @@ def install_question_v2_route(
         fastapi_request.state.request_id = request_id
         fastapi_request.state.v2_retrieval_executed = False
         fastapi_request.state.v2_answer_provider_executed = False
+        workflow = request.workflow
         service = QuestionService(
             retrieval=_TrackedRetrieval(
-                cast(RetrievalService, dependencies.retrieval), fastapi_request
+                _retrieval_for(
+                    dependencies.workflow_retrievals,
+                    dependencies.retrieval,
+                    workflow,
+                ),
+                fastapi_request,
             ),
             provider=_TrackedProvider(
                 cast(AnswerProvider, dependencies.provider), fastapi_request
             ),
         )
-        outcome = service.answer(request.question, request_id)
+        outcome = service.answer(request.question, request_id, workflow)
         return _to_http_response_v2(outcome)
+
+
+class _AnsweredFields(TypedDict):
+    """Fields shared by every answered v2 response model."""
+
+    api_version: Literal["v2"]
+    request_id: str
+    status: Literal["answered"]
+    answer: str
+    claims: list[Claim]
+    evidence: list[Evidence]
+    corpus: CorpusProvenance
+    metadata: QuestionMetadataV2
+
+
+def _retrieval_for(
+    workflow_retrievals: Mapping[Workflow, object] | None,
+    default: object,
+    workflow: Workflow,
+) -> RetrievalService:
+    """Select the retrieval profile configured for ``workflow``.
+
+    Without per-workflow retrievals the single configured retrieval serves
+    every workflow (fake mode and tests).
+    """
+    if workflow_retrievals is None:
+        return cast(RetrievalService, default)
+    return cast(RetrievalService, workflow_retrievals[workflow])
 
 
 def is_v2_request(request: Request) -> bool:
@@ -175,22 +256,49 @@ def _to_http_response_v2(outcome: QuestionOutcome) -> SuccessResponseV2:
         raise TypeError("v2 requires complete question component metadata")
     metadata = _question_metadata(metadata_value)
     if isinstance(outcome, AnsweredQuestionOutcome):
-        return AnsweredResponseV2(
-            api_version="v2",
-            request_id=outcome.request_id,
-            workflow="research_question",
-            status="answered",
-            answer=outcome.answer,
-            claims=[_claim(value) for value in outcome.claims],
-            evidence=[_evidence(value) for value in outcome.evidence],
-            corpus=_corpus(outcome.corpus),
-            metadata=metadata,
-        )
+        common: _AnsweredFields = {
+            "api_version": "v2",
+            "request_id": outcome.request_id,
+            "status": "answered",
+            "answer": outcome.answer,
+            "claims": [_claim(value) for value in outcome.claims],
+            "evidence": [_evidence(value) for value in outcome.evidence],
+            "corpus": _corpus(outcome.corpus),
+            "metadata": metadata,
+        }
+        payload = outcome.payload
+        if outcome.workflow == "research_question" and payload is None:
+            return AnsweredResponseV2(workflow="research_question", **common)
+        if outcome.workflow == "evidence_comparison" and isinstance(
+            payload, ComparisonPayload
+        ):
+            return AnsweredComparisonResponseV2(
+                workflow="evidence_comparison",
+                comparison=_comparison(payload),
+                **common,
+            )
+        if outcome.workflow == "conflicting_evidence" and isinstance(
+            payload, ConflictsPayload
+        ):
+            return AnsweredConflictsResponseV2(
+                workflow="conflicting_evidence",
+                conflicts=_conflicts(payload),
+                **common,
+            )
+        if outcome.workflow == "research_gap" and isinstance(
+            payload, GapAnalysisPayload
+        ):
+            return AnsweredGapAnalysisResponseV2(
+                workflow="research_gap",
+                gap_analysis=_gap_analysis(payload),
+                **common,
+            )
+        raise ResponseContractFailure()
     if isinstance(outcome, NoResultsQuestionOutcome):
         return NoResultsResponseV2(
             api_version="v2",
             request_id=outcome.request_id,
-            workflow="research_question",
+            workflow=outcome.workflow,
             status="no_results",
             answer=None,
             claims=[],
@@ -202,7 +310,7 @@ def _to_http_response_v2(outcome: QuestionOutcome) -> SuccessResponseV2:
     return InsufficientEvidenceResponseV2(
         api_version="v2",
         request_id=outcome.request_id,
-        workflow="research_question",
+        workflow=outcome.workflow,
         status="insufficient_evidence",
         answer=None,
         claims=[],
@@ -264,4 +372,79 @@ def _claim(value: object) -> Claim:
         claim_id=value.claim_id,  # type: ignore[attr-defined]
         text=value.text,  # type: ignore[attr-defined]
         citation_chunk_ids=list(value.citation_chunk_ids),  # type: ignore[attr-defined]
+    )
+
+
+def _cited_item(value: CitedItem) -> CitedItemV2:
+    """Map one validated similarity or difference."""
+    return CitedItemV2(
+        item_id=value.item_id,
+        text=value.text,
+        citation_chunk_ids=list(value.citation_chunk_ids),
+    )
+
+
+def _comparison(value: ComparisonPayload) -> ComparisonPayloadV2:
+    """Map a validated comparison payload exactly."""
+    return ComparisonPayloadV2(
+        subjects=[
+            ComparisonSubjectV2(
+                subject_id=subject.subject_id,
+                doi=subject.doi,
+                paper_title=subject.paper_title,
+                summary=subject.summary,
+                citation_chunk_ids=list(subject.citation_chunk_ids),
+            )
+            for subject in value.subjects
+        ],
+        similarities=[_cited_item(item) for item in value.similarities],
+        differences=[_cited_item(item) for item in value.differences],
+    )
+
+
+def _conflicts(value: ConflictsPayload) -> ConflictsPayloadV2:
+    """Map a validated conflicts payload exactly."""
+    return ConflictsPayloadV2(
+        review_note=value.review_note,
+        items=[
+            ConflictItemV2(
+                item_id=item.item_id,
+                topic=item.topic,
+                summary=item.summary,
+                positions=[
+                    ConflictPositionV2(
+                        position_id=position.position_id,
+                        text=position.text,
+                        citation_chunk_ids=list(position.citation_chunk_ids),
+                    )
+                    for position in item.positions
+                ],
+            )
+            for item in value.items
+        ],
+    )
+
+
+def _gap_analysis(value: GapAnalysisPayload) -> GapAnalysisPayloadV2:
+    """Map a validated gap-analysis payload exactly."""
+    return GapAnalysisPayloadV2(
+        gaps=[
+            GapItemV2(
+                gap_id=gap.gap_id,
+                text=gap.text,
+                citation_chunk_ids=list(gap.citation_chunk_ids),
+            )
+            for gap in value.gaps
+        ],
+        hypotheses=[
+            HypothesisV2(
+                hypothesis_id=hypothesis.hypothesis_id,
+                text=hypothesis.text,
+                rationale=hypothesis.rationale,
+                based_on_gap_ids=list(hypothesis.based_on_gap_ids),
+                citation_chunk_ids=list(hypothesis.citation_chunk_ids),
+                is_speculative=True,
+            )
+            for hypothesis in value.hypotheses
+        ],
     )

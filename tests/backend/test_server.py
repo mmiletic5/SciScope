@@ -54,15 +54,20 @@ def test_defaults_run_fake_without_database_or_keys() -> None:
     }
 
 
-def test_health_reports_origins_and_only_implemented_workflows() -> None:
-    """List only implemented workflows and configured origins."""
+def test_health_reports_origins_and_provider_workflows() -> None:
+    """List the fake provider's workflows (all four) and configured origins."""
     response = _client().get("/api/health")
 
     assert response.status_code == 200
     assert response.json() == {
         "status": "ok",
         "api_versions": ["v1", "v2"],
-        "workflows": ["research_question"],
+        "workflows": [
+            "research_question",
+            "evidence_comparison",
+            "conflicting_evidence",
+            "research_gap",
+        ],
         "components": {
             "retrieval": {"configured_origin": "synthetic"},
             "answer_provider": {"configured_origin": "fake"},

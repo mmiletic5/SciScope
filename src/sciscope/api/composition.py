@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterator, Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from threading import Lock
@@ -14,8 +14,10 @@ from starlette.responses import Response
 
 from sciscope.api.app import create_app
 from sciscope.question_service.contracts import (
+    WORKFLOWS,
     AnswerProvider,
     QuestionMetadata,
+    Workflow,
 )
 from sciscope.question_service.retrieval_adapter import (
     PublicRetrievalAdapter,
@@ -101,11 +103,17 @@ def create_application(
     retrieval_settings: RetrievalAdapterSettings,
     provider: AnswerProvider,
     metadata: QuestionMetadata,
+    workflow_retrieval_settings: (
+        Mapping[Workflow, RetrievalAdapterSettings] | None
+    ) = None,
 ) -> ComposedApplication:
     """Compose the accepted API dependencies without hidden resources.
 
     Exactly one Engine source is required. A directly supplied Engine remains
     borrowed; an Engine returned by ``engine_factory`` is owned by the result.
+    ``workflow_retrieval_settings``, when given, must cover every workflow;
+    each entry becomes one adapter over the shared retrieval service and
+    serves that v2 workflow. ``retrieval_settings`` still serves v1.
     """
     _validate_configuration(
         engine=engine,
@@ -115,6 +123,18 @@ def create_application(
         provider=provider,
         metadata=metadata,
     )
+    if workflow_retrieval_settings is not None:
+        if set(workflow_retrieval_settings) != set(WORKFLOWS):
+            raise ValueError("Provide retrieval settings for every workflow")
+        for settings in workflow_retrieval_settings.values():
+            _validate_configuration(
+                engine=engine,
+                engine_factory=engine_factory,
+                query_embedder=query_embedder,
+                retrieval_settings=settings,
+                provider=provider,
+                metadata=metadata,
+            )
     owned_engine: _DisposableEngine | None = None
     resolved_engine = engine
     try:
@@ -130,10 +150,21 @@ def create_application(
             service=service,
             settings=retrieval_settings,
         )
+        workflow_retrievals = (
+            None
+            if workflow_retrieval_settings is None
+            else {
+                workflow: PublicRetrievalAdapter(
+                    service=service, settings=settings
+                )
+                for workflow, settings in workflow_retrieval_settings.items()
+            }
+        )
         app = create_app(
             retrieval=adapter,
             provider=provider,
             v2_metadata=metadata,
+            workflow_retrievals=workflow_retrievals,
         )
         composed = ComposedApplication(app=app, _owned_engine=owned_engine)
         composed.install_http_lifecycle()

@@ -1,6 +1,6 @@
 """FastAPI application construction for Feature 011."""
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 
 from fastapi import FastAPI, Request
@@ -18,9 +18,11 @@ from sciscope.api.routes_v2 import (
     is_v2_request,
 )
 from sciscope.question_service.contracts import (
+    WORKFLOWS,
     DependencyFailure,
     DependencyFailureCode,
     QuestionMetadata,
+    Workflow,
 )
 from sciscope.question_service.ids import (
     generate_request_id,
@@ -51,6 +53,14 @@ _CONTROLLED_FAILURES = {
         "The requested dependency timed out.",
         True,
     ),
+    # The contract has no code for a workflow the configured provider does
+    # not implement yet; health already lists only enabled workflows.
+    DependencyFailureCode.WORKFLOW_NOT_IMPLEMENTED: (
+        503,
+        "provider_unavailable",
+        "The requested dependency is currently unavailable.",
+        True,
+    ),
 }
 _CONTRACT_FAILURE_MESSAGE = "The response could not be validated."
 _INTERNAL_ERROR_MESSAGE = "An internal error occurred."
@@ -67,6 +77,7 @@ class AppDependencies:
     retrieval: object
     provider: object
     v2_metadata: QuestionMetadata | None = None
+    workflow_retrievals: Mapping[Workflow, object] | None = None
 
 
 def create_app(
@@ -74,6 +85,7 @@ def create_app(
     retrieval: object,
     provider: object,
     v2_metadata: QuestionMetadata | None = None,
+    workflow_retrievals: Mapping[Workflow, object] | None = None,
     request_id_factory: Callable[[], str] = generate_request_id,
 ) -> FastAPI:
     """Create an offline FastAPI application with explicit dependencies.
@@ -82,7 +94,14 @@ def create_app(
         retrieval: An opaque retrieval dependency supplied by the caller.
         provider: An opaque answer-provider dependency supplied by the caller.
         v2_metadata: Explicit component configuration required to register v2.
+        workflow_retrievals: Optional v2 retrieval per workflow (one retrieval
+            profile each); must cover every workflow. Without it, ``retrieval``
+            serves every v2 workflow.
         request_id_factory: Generates IDs for validation-error envelopes.
+
+    Raises:
+        ValueError: If ``workflow_retrievals`` does not cover exactly the
+            known workflows.
 
     Returns:
         A FastAPI application that stores the supplied dependencies, registers
@@ -91,10 +110,15 @@ def create_app(
     app = FastAPI()
     if v2_metadata is not None:
         validate_question_metadata(v2_metadata)
+    if workflow_retrievals is not None:
+        if set(workflow_retrievals) != set(WORKFLOWS):
+            raise ValueError("Provide one retrieval for every workflow")
+        workflow_retrievals = dict(workflow_retrievals)
     app.state.dependencies = AppDependencies(
         retrieval=retrieval,
         provider=provider,
         v2_metadata=v2_metadata,
+        workflow_retrievals=workflow_retrievals,
     )
     install_validation_exception_handler(
         app, request_id_factory=request_id_factory

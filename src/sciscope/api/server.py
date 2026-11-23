@@ -20,6 +20,11 @@ from starlette.middleware.cors import CORSMiddleware
 
 from sciscope.api.app import create_app
 from sciscope.api.composition import create_application
+from sciscope.api.http_models_v2 import (
+    HealthComponent,
+    HealthComponents,
+    HealthResponse,
+)
 from sciscope.database.config import DatabaseSettings
 from sciscope.database.session import create_database_engine
 from sciscope.embedding.config import EmbeddingConfig, EmbeddingConfigError
@@ -33,10 +38,11 @@ from sciscope.embedding.openai_client import (
 )
 from sciscope.embedding.query_embedder import OpenAIQueryEmbedder
 from sciscope.question_service.contracts import (
-    AnswerProvider,
+    WORKFLOWS,
     ComponentMetadata,
     QuestionMetadata,
     RetrievalService,
+    Workflow,
 )
 from sciscope.question_service.fakes import (
     ComponentFakeAnswerProvider,
@@ -55,11 +61,16 @@ from sciscope.retrieval import QueryEmbedder, RankingOptions
 DEFAULT_CORS_ORIGINS = ("http://localhost:5173", "http://127.0.0.1:5173")
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8000
-IMPLEMENTED_WORKFLOWS = ("research_question",)
 
 _RETRIEVAL_CONTRACT_VERSION = "retrieval.v2"
-_TOP_K = 5
 _CANDIDATE_POOL_SIZE = 50
+WORKFLOW_TOP_K: Mapping[Workflow, int] = {
+    "research_question": 5,
+    "evidence_comparison": 10,
+    "conflicting_evidence": 10,
+    "research_gap": 10,
+}
+"""Server-owned retrieval ``top_k`` per workflow (contract section 6)."""
 
 AiProvider = Literal["fake", "openai"]
 RetrievalBackend = Literal["fake", "postgres"]
@@ -213,7 +224,10 @@ def _cors_origins(env: Mapping[str, str]) -> tuple[str, ...]:
     return origins
 
 
-def _build_provider(config: ServerConfig) -> AnswerProvider:
+ServerProvider = ComponentFakeAnswerProvider | OpenAIAnswerProvider
+
+
+def _build_provider(config: ServerConfig) -> ServerProvider:
     """Build the configured answer provider."""
     if config.ai_provider == "fake":
         return ComponentFakeAnswerProvider()
@@ -252,25 +266,60 @@ def _build_query_embedder(config: ServerConfig) -> QueryEmbedder:
     )
 
 
-def _health_route(app: FastAPI, metadata: QuestionMetadata) -> None:
+def retrieval_settings_for(
+    workflow: Workflow,
+    mode: ServerRetrievalMode,
+    retrieval_metadata: ComponentMetadata,
+) -> RetrievalAdapterSettings:
+    """Return the server-owned retrieval profile of one workflow.
+
+    Args:
+        workflow: Workflow served by the profile.
+        mode: Configured retrieval mode.
+        retrieval_metadata: Configured retrieval component metadata.
+
+    Returns:
+        ``retrieval.v2`` settings with the workflow's ``top_k``. The candidate
+        pool applies in hybrid mode only, because the retrieval contract
+        accepts ranking options only there.
+    """
+    return RetrievalAdapterSettings(
+        contract_version=_RETRIEVAL_CONTRACT_VERSION,
+        mode=mode,
+        top_k=WORKFLOW_TOP_K[workflow],
+        filters=None,
+        ranking=(
+            RankingOptions(candidate_pool_size=_CANDIDATE_POOL_SIZE)
+            if mode == "hybrid"
+            else None
+        ),
+        retrieval_metadata=retrieval_metadata,
+    )
+
+
+def _health_route(
+    app: FastAPI,
+    metadata: QuestionMetadata,
+    workflows: tuple[Workflow, ...],
+) -> None:
     """Install ``GET /api/health``: static, no secrets, no I/O."""
-    body: dict[str, object] = {
-        "status": "ok",
-        "api_versions": ["v1", "v2"],
-        "workflows": list(IMPLEMENTED_WORKFLOWS),
-        "components": {
-            "retrieval": {
-                "configured_origin": metadata.retrieval.configured_origin
-            },
-            "answer_provider": {
-                "configured_origin": metadata.answer_provider.configured_origin
-            },
-        },
-    }
+    body = HealthResponse(
+        status="ok",
+        api_versions=["v1", "v2"],
+        workflows=[workflow for workflow in WORKFLOWS if workflow in workflows],
+        components=HealthComponents(
+            retrieval=HealthComponent(
+                configured_origin=metadata.retrieval.configured_origin
+            ),
+            answer_provider=HealthComponent(
+                configured_origin=metadata.answer_provider.configured_origin
+            ),
+        ),
+    ).model_dump()
 
     @app.get("/api/health")
     def health() -> dict[str, object]:
-        """Report liveness and configured component origins."""
+        """Report liveness, enabled workflows and configured origins."""
         return body
 
 
@@ -332,29 +381,23 @@ def create_server_app(
             if config.retrieval_mode == "hybrid"
             else None
         )
+        workflow_settings = {
+            workflow: retrieval_settings_for(
+                workflow, config.retrieval_mode, retrieval_metadata
+            )
+            for workflow in WORKFLOWS
+        }
         composed = create_application(
             engine=None,
             engine_factory=lambda: create_database_engine(settings),
             query_embedder=embedder,
-            retrieval_settings=RetrievalAdapterSettings(
-                contract_version=_RETRIEVAL_CONTRACT_VERSION,
-                mode=config.retrieval_mode,
-                top_k=_TOP_K,
-                filters=None,
-                # The retrieval contract accepts ranking options only in
-                # hybrid mode.
-                ranking=(
-                    RankingOptions(candidate_pool_size=_CANDIDATE_POOL_SIZE)
-                    if config.retrieval_mode == "hybrid"
-                    else None
-                ),
-                retrieval_metadata=retrieval_metadata,
-            ),
+            retrieval_settings=workflow_settings["research_question"],
             provider=provider,
             metadata=metadata,
+            workflow_retrieval_settings=workflow_settings,
         )
         app = composed.app
-    _health_route(app, metadata)
+    _health_route(app, metadata, provider.supported_workflows)
     _add_cors(app, config.cors_origins)
     return app
 
