@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { fetchHealth } from './api/client'
-import type { QuestionMetadataV2 } from './api/types'
+import type { QuestionMetadataV2, WorkflowV2 } from './api/types'
 import { Header } from './components/Header'
 import { Navigation, type ViewId } from './components/Navigation'
 import { ExplorerPage } from './features/explorer/ExplorerPage'
-import { ComparisonPreview } from './features/previews/ComparisonPreview'
+import { ComparisonPage } from './features/comparison/ComparisonPage'
 import { ConflictsPreview } from './features/previews/ConflictsPreview'
 import { GapsPreview } from './features/previews/GapsPreview'
 import { badgeFromHealth, badgeFromMetadata, OFFLINE_BADGE, type ModeBadge } from './lib/mode'
@@ -12,6 +12,7 @@ import { badgeFromHealth, badgeFromMetadata, OFFLINE_BADGE, type ModeBadge } fro
 function App() {
   const [metadata, setMetadata] = useState<QuestionMetadataV2 | null>(null)
   const [healthBadge, setHealthBadge] = useState<ModeBadge | null>(null)
+  const [availableWorkflows, setAvailableWorkflows] = useState<readonly WorkflowV2[] | null>(null)
   const [activeView, setActiveView] = useState<ViewId>('research-question')
   const pageTitle = {
     'research-question': 'Research question',
@@ -23,7 +24,11 @@ function App() {
   useEffect(() => {
     let cancelled = false
     fetchHealth().then(
-      (health) => { if (!cancelled) setHealthBadge(badgeFromHealth(health)) },
+      (health) => {
+        if (cancelled) return
+        setHealthBadge(badgeFromHealth(health))
+        setAvailableWorkflows(health.workflows)
+      },
       () => { if (!cancelled) setHealthBadge(OFFLINE_BADGE) },
     )
     return () => { cancelled = true }
@@ -35,13 +40,15 @@ function App() {
   return (
     <div className="app-shell">
       <Header badge={badge} />
-      <Navigation activeView={activeView} onNavigate={setActiveView} />
+      <Navigation activeView={activeView} onNavigate={setActiveView} availableWorkflows={availableWorkflows} />
       <p className="visually-hidden" role="status" aria-live="polite">{pageTitle}</p>
       <main className="app-main">
         <div className="explorer-view" hidden={activeView !== 'research-question'}>
           <ExplorerPage onMetadataChange={setMetadata} />
         </div>
-        {activeView === 'evidence-comparison' && <ComparisonPreview />}
+        <div className="explorer-view" hidden={activeView !== 'evidence-comparison'}>
+          <ComparisonPage onMetadataChange={setMetadata} />
+        </div>
         {activeView === 'conflicting-evidence' && <ConflictsPreview />}
         {activeView === 'gaps-hypotheses' && <GapsPreview />}
       </main>

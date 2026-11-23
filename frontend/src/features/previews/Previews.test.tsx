@@ -1,25 +1,9 @@
-import { render, screen, within } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import App from '../../App'
 
 describe('static workflow previews', () => {
-  it('opens the comparison preview with the required table and one main landmark', async () => {
-    const user = userEvent.setup()
-    render(<App />)
-    await user.click(screen.getByRole('button', { name: 'Evidence comparison' }))
-
-    expect(screen.getByRole('heading', { name: 'Evidence comparison' })).toBeTruthy()
-    expect(screen.getByText('Preview — this feature is not connected to the backend yet.')).toBeTruthy()
-    const table = screen.getByRole('table')
-    for (const label of ['Stressor', 'Control group', 'Measure', 'Sample', 'Result', 'Claim source']) {
-      expect(within(table).getByText(label)).toBeTruthy()
-    }
-    expect(within(table).getAllByText('[paper selected from results]')).toHaveLength(12)
-    expect(screen.getAllByRole('main')).toHaveLength(1)
-    expect(screen.getByRole('button', { name: 'Evidence comparison' }).getAttribute('aria-current')).toBe('page')
-  })
-
   it('opens the conflicting-evidence preview with placeholder-only position and reason cards', async () => {
     const user = userEvent.setup()
     render(<App />)

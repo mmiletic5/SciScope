@@ -4,10 +4,12 @@ type SourceCardProps = {
   evidence: Evidence
   number?: number
   highlighted: boolean
+  /** DOM id prefix; use a distinct one per screen so ids stay unique across mounted screens. */
+  idPrefix?: string
 }
 
-export function SourceCard({ evidence, number, highlighted }: SourceCardProps) {
-  const sourceId = `source-${encodeURIComponent(evidence.chunk_id)}`
+export function SourceCard({ evidence, number, highlighted, idPrefix = 'source' }: SourceCardProps) {
+  const sourceId = `${idPrefix}-${encodeURIComponent(evidence.chunk_id)}`
   const doiHref = evidence.doi
     ? `https://doi.org/${encodeURIComponent(evidence.doi).replaceAll('%2F', '/')}`
     : null
