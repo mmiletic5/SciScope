@@ -912,3 +912,12 @@ dependency resolution, and CI remain unverified. Human acceptance: NOT PROVIDED.
 - **Observed outcome:** NOT PROVIDED
 - **Explicit decision:** NOT PROVIDED
 - **Final status:** AUTO_VALIDATED; T008 owner review pending.
+
+## MVP track (lean mode), 2026-11-23
+
+- The MVP track was run in lean mode with explicit project-owner approval, without Spec Kit artefacts, formal RED/GREEN phases or formal acceptance. Nothing from it is marked ACCEPTED.
+- Automated offline tests, ruff and mypy pass on the merged branch. DB-gated tests that need `SCISCOPE_TEST_DATABASE_URL` were not run.
+- The pilot database was recreated locally from `pilot-delivery.zip`; `verify_pilot` printed PASS (17 papers, 319 sections, 728 chunks, 728 vectors, zero mismatches).
+- The owner ran a live smoke of five development questions (one per workflow plus one insufficient-evidence case) through the real database and a real OpenAI model: HTTP 200 and citations inside the returned evidence.
+- The owner manually exercised all four screens in Live mode.
+- **Not done:** held-out evaluation; formal quality metrics; DB-gated test execution on the merged code; security/privacy review.
