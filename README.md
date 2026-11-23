@@ -21,7 +21,8 @@ frontend over a 17-paper PLOS ONE honey bee corpus. API:
 2. **Environment variable names** (values go in the gitignored `.env`, never in git):
    `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_PORT`,
    `DATABASE_URL`, `OPENAI_API_KEY`, `OPENAI_ANSWER_MODEL`, `AI_PROVIDER`,
-   `RETRIEVAL_BACKEND`, `RETRIEVAL_MODE`. Full table in
+   `RETRIEVAL_BACKEND`, `RETRIEVAL_MODE`, `SCISCOPE_AGENTIC_RETRIEVAL` (opt-in,
+   default `0`). Full table in
    [docs/mvp/RUN_BACKEND.md](docs/mvp/RUN_BACKEND.md).
 3. **Backend, live mode** (real retrieval and OpenAI answers):
    ```powershell
