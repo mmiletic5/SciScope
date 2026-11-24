@@ -1,11 +1,13 @@
 # SciScope
 
-SciScope is a planned honeybee research assistant. This repository currently
-contains the initial specification workflow, evaluation framework, and
-development tooling. It does **not** contain a running application, corpus,
-embeddings, AI provider, or scientific answers. The proposed product has a
-Research Question Explorer, Evidence Comparison, Conflicting Evidence Finder,
-and Research Gap & Hypothesis Assistant, all using one shared RAG system. See
+SciScope is a honeybee research assistant over a 17-paper PLOS ONE pilot corpus.
+It offers four workflows (Research Question Explorer, Evidence Comparison,
+Conflicting Evidence Finder, Research Gap & Hypothesis Assistant) on one shared RAG
+system: hybrid retrieval over PostgreSQL/pgvector, a grounded OpenAI answer provider
+with citation validation, a FastAPI backend and a React frontend. A fake mode runs
+without a database, network or key. The MVP was built in lean mode and is not marked
+ACCEPTED; what was verified, and its limits, are in
+[docs/mvp/SUBMISSION.md](docs/mvp/SUBMISSION.md). See also
 [product scope](docs/PRODUCT_SCOPE.md) and [architecture](docs/ARCHITECTURE.md).
 
 ## MVP quickstart
@@ -14,6 +16,9 @@ The MVP track (lean mode, not ACCEPTED) adds a local backend and a React
 frontend over a 17-paper PLOS ONE honey bee corpus. API:
 [docs/mvp/API_CONTRACT.md](docs/mvp/API_CONTRACT.md). Demo plan:
 [docs/mvp/DEMO_SCRIPT.md](docs/mvp/DEMO_SCRIPT.md).
+
+**Submission:** [docs/mvp/SUBMISSION.md](docs/mvp/SUBMISSION.md) (what is
+submitted, data package hashes, reproduction steps, evaluation summary, limits).
 
 1. **Database:** follow [docs/mvp/DEMO_DB.md](docs/mvp/DEMO_DB.md) (Docker,
    `pilot-delivery.zip`, `alembic upgrade head`, `scripts/mvp_import_pilot.py`,
