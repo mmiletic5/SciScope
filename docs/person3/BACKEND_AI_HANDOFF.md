@@ -1,11 +1,13 @@
 # Backend & AI Handoff
 
-> **Status: CURRENT — Feature 007 accepted; P4-09 and P4-10 remain pending.**
+> **Status: CURRENT — Feature 007 accepted; Feature 012 / P4-09 is in progress through accepted T005; T006–T008 and P4-10 remain pending.**
 >
-> This handoff records repository evidence available on branch
+> Historical Feature 007 evidence is retained from branch
 > `007-public-retrieval-facade` at commit
-> `6c7748147fb0c3a47d26f8a0deb4dbdd58764a4f`. It does not grant acceptance,
-> replace review, or authorize live AI providers or database work.
+> `6c7748147fb0c3a47d26f8a0deb4dbdd58764a4f`. The current Feature 012 / P4-09
+> working baseline is `caf3c578ceaf99ffbcf1923c9d396e0510a3b442`, with T001–T005
+> accepted and committed. This handoff does not grant acceptance for T006–T008,
+> live AI providers, or database work.
 
 ## 1. Executive Summary
 
@@ -19,12 +21,13 @@ core composition bridge, response/provenance mapping, and offline conformance
 coverage. T007-B, T007-C, and T007-D are accepted and committed. T007-E is
 owner-confirmed accepted after Person 2 review and an owner-reported native
 Windows pass whose terminal evidence was not retained. Feature 007 is
-owner-confirmed accepted; P4-09 and P4-10 remain future work.
+owner-confirmed accepted. Feature 012 / P4-09 has T001–T005 accepted; T006–T008
+and P4-10 remain future work.
 
-The confirmed next Backend & AI backlog item is **P4-09 — shared retrieval
-service integration**. It is a future adapter/composition task between the
-Feature 011 question service and the public retrieval facade; it has not been
-implemented by successful T007 testing.
+The current Backend & AI backlog item is **P4-09 — shared retrieval service
+integration**. Its accepted T001–T005 increments now provide an adapter,
+separately versioned HTTP boundary, and explicit offline composition. T006–T008
+remain separately gated.
 
 ## 2. Person 3 Ownership and Scope
 
@@ -244,11 +247,14 @@ and the T007-E review-ready package are the confirmed retrieval-facade history.
   metadata contract have not been selected by T007. They require an approved
   integration specification rather than an implicit default.
 
-## 11. Next Phase — Backend Retrieval Integration
+## 11. Feature 012 / P4-09 — Accepted Foundation and Remaining Work
 
 The official next backlog identifier is **P4-09 — shared retrieval service
 integration**, owned by Person 3 and dependent on P3-08 and P4-02, as listed
-in [PROJECT_TODO.md](../../PROJECT_TODO.md).
+in [PROJECT_TODO.md](../../PROJECT_TODO.md). It is **IN PROGRESS**: T001–T005
+are complete and accepted; T006–T008 are pending. T005 was accepted in
+`caf3c578ceaf99ffbcf1923c9d396e0510a3b442`
+(`feat: compose retrieval application with safe lifecycle`).
 
 ### Established interfaces
 
@@ -257,10 +263,10 @@ in [PROJECT_TODO.md](../../PROJECT_TODO.md).
 | Feature 011 question service | `retrieve(question, request_id) -> RetrievalOutcome` from `question_service.contracts`; yields `Evidence` and `CorpusProvenance` used by API responses and citation validation. |
 | T007 public retrieval facade | `RetrievalService.retrieve(RetrievalRequest) -> RetrievalResponse`, with explicit contract version, mode, filters, ranking, public DTOs, and typed sanitized errors. |
 
-### Required future adapter work
+### Historical pre-Feature-012 adapter plan
 
-The future P4-09 adapter should be specified and tested before implementation.
-It will need to:
+The following adapter work is now completed by accepted T001–T005 and retained
+as historical boundary context:
 
 1. Receive the Feature 011 question and request ID through injected
 dependencies, then construct an explicitly versioned public `RetrievalRequest`.
@@ -278,6 +284,63 @@ Citation generation/validation belongs to the API and provider boundary: a real
 answer provider may cite only evidence supplied by this adapter, and validation
 must continue to use response-local stable chunk IDs. The T007 facade itself
 does not implement answer generation or citation selection.
+
+### Accepted T001–T005 boundaries
+
+T001–T005 established truthful component metadata, the public
+`RetrievalService` question adapter, separately versioned v2 HTTP models and
+sanitized typed retrieval errors, a public Engine-backed retrieval factory, and
+an explicit application composition root. The root distinguishes owned and
+borrowed Engines, validates before allocation, and protects v1/v2 handler
+dispatch with one operation lease. The accepted v1 fake-only contract remains
+unchanged. These offline boundaries do not establish production deployment,
+live retrieval validation, real PostgreSQL lifecycle behavior, final mode
+selection, streaming/background-task safety, or ASGI-server draining.
+
+### T006 — Cross-story offline integration regression
+
+T006 / 012-F is **NOT STARTED**. It requires offline RED tests for injected
+fake-provider v2 success, no-results without provider invocation, insufficient
+evidence, response-local citations, exact explicit version/mode forwarding,
+truthful retrieval/provider configured-origin versus executed state,
+independent test-data flags, no mode fallback, and preserved v1 compatibility.
+The next session must first inspect the accepted code and select its minimal
+test-file scope; no filename or expected count is precommitted.
+
+The required sequence is contract review, RED, independent Person 3 RED,
+authorized GREEN, Codex focused/backend/public-retrieval/static checks,
+concrete affected-owner review, independent Person 3 GREEN, explicit Person 3
+acceptance, then a separately authorized focused commit. Person 2 must review
+the affected public retrieval boundary and Person 4 must review actual v2 HTTP
+behavior and frontend compatibility; prior T003/T004 reports do not approve
+T006. Planned regression:
+
+```bash
+uv run --locked pytest tests/backend/ tests/retrieval/test_public_service.py tests/retrieval/test_public_contracts.py -q
+```
+
+### T007 — Guarded PostgreSQL verification
+
+T007 / 012-G has no current database authorization. A later separately
+authorized run may use only `gq-sp-001`, `gq-cmp-001`, `gq-conf-001`,
+`gq-gap-001`, and `gq-ins-001`. It must verify exact database/role identity,
+PostgreSQL and pgvector versions, Alembic revision, active snapshot/corpus
+identity and documented counts, read-only repeatable-read transactions, exact
+evidence/provenance mapping, relevant determinism, and unchanged pre/post
+state. No migration, ingestion, write, held-out tuning, paid provider, or
+automatic version/mode activation is allowed. The five-question development
+comparison is not a reliable overall winner; the leading candidate is not an
+activated production default. Person 2 review and an explicit Person 3
+mode-selection decision remain required.
+
+### T008 — Final Feature 012 closeout
+
+T008 / 012-H remains pending. It requires final approved regression/static
+verification, separate Codex and owner evidence, preserved chronology of
+failures/corrections, T006/T007 outcomes, Person 2/4 decisions, Person 1 review
+only if source/provenance meaning changes, explicit Person 3 final decision,
+task/backlog reconciliation, and CI/PR integration. It cannot automatically
+accept Feature 012.
 
 ## 12. Later Phase — Gemini / Real AI Integration
 
@@ -298,14 +361,17 @@ design decisions; no live-call behavior is claimed here.
 
 ## 13. Recommended Implementation Sequence
 
-1. Create an approved P4-09 specification and plan that chooses public
-retrieval version/mode/configuration and defines the adapter's error and
-evidence mapping.
-2. Add deterministic behavior tests for the adapter using public retrieval
-fakes, then implement the smallest injected adapter.
-3. Run the approved offline checks. Add guarded database integration only under
-separate authorization and retain the Windows verification requirement.
-4. Specify P4-10 separately before adding Gemini or any other live provider.
+1. Begin T006 / 012-F with contract and architecture review, then create
+   offline cross-component behavior tests and demonstrate genuine RED.
+2. Obtain independent Person 3 RED verification; only then implement a minimal
+   separately authorized GREEN increment and run focused, backend,
+   public-retrieval, Ruff, format, and mypy checks.
+3. Obtain concrete Person 2 public-retrieval-boundary review, Person 4 v2
+   frontend-compatibility review, independent Person 3 GREEN verification,
+   explicit acceptance, and a separately authorized focused commit.
+4. Proceed to T007 only after explicit database authorization; complete T008
+   only after its review, evidence, CI/PR, and final acceptance gates. Specify
+   P4-10 separately before adding Gemini or another live provider.
 
 ## 14. Verification and Acceptance Checklist
 
@@ -315,11 +381,12 @@ separate authorization and retain the Windows verification requirement.
 - [x] T007-E accepted by the project owner.
 - [x] T007-F feature-level evidence/document synchronization completed under
   the approved workflow.
-- [ ] P4-09 has an approved specification, plan, and behavior tests.
-- [ ] P4-09 adapter preserves public request/error/provenance contracts.
-- [ ] P4-09 receives automated, human, and required ownership review.
+- [x] Feature 012 planning and T001–T005 accepted implementation checkpoints
+  are recorded in the Feature 012 artifacts and chronological evidence.
+- [ ] P4-09 feature-level verification, required ownership review, and final
+  acceptance remain open through T006–T008.
 - [ ] Any Gemini/live-provider work has separate explicit authorization,
-configuration, testing, and acceptance.
+  configuration, testing, and acceptance.
 
 ## 15. Key Source Files and References
 
@@ -342,11 +409,11 @@ configuration, testing, and acceptance.
 
 ## 16. Handoff Status
 
-**CURRENT — Feature 007 accepted; P4-09 and P4-10 remain pending.**
+**CURRENT — Feature 007 accepted; P4-09 is in progress through accepted T005; T006–T008 and P4-10 remain pending.**
 
 The next recipient should treat Feature 011 as an accepted fake-only foundation
 and T007-B through T007-F as accepted public-facade work. Native Windows PASS
 and Person 2 review were reported by the owner; Windows terminal evidence was
 not retained. Backend Retrieval Integration (P4-09) and Gemini/real-AI
 integration (P4-10) are future approved-work candidates, not completed
-capabilities.
+capabilities. T005 does not establish production deployment or live retrieval.

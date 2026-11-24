@@ -2,11 +2,14 @@
 
 from sciscope.question_service.contracts import (
     Claim,
+    ComponentMetadata,
     CorpusProvenance,
     Evidence,
     MockMetadata,
+    OutcomeMetadata,
     ProviderOutcome,
     ProviderOutcomeStatus,
+    QuestionMetadata,
     RetrievalOutcome,
 )
 
@@ -56,7 +59,7 @@ def validate_answered_outcome(
         raise ResponseContractFailure()
     if not retrieval.evidence or not _is_nonempty_string(provider.answer):
         raise ResponseContractFailure()
-    if not provider.claims:
+    if not provider.claims or provider.payload is not None:
         raise ResponseContractFailure()
     for claim in provider.claims:
         _validate_claim(claim, evidence_ids)
@@ -82,8 +85,37 @@ def validate_insufficient_evidence_outcome(
         or not retrieval.evidence
         or provider.answer is not None
         or provider.claims
+        or provider.payload is not None
     ):
         raise ResponseContractFailure()
+
+
+def validate_retrieval_outcome(outcome: RetrievalOutcome) -> set[str]:
+    """Validate shared retrieval evidence, provenance, and metadata fields.
+
+    Args:
+        outcome: Retrieval dependency output.
+
+    Returns:
+        The set of unique evidence chunk IDs.
+
+    Raises:
+        ResponseContractFailure: If any field is malformed or a chunk ID
+            repeats.
+    """
+    return _validate_retrieval_outcome(outcome)
+
+
+def validate_outcome_metadata(metadata: OutcomeMetadata) -> None:
+    """Validate dependency metadata without coercion.
+
+    Args:
+        metadata: Metadata attached to a retrieval or provider outcome.
+
+    Raises:
+        ResponseContractFailure: If the metadata is malformed.
+    """
+    _validate_metadata(metadata)
 
 
 def _validate_retrieval_outcome(outcome: RetrievalOutcome) -> set[str]:
@@ -99,9 +131,44 @@ def _validate_retrieval_outcome(outcome: RetrievalOutcome) -> set[str]:
     return evidence_ids
 
 
-def _validate_metadata(metadata: MockMetadata) -> None:
-    """Require explicit true flags for synthetic Feature 011 output."""
-    if metadata.is_mock is not True or metadata.is_test_data is not True:
+def validate_question_metadata(metadata: QuestionMetadata) -> None:
+    """Validate independent metadata for retrieval and answer components.
+
+    Args:
+        metadata: Internal component metadata for one question request.
+
+    Raises:
+        ResponseContractFailure: If either component is absent or malformed.
+    """
+    if type(metadata) is not QuestionMetadata:
+        raise ResponseContractFailure()
+    _validate_component_metadata(metadata.retrieval)
+    _validate_component_metadata(metadata.answer_provider)
+
+
+def _validate_metadata(metadata: OutcomeMetadata) -> None:
+    """Validate Feature 011 or T012-B internal metadata without coercion."""
+    if type(metadata) is MockMetadata:
+        if metadata.is_mock is not True or metadata.is_test_data is not True:
+            raise ResponseContractFailure()
+        return
+    if type(metadata) is ComponentMetadata:
+        _validate_component_metadata(metadata)
+        return
+    if type(metadata) is QuestionMetadata:
+        validate_question_metadata(metadata)
+        return
+    raise ResponseContractFailure()
+
+
+def _validate_component_metadata(metadata: object) -> None:
+    """Require the exact component contract and strict field types."""
+    if (
+        type(metadata) is not ComponentMetadata
+        or metadata.configured_origin not in {"synthetic", "fake", "real"}
+        or type(metadata.executed) is not bool
+        or type(metadata.is_test_data) is not bool
+    ):
         raise ResponseContractFailure()
 
 

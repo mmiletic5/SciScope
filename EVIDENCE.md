@@ -527,3 +527,465 @@ dependency resolution, and CI remain unverified. Human acceptance: NOT PROVIDED.
   This does not complete broader P1 shared-contract work, the separate GIN
   migration, T008, P4-09 real retrieval integration, P4-10 Gemini integration,
   or any broader application/feature acceptance.
+
+### Feature 012 — P4-09 Shared Retrieval Integration planning package
+
+- **Owner:** Person 3 (Backend & AI).
+- **Date:** 2026-11-22.
+- **Baseline:** `feature/p4-09-backend-retrieval-integration` at
+  `7a8233bd029ba666274d8ecd902a84bfe6cf8fe6`.
+- **Scope:** Draft-only Spec Kit research, specification, plan, dependency-ordered
+  tasks, requirements checklist, and append-only chronological test log, plus
+  this planning evidence and a backlog note. No behavior tests, application
+  changes, database connection, migration, ingestion, embedding, provider call,
+  commit, or push.
+- **Artifacts:**
+  [`specs/012-shared-retrieval-integration/research.md`](specs/012-shared-retrieval-integration/research.md),
+  [`spec.md`](specs/012-shared-retrieval-integration/spec.md),
+  [`plan.md`](specs/012-shared-retrieval-integration/plan.md),
+  [`tasks.md`](specs/012-shared-retrieval-integration/tasks.md),
+  [`checklists/requirements.md`](specs/012-shared-retrieval-integration/checklists/requirements.md),
+  and [`docs/person3/P4_09_TEST_LOG.md`](docs/person3/P4_09_TEST_LOG.md).
+- **Research:** Existing Person 2 five-question development comparison is
+  summarized in `research.md`; it includes mixed results and is insufficient
+  for a reliable general mode winner. Mode/version selection remains PENDING.
+  No new comparison was run.
+- **Decisions pending:** Person 2 review of retrieval mode/version and error
+  semantics; Person 4 review of metadata/error HTTP compatibility; Person 1
+  source/provenance review if meanings change; Person 3 decisions on application
+  setting and resource lifecycle; explicit spec and plan approval.
+- **Automated verification:** Spec Kit composed `spec-template` resolution
+  completed through the repository PowerShell resolver. The first resolver
+  attempt failed during PowerShell initialization because its user module
+  directory was outside the sandbox; the elevated read-only retry succeeded.
+  Plan/tasks/checklist template resolution and Spec Kit prerequisite scripts
+  completed. `git diff --check`, the targeted new-document whitespace scan,
+  and a one-off local-link/eight-task structural audit passed. The broad
+  whitespace scan found one pre-existing historical hard-break at EVIDENCE.md
+  line 245; it was left untouched. Read-only manual Spec Kit cross-artifact
+  analysis found no inconsistency, with D012-01 through D012-05 explicitly
+  pending. Exact command outcomes and the whitespace correction are recorded
+  in [`docs/person3/P4_09_TEST_LOG.md`](docs/person3/P4_09_TEST_LOG.md). Pytest,
+  Ruff, mypy, database, and provider checks were NOT RUN.
+- **Human verification / acceptance:** PENDING. No owner or reviewer decisions
+  are inferred. The P4-09 backlog checkbox remains unchecked.
+- **Current status:** DRAFT / PLANNED; no implementation authorization or
+  feature completion is claimed.
+
+### Feature 012 / T012-A — Delegated design decisions
+
+- **Date / baseline:** 2026-11-22; branch `feature/p4-09-backend-retrieval-integration`, baseline `7a8233bd029ba666274d8ecd902a84bfe6cf8fe6`.
+- **Delegation:** Person 2 and Person 4 told the Person 3 owner that Person 3 may make technical choices within the feature, with retrieval selection based on best available measured results. This is owner-reported delegation only; no specific implementation or test result was reviewed or approved. Person 3 is responsible for validation and approval. Concrete affected-owner reviews, independent verification, and explicit acceptance remain separate gates.
+- **D012-01:** `retrieval.v1` + `dense` is the leading candidate based on existing Person 2 measurements: tied v1 hybrid at Recall@10 0.875 and MRR@10 0.521, with lower median latency (23.462 ms vs 162.734 ms). This five-question development sample is not a reliable general winner. Final activation requires approved comparative evidence, compatible explicitly configured query embedder, and explicit Person 3 acceptance. v1 lexical may be used only for a separately authorized PostgreSQL wiring smoke test. No implicit fallback.
+- **D012-02:** Adopt component-origin retrieval/answer metadata and separate test-data status, preserve exact Feature 011 fake-only behavior, verify DTO/frontend compatibility, and use a separately approved HTTP version if additive fields break strict clients.
+- **D012-03:** Adopt sanitized error mapping where compatible, preserve typed retryability, classify server-owned invalid configuration as server/internal failure, and expose no private exception details. Exact HTTP compatibility remains to be verified.
+- **D012-04:** Adopt explicit composition-root ownership; creator owns Engine disposal, adapters do not dispose borrowed engines, and imports/app construction/fake-only paths do not initialize DB/providers implicitly.
+- **D012-05:** Preserve exact source identifiers, DOI, locator, passage text, title, delivery digest, source-contract version, and corpus version. Person 1 review is needed only if source meaning/upstream contract changes.
+- **Checks and actions:** Documentation consistency checks and `git diff --check` are pending. No source/tests, benchmark, database, migration, ingestion, embedding, or provider activity. No commit or push. Feature remains DRAFT; backlog unchecked; no acceptance inferred.
+- **Artifacts:** See the updated D012 decision register in [`specs/012-shared-retrieval-integration/spec.md`](specs/012-shared-retrieval-integration/spec.md), and full dated entry in [`docs/person3/P4_09_TEST_LOG.md`](docs/person3/P4_09_TEST_LOG.md).
+
+### Feature 012 / T012-A — Documentation verification result
+
+- **Date:** 2026-11-22.
+- **Checks:** `git diff --check` PASS. Targeted trailing-whitespace scan on the new Feature 012 docs and test log found no matches. One-off Python documentation audit PASS: 8 Markdown files checked, relative links resolve, and D012-01 through D012-05 are traceable across decision artifacts. The audit initially found missing plan labels for D012-01 and D012-05; these were added before the passing rerun.
+- **Tests / application / database / providers:** NOT RUN. No implementation, benchmark, database access, migration, ingestion, or provider call.
+- **Human review and acceptance:** No specific Person 2/Person 4 implementation or test review was performed; their reported delegation is not such approval. Person 3 explicit feature decision remains PENDING. No acceptance inferred.
+- **Git:** No staging, commit, push, or merge.
+
+### Feature 012 / T012-A — Final contract and task-order correction
+
+- **Date / scope:** 2026-11-22. Documentation-only reconciliation on branch
+  `feature/p4-09-backend-retrieval-integration` at baseline
+  `7a8233bd029ba666274d8ecd902a84bfe6cf8fe6`. No application source, test
+  source, database, benchmark, migration, ingestion, or provider activity.
+- **HTTP direction:** The accepted closed fake-only `/api/v1/questions` success
+  and error JSON contracts remain exact. The package now documents a DRAFT
+  separately versioned `POST /api/v2/questions` proposal for real retrieval;
+  it has its own closed success/error shapes, component metadata, response-local
+  citation validation, corpus identity, no-results behavior, and migration tests.
+  It requires explicit approval before implementation or consumer migration.
+- **Task direction:** The eight incomplete tasks are reordered sequentially:
+  T001 approval, T002 internal metadata/validation, T003 public adapter, T004
+  v2 HTTP/error handling, T005 composition/lifecycle, T006 offline regression,
+  T007 separately authorized PostgreSQL comparison/verification, and T008
+  evidence close-out.
+- **Safety direction:** Typed retrieval errors retain their actual retryability
+  and a safe route-scoped request ID through a dedicated proposed handler. The
+  repository currently exposes no approved production Engine-backed
+  public-facade factory; the proposed explicit composition root is a later
+  implementation dependency, and private test helpers are not production APIs.
+- **Human decisions:** Person 2 and Person 4 delegation remains owner-reported
+  only. No specific implementation review, test approval, formal Person 3
+  specification/plan approval, or feature acceptance is claimed.
+- **Verification:** Final documentation checks are recorded in the chronological
+  Feature 012 log: `git diff --check` passed; the targeted trailing-whitespace
+  scan had no matches; and a local link/task/contract audit passed for all eight
+  planning/evidence documents. No staging, commit, push, or merge.
+
+### Feature 012 / T012-A — Formal planning approval
+
+- **Approver / date:** Person 3 — Backend & AI, 2026-11-22.
+- **Approved scope:** The Feature 012 research, specification, plan, ordered
+  T001–T008 workflow, and beginning T012-B offline RED/GREEN implementation.
+  T012-A is complete as the planning/authorization gate; it required no
+  artificial RED/GREEN behavior test. No application implementation occurred.
+- **Restrictions and remaining gates:** PostgreSQL access, benchmarks, live
+  embedding/provider or Gemini calls, final mode activation, v1 response-shape
+  changes, automatic later-increment acceptance, push, and merge remain
+  unauthorized. Concrete v2 HTTP implementation, applicable affected-owner
+  reviews, independent owner verification, and final Feature 012 acceptance
+  remain separate gates.
+- **Review status:** Person 2 and Person 4 delegation is owner-reported only;
+  no concrete implementation or test approval is asserted. T002–T008 remain
+  unchecked and unaccepted.
+- **Verification:** Existing documentation checks remain the only automated
+  evidence for T012-A. Pytest, Ruff, mypy, database, benchmark, and provider
+  checks were not run. The chronological log contains the commands and actual
+  outcomes. The approval-record rerun passed `git diff --check` and the local
+  link/task/contract audit; its whitespace scan found only the known historical
+  hard break at `EVIDENCE.md:245`, which was preserved.
+- **Initial commit:** `ea5e6f0` — `docs: approve Feature 012 integration plan`. It was amended only to retain this post-creation evidence; the final commit ID is reported from Git after the amendment.
+
+### Feature 012 / T012-B — Internal Metadata Contracts and Validation Foundations
+
+- **Owner / decision:** Person 3 (Backend & AI) explicitly **ACCEPTED** T002 / 012-B on 2026-11-22. The accepted scope is immutable internal component/question metadata, fail-closed validation, independent component origin/execution/test-data state, answered/no-results propagation, and preservation of the accepted fake-only v1 behavior.
+- **Implementation and test paths:** [`contracts.py`](src/sciscope/question_service/contracts.py), [`validation.py`](src/sciscope/question_service/validation.py), [`service.py`](src/sciscope/question_service/service.py), and [`test_retrieval_metadata.py`](tests/backend/test_retrieval_metadata.py). The chronological RED/GREEN attempts, corrections, Codex results, and owner verification are retained in [`P4_09_TEST_LOG.md`](docs/person3/P4_09_TEST_LOG.md).
+- **Owner-reported verification:** On branch `feature/p4-09-backend-retrieval-integration` at `503df57425cf939900a2f1322365362e9ea398e0`, using Python 3.12.16, the owner reported: focused metadata suite 13 passed in 0.38s; backend regression 80 passed in 0.68s; focused Ruff lint/format and mypy passed. `git diff --check` produced no error output; no owner exit code, operating system, or shell was recorded.
+- **Codex verification:** The preceding chronological evidence records a focused GREEN 13 passed, backend regression 80 passed, Ruff lint/format pass, and mypy pass using uv Python 3.12.16. v1 success/error regressions passed; no v2 route/model, database access, retrieval benchmark, migration, ingestion, live provider, or Gemini call occurred.
+- **Limitation and remaining work:** Retrieval/provider failures still propagate exceptions without a returned `QuestionOutcome` or v2 failure-metadata envelope; later approved HTTP/error work owns that integration. T003–T008 remain incomplete and separately gated. Feature 012 / P4-09 remains incomplete.
+
+### Feature 012 / T012-C — Public RetrievalService Adapter
+
+- **Owner / decision:** Person 3 (Backend & AI) explicitly **ACCEPTED** T003 / 012-C on 2026-11-22. The accepted scope is immutable explicit adapter settings, an injected public retrieval facade, exact request/evidence/corpus mapping, retrieval-only component metadata, fail-closed response/configuration validation, empty-result mapping, no fallback, and inert resource behavior.
+- **Implementation and test paths:** [`retrieval_adapter.py`](src/sciscope/question_service/retrieval_adapter.py) and [`test_retrieval_adapter.py`](tests/backend/test_retrieval_adapter.py). The preserved RED/GREEN chronology, owner verification, and correction history are in [`P4_09_TEST_LOG.md`](docs/person3/P4_09_TEST_LOG.md).
+- **Owner-reported verification:** At pre-commit `44a07b5ea9a39b1a09c8ad3ce387cfcd8fe3c867`, using Python 3.12.16, Person 3 reported: adapter 18 passed in 0.05s; backend 98 passed in 0.62s; public retrieval 66 passed in 0.52s; focused Ruff lint/format and mypy passed. `git diff --check` produced no error output; the owner operating system, shell, and exit code were not recorded.
+- **Codex verification:** The chronological log records the final focused suite 18 passed in 0.09s, backend 98 passed in 0.94s, public retrieval 66 passed in 0.65s, and focused Ruff/format/mypy passes. Person 2's boundary confirmation is owner-reported only; no direct review transcript or Person 2 test execution is claimed.
+- **Limitations and remaining work:** The adapter returns retrieval-only `ComponentMetadata`; full `QuestionMetadata` composition, end-to-end `QuestionService` integration, HTTP v2 responses/error envelopes, and public retrieval error mapping remain later work. Its strict warning/ranking validation needs integration compatibility review. No final retrieval mode was selected or activated. T004–T008 and P4-09 remain incomplete. PostgreSQL access, benchmark, migration, ingestion, live provider, Gemini, and HTTP v2 work were not performed.
+
+### Feature 012 / T012-D — Versioned HTTP Integration and Typed Retrieval Errors
+
+- **Acceptance:** Person 3 — Backend & AI explicitly **ACCEPTED** T004 / 012-D on 2026-11-22. The accepted offline scope adds the separate strict `POST /api/v2/questions` boundary, explicit validated `v2_metadata` registration, truthful component metadata, answered/no-results/insufficient-evidence handling, response-local citation failure handling, seven typed retrieval error mappings, controlled timeout mapping, retryability preservation, route-scoped request IDs, and sanitized failures. Accepted v1 behavior remains unchanged.
+- **Affected-owner confirmations:** Person 2 confirmed the typed public retrieval error mapping, error boundary, retryability, and sanitized failures; Person 4 confirmed the separate v2 contract, request/response structure, frontend compatibility, and v1 preservation. Both are OWNER-REPORTED CONFIRMATIONS only; no transcript, date, reviewer test result, or additional implementation approval is asserted.
+- **Evidence:** RED was 14 failed / 1 passed because v2 was absent. Codex GREEN was 19 v2 tests, 29 combined v1/v2 tests, 117 backend tests, and 66 public-retrieval tests; focused Ruff/format/mypy and `git diff --check` passed. Owner-reported independent GREEN used Python 3.12.16 and reported the same commands passing: 19, 29, 117, and 66 tests respectively. The full RED/GREEN chronology, corrections, commands, and owner/Codex separation are in [`P4_09_TEST_LOG.md`](docs/person3/P4_09_TEST_LOG.md). Implemented paths are [`app.py`](src/sciscope/api/app.py), [`http_models_v2.py`](src/sciscope/api/http_models_v2.py), [`routes_v2.py`](src/sciscope/api/routes_v2.py), and [`test_question_api_v2.py`](tests/backend/test_question_api_v2.py).
+- **Limitations and remaining work:** This is an injected offline HTTP boundary. Production PublicRetrievalAdapter composition and engine/resource lifecycle remain T005; full cross-component offline integration remains T006; separately authorized PostgreSQL verification remains T007. No final retrieval mode was selected or activated, and no PostgreSQL, benchmark, migration, ingestion, embedding, Gemini, or live answer-provider operation occurred. Early caller validation failures and response-contract/unexpected failures omit execution metadata rather than invent a state. Citation membership establishes only response-local identity, not scientific support. T001–T004 are complete; T005–T008 and P4-09 remain incomplete.
+
+### Feature 012 / T005 / 012-E — Explicit Composition and Resource Lifecycle
+
+- **Acceptance:** Person 3 — Backend & AI explicitly **ACCEPTED** T005 / 012-E on 2026-11-23. The accepted offline scope adds an explicit public retrieval factory and application composition root, owned/borrowed Engine lifecycle rules, validation before allocation, initialization-failure cleanup, idempotent close, HTTP-handler operation leases, safe close behavior for tracked requests, and fake-only inertness while preserving accepted v1/v2 contracts.
+- **Evidence:** Independent Person 3 GREEN verification reported 6 HTTP-lifecycle tests, 9 application-lifecycle tests, 6 retrieval-composition tests, 2 app-factory tests, 29 v1/v2 API tests, 139 backend tests, and 66 public-retrieval tests passing. Ruff, format, and mypy passed. Full commands, RED/GREEN chronology, owner attribution, and limitations are retained in [`P4_09_TEST_LOG.md`](docs/person3/P4_09_TEST_LOG.md). Implemented paths are [`factory.py`](src/sciscope/retrieval/factory.py), [`composition.py`](src/sciscope/api/composition.py), [`test_app_factory.py`](tests/backend/test_app_factory.py), [`test_retrieval_composition.py`](tests/backend/test_retrieval_composition.py), [`test_application_lifecycle.py`](tests/backend/test_application_lifecycle.py), and [`test_http_lifecycle.py`](tests/backend/test_http_lifecycle.py).
+- **Limitations and remaining work:** The HTTP lease covers dispatch through handler completion only; streaming-response iteration, post-response background tasks, ASGI-server-level draining, automatic outstanding-work waiting, production deployment shutdown, real PostgreSQL disposal, and all disconnect/cancellation cases are not established. T001–T005 are complete; T006–T008 remain pending, and Feature 012 / P4-09 remains in progress. PostgreSQL access is not authorized, retrieval mode/version activation is pending, no real provider calls occurred, and no production deployment is claimed. Commit hash: PENDING until created.
+
+### Feature 012 / T005 / 012-E — Post-commit reconciliation
+
+- **Commit:** `caf3c578ceaf99ffbcf1923c9d396e0510a3b442` — `feat: compose retrieval application with safe lifecycle`.
+- **State:** T001–T005 are ACCEPTED; T006–T008 are PENDING; Feature 012 / P4-09 remains IN PROGRESS. The preceding “commit hash: PENDING” wording describes the pre-commit acceptance checkpoint and is retained as historical evidence. No new test result, reviewer approval, CI outcome, database authorization, provider operation, or retrieval-mode activation is asserted here.
+### Feature 012 — Frontend Research Question Explorer
+
+- **Owner:** Person 4 (Frontend & Integration).
+- **Date:** 2026-11-22.
+- **Artifacts:** Approved specification, plan, and eight-task list, UI data model, question
+  service contract summary, quickstart validation guide, and
+  requirements-quality checklist in [`specs/012-frontend-explorer`](specs/012-frontend-explorer).
+- **Current state:** IN_PROGRESS — the project owner explicitly approved the
+  specification and supplied three corrections on 2026-11-22. Those
+  corrections are applied in `spec.md`: mock notice dismissal is scoped to the
+  current result, the header badge follows the latest response metadata, and
+  requests time out after 30 seconds with an abort and retryable message. The
+  plan and task list are approved; implementation is authorized through T008.
+  T001 through T006 are automated-validated. T007's implementation, all four
+  required checks, and the Explorer walkthrough are accepted. T008 is now
+  implemented and automated-validated; feature-owner review remains pending. The owner also
+  approved the ESLint and `@eslint/js` v9 alignment.
+- **Research:** Read the constitution, development workflow, team ownership,
+  product scope, architecture, data model, Phase 5 backlog, integration
+  handoff, Feature 011 API source/models/fakes, Golden Questions v0, and current
+  frontend starter. Verified the closed fake-only contract and separated its
+  facts from the unsupported local launcher. Compared state-driven navigation
+  with a router, Vitest/Testing Library with Jest, and checked the JSX
+  accessibility plugin's maintained flat-config support. External findings
+  and unavailable package-registry checks are recorded in `research.md`.
+- **Plan decisions:** Use app state instead of a router; use Vitest with
+  Testing Library, user-event, and jsdom for offline mocked behavior tests; use
+  response-local mock-notice dismissal; abort pending requests after 30
+  seconds; propose an independent frontend CI job without changing Python CI.
+  Optional Playwright tests remain out of scope unless separately approved.
+- **Task sequencing:** T001–T006 cover setup, User Story 1, and User Story 2;
+  T007's four automated checks and owner-reported Explorer walkthrough passed;
+  T008 implements User Story 3 previews. The task list records T007 accepted.
+- **Proxy-response correction:** The owner clarified that a stopped backend
+  can yield HTTP 5xx with an HTML/non-envelope proxy body. The specification,
+  plan, data model, and service contract now classify any 5xx without a valid
+  API error envelope as retryable API-unreachable; malformed HTTP 200/4xx
+  bodies remain generic nonretryable errors. Client tests for both paths are
+  required by the task list.
+- **T001 evidence:** The IBM Plex Fontsource packages and approved development
+  dependencies installed without peer overrides; npm reported zero
+  vulnerabilities. npm also warned that resolved `eslint@9.39.5` is no longer
+  supported; this is the resolved v9 major required by the approved
+  `eslint-plugin-jsx-a11y` peer range. `npm.cmd run lint`, `npm.cmd run typecheck`, and
+  `npm.cmd run build` all passed. The Vite `/api` proxy remains configured for
+  `http://127.0.0.1:8000`. T001 is AUTO_VALIDATED; no manual acceptance is
+  implied. Setup-only RED: N/A because T001 defines no application behavior;
+  baseline inspection confirmed that the starter had no test script.
+- **Dependency compatibility finding:** `eslint-plugin-jsx-a11y` 6.10.2
+  declares ESLint peer support through major 9. T001 applied the approved
+  alignment to `eslint` and `@eslint/js` 9 and enabled the recommended flat
+  config without peer overrides. npm warned that resolved `eslint@9.39.5` is
+  no longer supported; the installed version is recorded in the T001 evidence.
+- **Template workflow:** The composed Spec Kit template was resolved with the
+  repository script after the machine's default PowerShell execution policy
+  blocked its initial invocation. The resolved template was used to create the
+  draft spec. The requirements checklist was reviewed against the draft; it
+  records specification quality only and is not implementation approval.
+- **Automated verification:** T001–T008 implementation checks passed. T008
+  RED/GREEN and final checks are recorded in its task entry below.
+- **Manual verification:** T007 Explorer walkthrough was performed by Milena
+  (Person 4) on 2026-11-22 and ACCEPTED; preview walkthrough is not part of the
+  Explorer gate.
+- **Backlog state:** P5 backlog items remain unchecked; the Phase 5 note in
+  `PROJECT_TODO.md` reflects approved specification, plan, and task list plus
+  the accepted T007 Explorer gate.
+- **Runtime compatibility input:** The project owner reports Node.js
+  `v24.20.0`. Official Vite guidance requires Node `20.19+` or `22.12+`;
+  Vitest 5 requires Node `22.12+` and Vite `6.4+`. The reported Node and
+  installed Vite `8.3.8` satisfy those minima. The local `node --version`
+  command returned `v24.20.0`.
+- **Open questions and limits:** The handoff does not establish an official
+  backend launcher, evidence has no author/year/section fields, filters are not
+  part of the request contract, and real retrieval (P4-09) and Gemini (P4-10)
+  remain separate work. A separate frontend CI job appears only as a proposal
+  in the plan. The local demo command is treated as owner-provided, not officially
+  supported.
+- **Next gate:** Owner review of the completed T008 previews; no further task is
+  authorized in this implementation run.
+
+### T002 — Frontend question-service types and fixtures
+
+- **Owner:** Person 4
+- **Feature specification and plan:** Approved Feature 012 `spec.md` and `plan.md`; approved `tasks.md`.
+- **Current state:** AUTO_VALIDATED
+- **Files changed:** `frontend/src/api/types.ts`, `frontend/src/api/fixtures.ts`, `frontend/src/api/types.test.ts`, `specs/012-frontend-explorer/research.md`, `specs/012-frontend-explorer/tasks.md`, `PROJECT_TODO.md`, `EVIDENCE.md`.
+- **Tests created or updated:** `frontend/src/api/types.test.ts`.
+- **RED result:** `npm.cmd run test -- src/api/types.test.ts` failed as expected before implementation: Vitest could not resolve the not-yet-created `./fixtures` module.
+- **GREEN result:** The same command passed: 1 test file, 3 tests passed.
+- **Other automated checks:** `npm.cmd run typecheck` — PASS.
+- **Known issues and prior attempts:** Fixture text and DOI are explicitly synthetic and must not be presented as a real scientific source. TypeScript types alone do not validate network JSON; T003 covers runtime envelope validation.
+- **Awaiting human confirmation:** Yes.
+
+#### Human evidence
+
+- **Verifier:** NOT PROVIDED
+- **Verification date:** NOT PROVIDED
+- **Exact manual commands or actions:** NOT RUN
+- **Observed outcome:** NOT PROVIDED
+- **Explicit decision:** NOT PROVIDED
+- **Final status:** AUTO_VALIDATED; human verification pending.
+
+### T003 — Question API client and request IDs
+
+- **Owner:** Person 4
+- **Feature specification and plan:** Approved Feature 012 `spec.md` and `plan.md`; approved `tasks.md`; accepted Person 3 HTTP handoff.
+- **Current state:** AUTO_VALIDATED
+- **Files changed:** `frontend/src/api/client.ts`, `frontend/src/api/client.test.ts`, `frontend/src/lib/requestId.ts`, `frontend/src/lib/requestId.test.ts`, `specs/012-frontend-explorer/tasks.md`, `PROJECT_TODO.md`, `EVIDENCE.md`.
+- **Tests created or updated:** API-client tests for the three success states, six known error codes, fetch rejection, 5xx HTML/empty/malformed/success-shaped bodies, malformed 200/4xx bodies, request serialization and 30-second abort; request-ID validation tests.
+- **RED result:** `npm.cmd run test -- src/api/client.test.ts src/lib/requestId.test.ts` failed before implementation because `client.ts` and `requestId.ts` did not exist.
+- **GREEN result:** The same command passed: 2 files, 28 tests passed. HTTP 5xx without a valid API error envelope is retryable API-unreachable; malformed HTTP 200/4xx is generic nonretryable. Timeout aborts and retains the generated request reference.
+- **Other automated checks:** `npm.cmd run typecheck` — PASS; `npm.cmd run lint` — PASS.
+- **Known issues and prior attempts:** Initial assertions for valid server error envelopes expected the client-generated ID; corrected them to assert the returned server request ID, matching the contract. All client failures use sanitized messages; raw body/error text is not displayed. No backend contract changes.
+- **Awaiting human confirmation:** Yes.
+
+#### Human evidence
+
+- **Verifier:** NOT PROVIDED
+- **Verification date:** NOT PROVIDED
+- **Exact manual commands or actions:** NOT RUN
+- **Observed outcome:** NOT PROVIDED
+- **Explicit decision:** NOT PROVIDED
+- **Final status:** AUTO_VALIDATED; human verification pending.
+
+### T004 — Research question form and initial/loading view
+
+- **Owner:** Person 4
+- **Feature specification and plan:** Approved Feature 012 `spec.md` and `plan.md`; approved `tasks.md`.
+- **Current state:** AUTO_VALIDATED
+- **Files changed:** `frontend/src/features/explorer/QuestionForm.tsx`, `frontend/src/features/explorer/QuestionForm.test.tsx`, `frontend/src/features/explorer/ExplorerPage.tsx`, `specs/012-frontend-explorer/tasks.md`, `PROJECT_TODO.md`, `EVIDENCE.md`.
+- **Tests created or updated:** Form validation/count/examples/submission/pending tests and initial/loading Explorer results-area tests.
+- **RED result:** `npm.cmd run test -- src/features/explorer/QuestionForm.test.tsx` failed before implementation because `QuestionForm.tsx` did not exist.
+- **GREEN result:** The same command passed: 1 file, 8 tests passed. It verifies trimmed 1–2,000 character validation, example fill without submit, trimmed submit, duplicate-submit prevention, loading announcement, initial state, and busy results region.
+- **Other automated checks:** `npm.cmd run typecheck` — PASS; `npm.cmd run lint` — PASS.
+- **Known issues and prior attempts:** Initial long-input tests used simulated keystrokes and exceeded the test timeout; switched to direct input-change events for boundary values. ESLint first reported a redundant explicit `region` role on a section; removed the redundant role and reran lint successfully.
+- **Awaiting human confirmation:** Yes.
+
+#### Human evidence
+
+- **Verifier:** NOT PROVIDED
+- **Verification date:** NOT PROVIDED
+- **Exact manual commands or actions:** NOT RUN
+- **Observed outcome:** NOT PROVIDED
+- **Explicit decision:** NOT PROVIDED
+- **Final status:** AUTO_VALIDATED; human verification pending.
+
+### T005 — Answer, citation, source, and provenance rendering
+
+- **Owner:** Person 4
+- **Feature specification and plan:** Approved Feature 012 `spec.md` and `plan.md`; approved `tasks.md`; accepted question-service contract.
+- **Current state:** AUTO_VALIDATED
+- **Files changed:** `frontend/src/lib/citations.ts`, `frontend/src/lib/citations.test.ts`, `frontend/src/features/explorer/AnswerView.tsx`, `frontend/src/features/explorer/AnswerView.test.tsx`, `frontend/src/features/explorer/ExplorerPage.tsx`, `frontend/src/features/explorer/ExplorerPage.test.tsx`, `frontend/src/components/SourceCard.tsx`, `frontend/src/components/CitationMarker.tsx`, `specs/012-frontend-explorer/plan.md`, `specs/012-frontend-explorer/spec.md`, `specs/012-frontend-explorer/tasks.md`, `PROJECT_TODO.md`, `EVIDENCE.md`.
+- **Tests created or updated:** Citation resolution ordering/deduplication/unknown/uncited cases; answer rendering, citation navigation/highlighting, DOI link safety, source locator disclosure, provenance; answered flow integration.
+- **RED result:** `npm.cmd run test -- src/features/explorer/AnswerView.test.tsx src/lib/citations.test.ts` failed before implementation because `citations.ts` and `AnswerView.tsx` did not exist. The integration test then demonstrated the page still showed only “Response received” rather than its answer.
+- **GREEN result:** `npm.cmd run test -- src/features/explorer/AnswerView.test.tsx src/lib/citations.test.ts src/features/explorer/ExplorerPage.test.tsx` passed: 3 files, 7 tests.
+- **Other automated checks:** `npm.cmd run typecheck` — PASS; `npm.cmd run lint` — PASS.
+- **Known issues and prior attempts:** An integration assertion initially expected the unprefixed title; corrected it to assert the accessible “Source 1” heading. DOI uses the fixed HTTPS doi.org origin with slash-preserving path encoding and safe new-tab attributes. Fixture source details remain synthetic.
+- **Awaiting human confirmation:** Yes.
+
+#### Human evidence
+
+- **Verifier:** NOT PROVIDED
+- **Verification date:** NOT PROVIDED
+- **Exact manual commands or actions:** NOT RUN
+- **Observed outcome:** NOT PROVIDED
+- **Explicit decision:** NOT PROVIDED
+- **Final status:** AUTO_VALIDATED; human verification pending.
+
+### T006 — Empty, error, synthetic-data, badge, and timeout states
+
+- **Owner:** Person 4
+- **Feature specification and plan:** Approved Feature 012 `spec.md` and `plan.md`; approved `tasks.md`; approved HTTP 5xx classification correction.
+- **Current state:** AUTO_VALIDATED
+- **Files changed:** `frontend/src/features/explorer/ResultStates.tsx`, `frontend/src/features/explorer/ResultStates.test.tsx`, `frontend/src/features/explorer/ExplorerPage.tsx`, `frontend/src/features/explorer/ExplorerPage.test.tsx`, `frontend/src/components/MockNotice.tsx`, `frontend/src/components/Header.tsx`, `frontend/src/components/Header.test.tsx`, `specs/012-frontend-explorer/tasks.md`, `PROJECT_TODO.md`, `EVIDENCE.md`.
+- **Tests created or updated:** Result-state tests for empty, insufficient evidence, six known errors, retry/reference, reachability, malformed response, and timeout; header default/either-true/both-false metadata tests; Explorer tests for response-scoped notice dismissal, retained editable question/retry, and client timeout integration.
+- **RED result:** `npm.cmd run test -- src/features/explorer/ResultStates.test.tsx src/components/Header.test.tsx` failed before implementation because the components did not exist. Explorer integration tests also failed before page wiring: the mock notice did not appear and API-unreachable errors displayed only a generic placeholder.
+- **GREEN result:** `npm.cmd run test -- src/features/explorer/ResultStates.test.tsx src/components/Header.test.tsx src/features/explorer/ExplorerPage.test.tsx` passed: 3 files, 20 tests. The 30-second test confirms the request aborts, exact timeout text and retry appear, and the entered question remains editable.
+- **Other automated checks:** `npm.cmd run typecheck` — PASS; `npm.cmd run lint` — PASS.
+- **Known issues and prior attempts:** Result presentation is implemented in `ResultStates.tsx`; the task's optional `StatusPanel.tsx` path was not needed. Header is implemented and tested independently; T007 will place it in the app shell and wire latest response metadata.
+- **Awaiting human confirmation:** Yes.
+
+#### Human evidence
+
+- **Verifier:** NOT PROVIDED
+- **Verification date:** NOT PROVIDED
+- **Exact manual commands or actions:** NOT RUN
+- **Observed outcome:** NOT PROVIDED
+- **Explicit decision:** NOT PROVIDED
+- **Final status:** AUTO_VALIDATED; human verification pending.
+
+### T007 — Explorer shell and demo-ready gate
+
+- **Owner:** Person 4
+- **Feature specification and plan:** Approved Feature 012 `spec.md` and `plan.md`; approved `tasks.md`.
+- **Current state:** DONE
+- **Files changed:** `frontend/src/App.tsx`, `frontend/src/App.test.tsx`, `frontend/src/components/Header.tsx`, `frontend/src/components/Navigation.tsx`, `frontend/src/features/explorer/ExplorerPage.tsx`, `frontend/src/features/explorer/QuestionForm.tsx`, `frontend/src/features/explorer/QuestionForm.test.tsx`, `frontend/src/features/explorer/AnswerView.tsx`, `frontend/src/styles/tokens.css`, `frontend/src/styles/global.css`, `frontend/src/index.css`, `frontend/index.html`, `frontend/README.md`, `specs/012-frontend-explorer/plan.md`, `EVIDENCE.md`, `PROJECT_TODO.md`, `specs/012-frontend-explorer/tasks.md`.
+- **Tests created or updated:** `frontend/src/App.test.tsx` checks semantic app landmarks, default mock badge, active-page announcement, polite result announcements, and absence of preview content. `frontend/src/features/explorer/QuestionForm.test.tsx` additionally verifies that Golden Questions are visible as their full accessible button labels and grouped accessibly.
+- **RED result:** `npm.cmd run test -- src/App.test.tsx` failed before implementation: the starter had no banner, navigation, main, footer, mock badge, or Research Question Explorer.
+- **GREEN result:** `npm.cmd run test -- src/App.test.tsx` passed: 1 file, 2 tests.
+- **Other automated checks:** `npm.cmd run lint` — PASS; `npm.cmd run typecheck` — PASS; `npm.cmd run test` — PASS (10 files, 67 tests); `npm.cmd run build` — PASS; `npm.cmd ls --depth=0` — PASS with no peer overrides. The build bundles IBM Plex Sans and IBM Plex Mono locally. Computed contrast ratios: primary button 5.02:1, secondary text 6.00:1, honey notice text 7.76:1, error title 6.95:1, blue link 10.36:1.
+- **Known issues and prior attempts:** The original starter screen was replaced. Additional RED checks found that example prompts were hidden behind generic aria-labels and the results region lacked a polite live announcement; the accessible full prompts, group role, and `aria-live="polite"` region are now in place. The `/api` Vite proxy remains pointed at `http://127.0.0.1:8000`. Preview navigation labels are present but disabled until T008; no preview screen was implemented. Automated checks do not verify 390 px browser layout or the live fake-backend walkthrough.
+- **Awaiting human confirmation:** No; Milena (Person 4) accepted the Explorer walkthrough.
+
+#### Human evidence
+
+- **Verifier:** Milena (Person 4)
+- **Verification date:** 2026-11-22
+- **Exact manual commands or actions:** Started `scratch/serve_fake.py` and `npm run dev`; exercised the default response, documented fake modes, backend-stopped proxy path, validation, keyboard navigation, focus, and 390 px viewport.
+- **Observed outcome:** Answered flow, citation scroll/highlight, Details and About this result disclosures, DOI link, mock notice dismissal/reappearance, and header badge were OK. Retrieval-empty, insufficient-evidence, provider-unavailable, retrieval-timeout, and stopped-backend scenarios produced expected states/retry rules. Whitespace and >2,000-character validation passed. Keyboard navigation and visible focus were OK; no horizontal overflow at 390 px.
+- **Explicit decision:** ACCEPTED.
+- **Final status:** DONE. T007 is accepted and T008 is authorized after the requested pre-task fixes.
+
+### T008 — Static workflow previews
+
+- **Owner:** Person 4
+- **Feature specification and plan:** Approved Feature 012 `spec.md` and `plan.md`; approved `tasks.md`; T007 Explorer gate accepted by Milena on 2026-11-22.
+- **Current state:** AUTO_VALIDATED
+- **Files changed:** `frontend/src/App.tsx`, `frontend/src/App.test.tsx`, `frontend/src/components/Navigation.tsx`, `frontend/src/features/explorer/ExplorerPage.tsx`, `frontend/src/features/explorer/ExplorerPage.test.tsx`, `frontend/src/features/explorer/QuestionForm.tsx`, `frontend/src/features/previews/PreviewBanner.tsx`, `frontend/src/features/previews/ComparisonPreview.tsx`, `frontend/src/features/previews/ConflictsPreview.tsx`, `frontend/src/features/previews/GapsPreview.tsx`, `frontend/src/features/previews/Previews.test.tsx`, `frontend/src/styles/global.css`, `specs/012-frontend-explorer/tasks.md`, `PROJECT_TODO.md`, `EVIDENCE.md`.
+- **Tests created or updated:** Preview navigation and content tests cover all three placeholder views, exact preview notice and draft copy, disabled actions, comparison rows, and exactly one `<main>` landmark per view. Explorer regression test ensures retry submits the currently edited question.
+- **RED result:** `npm.cmd run test -- src/features/previews/Previews.test.tsx` failed as expected before preview implementation: all three tests could not navigate because preview controls were disabled and preview screens did not exist. `npm.cmd run test -- src/features/explorer/ExplorerPage.test.tsx` also failed before the retry fix: retry submitted the original question after the field had been edited.
+- **GREEN result:** `npm.cmd run test -- src/features/previews/Previews.test.tsx src/App.test.tsx` passed: 2 files, 5 tests. After finding the duplicate `research-question` DOM ID, added a regression assertion; `npm.cmd run test -- src/App.test.tsx src/features/explorer/QuestionForm.test.tsx` passed: 2 files, 10 tests after assigning the textarea a distinct ID. The retry regression passed with `npm.cmd run test -- src/features/explorer/ExplorerPage.test.tsx src/features/explorer/QuestionForm.test.tsx`: 2 files, 13 tests.
+- **Other automated checks:** From `frontend/`, `npm.cmd run lint` — PASS; `npm.cmd run typecheck` — PASS; `npm.cmd run test` — PASS (11 files, 71 tests); `npm.cmd run build` — PASS (Vite 8.3.8 production build).
+- **Known issues and prior attempts:** Explorer remains mounted but hidden while another view is active, preserving its question/result state. `App.tsx` owns the single `<main>` landmark shared by Explorer and each preview. No preview content is connected to the backend or makes scientific claims.
+- **Awaiting human confirmation:** Yes.
+
+#### Human evidence
+
+- **Verifier:** NOT PROVIDED
+- **Verification date:** NOT PROVIDED
+- **Exact manual commands or actions:** NOT RUN
+- **Observed outcome:** NOT PROVIDED
+- **Explicit decision:** NOT PROVIDED
+- **Final status:** AUTO_VALIDATED; T008 owner review pending.
+
+## MVP track (lean mode), 2026-11-23
+
+- The MVP track was run in lean mode with explicit project-owner approval, without Spec Kit artefacts, formal RED/GREEN phases or formal acceptance. Nothing from it is marked ACCEPTED.
+- Automated offline tests, ruff and mypy pass on the merged branch. DB-gated tests that need `SCISCOPE_TEST_DATABASE_URL` were not run.
+- The pilot database was recreated locally from `pilot-delivery.zip`; `verify_pilot` printed PASS (17 papers, 319 sections, 728 chunks, 728 vectors, zero mismatches).
+- The owner ran a live smoke of five development questions (one per workflow plus one insufficient-evidence case) through the real database and a real OpenAI model: HTTP 200 and citations inside the returned evidence.
+- The owner manually exercised all four screens in Live mode.
+- **Not done:** held-out evaluation; formal quality metrics; DB-gated test execution on the merged code; security/privacy review.
+
+### Full suite on a disposable Postgres, 2026-11-23
+
+- **Setup:** throwaway container from the same pgvector image digest as `compose.yaml`, different name and host port, no volume. Database `sciscope_test_005`, role `sciscope`, then `alembic upgrade head` (reached `f005_pgvector_foundation`). The demo database was not touched. The URL was set only in the test process environment and the container was removed afterwards.
+- **Command:** `PYTHONPATH=src uv run --locked python -m pytest -q`
+- **Result:** 3360 passed, 1 failed, 16 errors, 3 skipped (3:48). Skips: live OpenAI test (no key), two symlink tests (no Windows symlink privilege).
+- **Failed:** `tests/ingestion/test_replacement.py::test_valid_replacement_prunes_old_corpus_and_keeps_audit`. It asserts `delivery_imports` has 3 rows ("existing inactive fixture plus both successful audits"); an empty database has 2.
+- **Errors (16):** all in `tests/retrieval/` (`test_phase_c_pipeline.py`, `test_postgres_core.py`, `test_postgres_lookup.py`, `test_public_postgres.py`). Fixture preflight requires the preserved active pilot snapshot, which an empty database does not have.
+- **Cause:** the DB-gated tests assume a database that already holds the preserved Phase A pilot data (one active import plus one inactive fixture), not an empty migrated one. These are environment-precondition failures, not shown to be code regressions. The retrieval tests were therefore not exercised against merged code; the pilot data would have to be loaded into a disposable database first.
+- **Not done:** no tests or source edited; not ACCEPTED; no human verification.
+
+- **Amendment, same day (pilot snapshot loaded):** a second throwaway container (same digest, different name, port 55432, no volume; database `sciscope_test_005`, role `sciscope`) was migrated with `alembic upgrade head` and loaded with `scripts/mvp_import_pilot.py` (outcome `imported`: 17 papers, 319 sections, 728 vectors; one active import). The demo database was not touched; the URL was set only in the process environment; the container was removed afterwards.
+  - `tests/retrieval`: **170 passed, 0 failed, 0 errors, 0 skipped** (4.6 s). The 16 earlier errors were therefore the missing-pilot precondition, not code defects.
+  - `tests/ingestion/test_replacement.py`: **2 passed, 1 failed** — `test_valid_replacement_prunes_old_corpus_and_keeps_audit` still fails at the same assertion (`delivery_imports` count is 2, expected 3). With the pilot loaded there is one pre-existing import, not the extra inactive fixture the test comments assume. The only failing assertion observed is that count; no other cause was seen.
+  - Not re-run: the rest of the suite (the 3360 passed above stand from the empty-DB run). No tests or source edited. Not ACCEPTED; no human verification.
+
+### Opt-in agentic retrieval for evidence_comparison, 2026-11-24 (lean mode, not committed)
+
+- **Scope:** new flag `SCISCOPE_AGENTIC_RETRIEVAL` (`0` default, `1` on; any other value stops startup naming the variable). Only `evidence_comparison` honors it (registry `AGENTIC_WORKFLOWS`). No API contract, fixture, type or response-field change.
+- **Design:** `AgenticRetrieval` (new `question_service/agentic_retrieval.py`) wraps the workflow's retrieval and implements the existing `RetrievalService` protocol.
+  - Stage 1: the provider's `plan_searches` runs a tool loop with one function tool, `search_corpus(query)`: at most 3 tool calls in total (parallel calls count; extra ones are not run), a 20 s stage budget, and the same retrieval profile per call (only `query_text` changes). Queries are sanitized (Cc/Cf characters removed, whitespace collapsed, at most 300 characters). Results go back as boundary-delimited passage blocks cut to 700 characters.
+  - Stage 2: the unchanged grounded call receives the round-robin union (at most 12 chunks, at most 60,000 characters).
+  - Fallback: any stage 1 exception, budget overrun, zero tool calls, empty union or corpus change → single-shot retrieval of the original question.
+  - The fake provider simulates stage 1 deterministically (two scripted searches).
+  - Logs: counts, reason code and latency only.
+  - `scripts/mvp_smoke.py --agentic` prints rounds, searches, merged count, fallback (with reason) and stage 1 latency.
+- **Live finding and fix:** the first live runs fell back 3/3 (`error:DependencyFailure`, HTTP 400). The configured answer model rejects function tools on `/v1/chat/completions` unless `reasoning_effort` is `none` (OpenAI error text). Stage 1 now always sends `reasoning_effort: "none"`; stage 2 is unchanged.
+- **Offline checks (commands run):**
+  - `ruff check .`: passed. `ruff format --check .`: 380 files formatted.
+  - `mypy src scripts/mvp_smoke.py`: no issues.
+  - `mypy .`: 286 errors, against 284 on a clean `HEAD` export. The 2 new errors are `backend` import-not-found in the new test file, the same as every sibling `test_openai_provider_*` file.
+  - `python -m pytest -q`: 3382 passed, 3 skipped, 36 errors. Baseline before the change: 3341 passed, 3 skipped, 36 errors. The 36 errors are the DB-gated ingestion/retrieval tests without `SCISCOPE_TEST_DATABASE_URL`, the same set before and after.
+  - 41 new tests in `tests/backend/test_agentic_retrieval.py`, `tests/backend/test_agentic_server.py` and `tests/mvp/test_mvp_smoke.py`. After the `reasoning_effort` fix, `tests/backend` + `tests/mvp` gave 490 passed, 1 skipped.
+  - Tests were written after the implementation (not test-first). Three mutation checks (limit removed, empty-union fallback removed, sanitizer bypassed) each made tests fail.
+- **Live smoke, `gq-cmp-001`, `--repeat 3`** (real DB + OpenAI; `SCISCOPE_LIVE_OPENAI=1` set by the agent for the command, per the owner's request):
+
+  | Run set | Latency (s) | Evidence | Stage 1 | Golden DOIs in evidence | Subjects |
+  | --- | --- | --- | --- | --- | --- |
+  | baseline A | 8.6 / 7.0 / 6.8 | 10 | — | 2/2 | 2 |
+  | agentic before fix | 7.6 / 7.4 / 7.7 | 10 | fallback 3/3, 0.6–0.9 s | 2/2 | 2 |
+  | agentic after fix | 8.9 / 10.3 / 11.8 | 12 | rounds 2, searches 3/2/3, merged 12, no fallback, 3.2–3.6 s | 2/2 | 2 |
+  | baseline B | 8.3 / 7.2 / 5.6 | 10 | — | 2/2 | 2 |
+
+  - All runs: HTTP 200, `answered`, citations in evidence, `ids_in_text=false`.
+  - Agentic found the same 2 papers as the baseline (the 2 extra chunks come from them). Its answers are equivalent in substance, with 1 difference item each, against 1–2 in the baseline. Mean latency: 10.3 s agentic against 7.3 s baseline (about +3 s). There is no quality gain on this question.
+- **Not done:** no other questions or workflows; no held-out evaluation; no human review of answers; not ACCEPTED; no human verification.
+
+### MVP final-state hygiene check on branch `mvp` (head `fa7e5a0`), 2026-11-24
+
+- **Scope:** read-only pre-PR check, run by the agent. No source or test changed; the only doc edit besides this entry is one added variable name (`SCISCOPE_AGENTIC_RETRIEVAL`) in the README MVP quickstart. Lean mode; **not ACCEPTED**; no human verification of this entry.
+- **Secret scan (paths and counts only, no values recorded):**
+  - Scanned all tracked files at HEAD (`git grep`) and every added line in all revisions of all refs (`git log --all -G`) for `sk-…` keys, bearer tokens, `OPENAI_API_KEY=<value>` and `DATABASE_URL`-style URLs with an embedded password.
+  - No real-looking credential found. Matches were: the `alembic.ini` dev placeholder URL; test fixtures with fake or single-character passwords on localhost or `127.0.0.1` (`tests/backend/test_server.py`, `tests/mvp/test_mvp_import_pilot.py`, `tests/evaluation/test_phase_d_*`, `tests/backend/test_agentic_server.py`, `tests/backend/test_question_api_v2_workflows.py`); one `sk-`-shaped fake token in `tests/backend/test_server.py`; templated URLs in `docs/mvp/DEMO_DB.md`; a one-character-value `OPENAI_API_KEY` mention in `specs/004-data-contract-delivery/plan.md`.
+  - `.env`, `.env.*` (except `.env.example`), `scratch/` and `.cache/` are gitignored (`git check-ignore`) and were never tracked in any revision (`git log --all --name-only`). `data/raw`, `data/processed`, `data/embeddings`, `data/delivery` are ignored; no dump, `pgdata` or database file is tracked.
+  - The scan is pattern-based and does not read the ignored local `.env`. It is not a security or privacy review.
+- **Offline checks, this run:**
+  - `ruff check`: all checks passed. `ruff format --check`: 380 files already formatted. `mypy src`: no issues in 103 source files.
+  - `PYTHONPATH=src uv run --locked python -m pytest -q`: **3382 passed, 3 skipped, 36 errors** (125 s). All 36 errors are DB-gated fixtures that require `SCISCOPE_TEST_DATABASE_URL` (`tests/ingestion`: 20, `tests/retrieval`: 16); the count equals the baseline in the agentic-retrieval entry above.
+  - Frontend (`frontend/`): `npm test` 20 files, **217 tests passed**; `npm run typecheck` and `npm run lint` clean; `npm run build` succeeded.
+- **Earlier verification, carried forward (not re-run today):**
+  - `verify_pilot` PASS on the local demo database (17 papers, 319 sections, 728 chunks, 728 vectors).
+  - On a disposable pilot-loaded Postgres: `tests/retrieval` 170 passed; `tests/ingestion/test_replacement.py` 2 passed, 1 failed (count assertion that assumes an extra inactive fixture import).
+  - Live smoke of the five development questions (owner, 2026-11-23) and, for `gq-cmp-001`, 3 baseline against 3 agentic runs after the `reasoning_effort` fix (agentic mean about +3 s, no measured quality gain).
+  - The owner exercised all four screens in Live mode and added four backup screenshots (`docs/mvp/demo/`).
+  - The heading "(lean mode, not committed)" in the agentic-retrieval entry is stale: that work is committed as `fa7e5a0`.
+- **Docs consistency:** README quickstart, `docs/mvp/RUN_BACKEND.md` and `docs/mvp/DEMO_SCRIPT.md` were compared with `server.py` (variable names and defaults, `HOST`/`PORT` 127.0.0.1:8000, default CORS origins, `SCISCOPE_AGENTIC_RETRIEVAL` 0/1), `vite.config.ts` (`/api` proxy to 127.0.0.1:8000), `VITE_API_MODE=fixtures`, the badge labels, `scripts/mvp_smoke.py` flags (`--only`, `--repeat`, `--agentic`), the four screenshot filenames, and the five demo questions against `evals/golden_questions.v0.json` (verbatim match). One omission fixed: the README variable list lacked `SCISCOPE_AGENTIC_RETRIEVAL`. `.env.example` lists only `OPENAI_API_KEY`, `OPENAI_BASE_URL` and `DATABASE_URL`, not `OPENAI_ANSWER_MODEL` or `AI_PROVIDER`; left unchanged.
+- **Not done:** held-out evaluation; statistical or quality claims; formal acceptance; security or privacy review beyond the scan above; DB-gated tests on the exact demo database, and the DB-gated tests were not re-run on the final head `fa7e5a0` (the pilot-loaded run predates the agentic change); human verification of any task.
+- **Known limits:** only 5 development questions exercised live; 17-paper PLOS ONE pilot corpus; agentic retrieval is opt-in (`SCISCOPE_AGENTIC_RETRIEVAL=1`), affects `evidence_comparison` only, and showed no measured quality gain (one question, 3 runs); live OpenAI and Postgres paths are otherwise verified by offline unit tests and owner smoke runs only; retrieval quality is not verified; `tests/ingestion/test_replacement.py::test_valid_replacement_prunes_old_corpus_and_keeps_audit` has a known precondition failure on a pilot-only database.

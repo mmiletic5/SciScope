@@ -1,10 +1,11 @@
 # Backend–Frontend Integration Handoff
 
-> **VERSION 1 — Feature 011 fake-backend integration baseline.**
+> **Feature 011 v1 baseline plus accepted offline Feature 012 v2 boundary.**
 >
-> **Status:** Ready for use with the accepted Feature 011 fake-only contract.
-> This document must be revised after P4-09 real retrieval integration and
-> P4-10 Gemini integration are implemented, verified, and accepted.
+> **Status:** v1 remains ready for the accepted fake-only contract. The
+> separately versioned v2 boundary is accepted for explicitly injected offline
+> dependencies; T006 cross-story integration, T007 database verification, and
+> T008 feature closeout remain pending.
 
 ## 1. Purpose and Audience
 
@@ -13,8 +14,11 @@ contract for the Feature 011 question API. It is suitable for UI contract work,
 response rendering, and deterministic in-process compatibility testing.
 
 It does not describe a deployed backend or a live scientific-answer service.
-The only accepted backend baseline is the deterministic fake implementation in
-[specs/011-fake-backend-api](../../specs/011-fake-backend-api).
+Feature 011 is the accepted deterministic fake-only v1 baseline in
+[specs/011-fake-backend-api](../../specs/011-fake-backend-api). In addition,
+Feature 012 T004 accepts a separately versioned injected offline v2 HTTP
+boundary, and T005 accepts explicit composition and request-dispatch lifecycle
+behavior. T006–T008 remain pending.
 
 ## 2. Current Backend Status
 
@@ -226,6 +230,38 @@ Loading, visual hierarchy, retry UI, and provenance-display design are frontend
 implementation choices unless a separately approved frontend specification
 makes them requirements.
 
+### Feature 012 v2 and post-T005 integration status
+
+`POST /api/v2/questions` is a separately versioned accepted API, registered
+only when `create_app` receives valid explicit `v2_metadata`. Its closed request
+contains `workflow`, `question`, and optional `request_id`; retrieval settings,
+mode, version, ranking, filters, and provider selection remain server-owned.
+The provider is explicitly injected.
+
+V2 success responses contain `api_version`, `request_id`, `workflow`, `status`,
+`answer`, `claims`, `evidence`, `corpus`, and component `metadata`. Retrieval
+and answer-provider metadata each have `configured_origin`, `executed`, and
+`is_test_data`; the frontend must never infer execution from origin. V2 errors
+are sanitized, preserve typed retryability where applicable, and use the
+route-scoped request ID rather than a downstream exception ID. Error metadata
+may be omitted when execution state is unavailable or unknown. The implemented
+422/500/503/504 mappings remain authoritative in the v2 models and handlers.
+
+Citations must resolve only from a claim's `citation_chunk_ids` to evidence in
+the same response. No cross-response evidence reuse is valid, and citation
+membership does not establish scientific correctness. V1 has no implicit
+migration to v2: its closed fake-only request/response shapes, synthetic
+evidence, and literal `is_mock=true` / `is_test_data=true` metadata remain
+unchanged.
+
+T005 provides explicit offline composition and a handler-dispatch lifecycle
+boundary. It does not establish production retrieval readiness, real PostgreSQL
+connectivity, real provider execution, a final mode, streaming-response or
+background-task protection, ASGI-server draining, or complete deployment
+shutdown safety. T006 still needs end-to-end in-process integration evidence.
+Person 4's next concrete gate is review of T006 v2 response/error/metadata
+behavior and frontend handling assumptions; no T006 approval is claimed here.
+
 ## 8. Fake vs Real Data Boundaries
 
 Every accepted Feature 011 response carries:
@@ -244,13 +280,11 @@ corpus, query embeddings, Gemini, or another live provider.
 
 ## 9. Dependencies and Known Limitations
 
-- The public T007 retrieval facade exists, but T007-E has remaining Person 2
-  review, native Windows verification, owner-acceptance, and T007-F gates.
-  See [BACKEND_AI_HANDOFF.md](BACKEND_AI_HANDOFF.md) and
-  [FEATURE_007_T007_E_REVIEW_HANDOFF.md](FEATURE_007_T007_E_REVIEW_HANDOFF.md).
-- P4-09, **shared retrieval service integration**, is not implemented. The
-  Feature 011 retrieval protocol and T007 public `RetrievalService` have
-  different request/response shapes and need an approved adapter.
+- Feature 007 is accepted within its public-facade scope; Person 2 review and
+  native Windows verification are owner-reported, and Windows terminal evidence
+  was not retained. See [BACKEND_AI_HANDOFF.md](BACKEND_AI_HANDOFF.md).
+- P4-09 is in progress through accepted T005. T006–T008 remain pending; no
+  production or live-retrieval integration is established.
 - P4-10, **explicitly configured Gemini provider**, is not implemented.
 - The repository contains no established frontend runtime, frontend API base
   URL, or approved server-launch command for this API baseline.
@@ -262,10 +296,9 @@ corpus, query embeddings, Gemini, or another live provider.
 
 ## 10. Future Updates After P4-09 and P4-10
 
-After P4-09 is specified, implemented, tested, reviewed, and accepted, revise
-this document to include the approved real-retrieval request mapping, response
-mapping, provenance fields, transport error mapping, and integration test
-commands.
+After T006 is specified, implemented, tested, reviewed, and accepted, revise
+this document with the verified cross-component integration behavior and
+frontend verification results. T007 and T008 remain separately gated.
 
 After P4-10 is separately specified, implemented, tested, reviewed, and
 accepted, revise it again with the explicit provider configuration path,
@@ -292,9 +325,9 @@ provider calls to frontend setup or automated tests.
 
 ## 12. Handoff Status
 
-**VERSION 1 — Feature 011 fake-backend integration baseline.**
+**Feature 011 v1 baseline plus accepted offline Feature 012 v2 boundary.**
 
-This document is immediately usable for deterministic frontend contract work.
-It is not a live-backend deployment guide. Update it only after P4-09 and
-P4-10 have their own approved scope, implementation, verification, review, and
-acceptance evidence.
+This document is immediately usable for deterministic v1 and injected-offline
+v2 contract work. It is not a live-backend deployment guide. T006–T008 and
+P4-10 require their own approved scope, implementation, verification, review,
+and acceptance evidence.

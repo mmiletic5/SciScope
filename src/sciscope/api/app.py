@@ -1,23 +1,38 @@
 """FastAPI application construction for Feature 011."""
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
+from sciscope.api.debug_frames import log_failure_frames
 from sciscope.api.http_models import ErrorDetail, ErrorResponse, MockMetadata
+from sciscope.api.http_models_v2 import QuestionMetadataV2
 from sciscope.api.routes import install_question_route
+from sciscope.api.routes_v2 import (
+    error_response_v2,
+    failure_metadata,
+    install_question_v2_route,
+    is_v2_request,
+)
 from sciscope.question_service.contracts import (
+    WORKFLOWS,
     DependencyFailure,
     DependencyFailureCode,
+    QuestionMetadata,
+    Workflow,
 )
 from sciscope.question_service.ids import (
     generate_request_id,
     is_valid_request_id,
 )
-from sciscope.question_service.validation import ResponseContractFailure
+from sciscope.question_service.validation import (
+    ResponseContractFailure,
+    validate_question_metadata,
+)
+from sciscope.retrieval import RetrievalErrorCode, RetrievalException
 
 _CONTROLLED_FAILURES = {
     DependencyFailureCode.RETRIEVAL_UNAVAILABLE: (
@@ -38,6 +53,14 @@ _CONTROLLED_FAILURES = {
         "The requested dependency timed out.",
         True,
     ),
+    # The contract has no code for a workflow the configured provider does
+    # not implement yet; health already lists only enabled workflows.
+    DependencyFailureCode.WORKFLOW_NOT_IMPLEMENTED: (
+        503,
+        "provider_unavailable",
+        "The requested dependency is currently unavailable.",
+        True,
+    ),
 }
 _CONTRACT_FAILURE_MESSAGE = "The response could not be validated."
 _INTERNAL_ERROR_MESSAGE = "An internal error occurred."
@@ -53,12 +76,16 @@ class AppDependencies:
 
     retrieval: object
     provider: object
+    v2_metadata: QuestionMetadata | None = None
+    workflow_retrievals: Mapping[Workflow, object] | None = None
 
 
 def create_app(
     *,
     retrieval: object,
     provider: object,
+    v2_metadata: QuestionMetadata | None = None,
+    workflow_retrievals: Mapping[Workflow, object] | None = None,
     request_id_factory: Callable[[], str] = generate_request_id,
 ) -> FastAPI:
     """Create an offline FastAPI application with explicit dependencies.
@@ -66,16 +93,32 @@ def create_app(
     Args:
         retrieval: An opaque retrieval dependency supplied by the caller.
         provider: An opaque answer-provider dependency supplied by the caller.
+        v2_metadata: Explicit component configuration required to register v2.
+        workflow_retrievals: Optional v2 retrieval per workflow (one retrieval
+            profile each); must cover every workflow. Without it, ``retrieval``
+            serves every v2 workflow.
         request_id_factory: Generates IDs for validation-error envelopes.
+
+    Raises:
+        ValueError: If ``workflow_retrievals`` does not cover exactly the
+            known workflows.
 
     Returns:
         A FastAPI application that stores the supplied dependencies, registers
         the approved question route, and starts no external resource.
     """
     app = FastAPI()
+    if v2_metadata is not None:
+        validate_question_metadata(v2_metadata)
+    if workflow_retrievals is not None:
+        if set(workflow_retrievals) != set(WORKFLOWS):
+            raise ValueError("Provide one retrieval for every workflow")
+        workflow_retrievals = dict(workflow_retrievals)
     app.state.dependencies = AppDependencies(
         retrieval=retrieval,
         provider=provider,
+        v2_metadata=v2_metadata,
+        workflow_retrievals=workflow_retrievals,
     )
     install_validation_exception_handler(
         app, request_id_factory=request_id_factory
@@ -84,6 +127,8 @@ def create_app(
         app, request_id_factory=request_id_factory
     )
     install_question_route(app, request_id_factory=request_id_factory)
+    if v2_metadata is not None:
+        install_question_v2_route(app, request_id_factory=request_id_factory)
     return app
 
 
@@ -102,12 +147,24 @@ def install_validation_exception_handler(
 
     @app.exception_handler(RequestValidationError)
     async def validation_exception_handler(
-        _request: Request,
+        request: Request,
         exc: RequestValidationError,
     ) -> JSONResponse:
         request_id = _valid_request_id_or_generated(
             exc.body, request_id_factory
         )
+        if is_v2_request(request):
+            return error_response_v2(
+                status_code=422,
+                code="invalid_request",
+                message=(
+                    "The request does not meet this API version's validation "
+                    "rules."
+                ),
+                retryable=False,
+                request_id=request_id,
+                metadata=None,
+            )
         response = ErrorResponse(
             api_version="v1",
             request_id=request_id,
@@ -144,39 +201,128 @@ def install_controlled_failure_handlers(
         status_code, code, message, retryable = _CONTROLLED_FAILURES[
             exception.code
         ]
+        request_id = _request_id_or_generated(request, request_id_factory)
+        if is_v2_request(request):
+            return error_response_v2(
+                status_code=status_code,
+                code=code,
+                message=message,
+                retryable=retryable,
+                request_id=request_id,
+                metadata=_failure_metadata_for_request(request),
+            )
         return _error_response(
             status_code=status_code,
             code=code,
             message=message,
             retryable=retryable,
-            request_id=_request_id_or_generated(request, request_id_factory),
+            request_id=request_id,
         )
 
     @app.exception_handler(ResponseContractFailure)
     async def response_contract_failure_handler(
         request: Request,
-        _exception: ResponseContractFailure,
+        exception: ResponseContractFailure,
     ) -> JSONResponse:
+        log_failure_frames(exception)
+        request_id = _request_id_or_generated(request, request_id_factory)
+        if is_v2_request(request):
+            return error_response_v2(
+                status_code=500,
+                code="response_contract_failure",
+                message=_CONTRACT_FAILURE_MESSAGE,
+                retryable=False,
+                request_id=request_id,
+                metadata=None,
+            )
         return _error_response(
             status_code=500,
             code="response_contract_failure",
             message=_CONTRACT_FAILURE_MESSAGE,
             retryable=False,
-            request_id=_request_id_or_generated(request, request_id_factory),
+            request_id=request_id,
+        )
+
+    @app.exception_handler(RetrievalException)
+    async def retrieval_exception_handler(
+        request: Request,
+        exception: RetrievalException,
+    ) -> JSONResponse:
+        """Map a typed public retrieval error at the separate v2 boundary."""
+        request_id = _request_id_or_generated(request, request_id_factory)
+        if not is_v2_request(request):
+            return _error_response(
+                status_code=500,
+                code="internal_error",
+                message=_INTERNAL_ERROR_MESSAGE,
+                retryable=False,
+                request_id=request_id,
+            )
+        status_code, code, message = _retrieval_error_mapping(exception.code)
+        return error_response_v2(
+            status_code=status_code,
+            code=code,
+            message=message,
+            retryable=exception.retryable,
+            request_id=request_id,
+            metadata=_failure_metadata_for_request(request),
         )
 
     @app.exception_handler(Exception)
     async def unexpected_exception_handler(
         request: Request,
-        _exception: Exception,
+        exception: Exception,
     ) -> JSONResponse:
+        log_failure_frames(exception)
+        request_id = _request_id_or_generated(request, request_id_factory)
+        if is_v2_request(request):
+            return error_response_v2(
+                status_code=500,
+                code="internal_error",
+                message=_INTERNAL_ERROR_MESSAGE,
+                retryable=False,
+                request_id=request_id,
+                metadata=None,
+            )
         return _error_response(
             status_code=500,
             code="internal_error",
             message=_INTERNAL_ERROR_MESSAGE,
             retryable=False,
-            request_id=_request_id_or_generated(request, request_id_factory),
+            request_id=request_id,
         )
+
+
+def _failure_metadata_for_request(
+    request: Request,
+) -> QuestionMetadataV2 | None:
+    """Map only observed v2 execution state into error metadata."""
+    return failure_metadata(
+        request,
+        retrieval_executed=getattr(
+            request.state, "v2_retrieval_executed", False
+        ),
+        answer_provider_executed=getattr(
+            request.state, "v2_answer_provider_executed", False
+        ),
+    )
+
+
+def _retrieval_error_mapping(
+    code: RetrievalErrorCode,
+) -> tuple[int, str, str]:
+    """Map approved public retrieval codes to sanitized HTTP categories."""
+    if code in {
+        RetrievalErrorCode.INVALID_REQUEST,
+        RetrievalErrorCode.UNSUPPORTED_CONTRACT_VERSION,
+        RetrievalErrorCode.RETRIEVAL_INTERNAL_ERROR,
+    }:
+        return 500, "internal_error", _INTERNAL_ERROR_MESSAGE
+    return (
+        503,
+        "retrieval_unavailable",
+        "The requested dependency is currently unavailable.",
+    )
 
 
 def _error_response(

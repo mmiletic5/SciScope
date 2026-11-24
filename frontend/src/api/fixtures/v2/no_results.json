@@ -1,0 +1,26 @@
+{
+  "api_version": "v2",
+  "request_id": "fixture-nores-001",
+  "workflow": "research_question",
+  "status": "no_results",
+  "answer": null,
+  "claims": [],
+  "evidence": [],
+  "corpus": {
+    "corpus_version": "synthetic-fixture-v2",
+    "source_contract_version": "synthetic-contract-v2",
+    "delivery_digest": "synthetic-digest-not-a-real-corpus"
+  },
+  "metadata": {
+    "retrieval": {
+      "configured_origin": "fake",
+      "executed": true,
+      "is_test_data": true
+    },
+    "answer_provider": {
+      "configured_origin": "fake",
+      "executed": false,
+      "is_test_data": true
+    }
+  }
+}

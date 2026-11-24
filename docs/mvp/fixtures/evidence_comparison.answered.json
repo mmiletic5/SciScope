@@ -1,0 +1,121 @@
+{
+  "api_version": "v2",
+  "request_id": "fixture-cmp-001",
+  "workflow": "evidence_comparison",
+  "status": "answered",
+  "answer": "Synthetic summary: papers A and B measure the same outcome but report opposite directions of effect.",
+  "claims": [
+    {
+      "claim_id": "subj-1",
+      "text": "Paper A reports a lower outcome rate under treatment X.",
+      "citation_chunk_ids": [
+        "197dd6e17c18af1a673084210bf029f58cb8cd64081fbbdb4e753dbd21970c37"
+      ]
+    },
+    {
+      "claim_id": "subj-2",
+      "text": "Paper B reports a higher outcome rate under treatment X.",
+      "citation_chunk_ids": [
+        "e908fa76c0aea5c4aa8f31e426a1e152d092fa38eb464cd7d0f19cdc2d89d920"
+      ]
+    },
+    {
+      "claim_id": "sim-1",
+      "text": "Both papers measured the same synthetic outcome under treatment X.",
+      "citation_chunk_ids": [
+        "197dd6e17c18af1a673084210bf029f58cb8cd64081fbbdb4e753dbd21970c37",
+        "e908fa76c0aea5c4aa8f31e426a1e152d092fa38eb464cd7d0f19cdc2d89d920"
+      ]
+    },
+    {
+      "claim_id": "diff-1",
+      "text": "Paper A reports a lower outcome rate under treatment X, whereas paper B reports a higher one.",
+      "citation_chunk_ids": [
+        "197dd6e17c18af1a673084210bf029f58cb8cd64081fbbdb4e753dbd21970c37",
+        "e908fa76c0aea5c4aa8f31e426a1e152d092fa38eb464cd7d0f19cdc2d89d920"
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "chunk_id": "197dd6e17c18af1a673084210bf029f58cb8cd64081fbbdb4e753dbd21970c37",
+      "doi": "10.0000/synthetic.0001",
+      "source_locator": "jats:v1:/article/body/sec[2]/p[1]",
+      "passage": "Synthetic passage A1. Colonies in the synthetic experiment showed a lower rate of the measured outcome under treatment X. This text is invented for UI tests and is not a scientific finding.",
+      "paper_title": "Synthetic paper A (not a publication)"
+    },
+    {
+      "chunk_id": "e908fa76c0aea5c4aa8f31e426a1e152d092fa38eb464cd7d0f19cdc2d89d920",
+      "doi": "10.0000/synthetic.0002",
+      "source_locator": "jats:v1:/article/body/sec[3]/p[2]",
+      "passage": "Synthetic passage B1. In the synthetic study B, treatment X was associated with a higher rate of the measured outcome. Invented for UI tests.",
+      "paper_title": "Synthetic paper B (not a publication)"
+    },
+    {
+      "chunk_id": "9544c5fffd45b88e732418c3a68b8586c4629db2c4262445af930899412f2570",
+      "doi": "10.0000/synthetic.0001",
+      "source_locator": "jats:v1:/article/body/sec[4]/p[3]",
+      "passage": "Synthetic passage A2. The authors state that the synthetic experiment was limited to a single season and a single site. Invented for UI tests.",
+      "paper_title": "Synthetic paper A (not a publication)"
+    }
+  ],
+  "corpus": {
+    "corpus_version": "synthetic-fixture-v2",
+    "source_contract_version": "synthetic-contract-v2",
+    "delivery_digest": "synthetic-digest-not-a-real-corpus"
+  },
+  "metadata": {
+    "retrieval": {
+      "configured_origin": "fake",
+      "executed": true,
+      "is_test_data": true
+    },
+    "answer_provider": {
+      "configured_origin": "fake",
+      "executed": true,
+      "is_test_data": true
+    }
+  },
+  "comparison": {
+    "subjects": [
+      {
+        "subject_id": "subj-1",
+        "doi": "10.0000/synthetic.0001",
+        "paper_title": "Synthetic paper A (not a publication)",
+        "summary": "Paper A reports a lower outcome rate under treatment X.",
+        "citation_chunk_ids": [
+          "197dd6e17c18af1a673084210bf029f58cb8cd64081fbbdb4e753dbd21970c37"
+        ]
+      },
+      {
+        "subject_id": "subj-2",
+        "doi": "10.0000/synthetic.0002",
+        "paper_title": "Synthetic paper B (not a publication)",
+        "summary": "Paper B reports a higher outcome rate under treatment X.",
+        "citation_chunk_ids": [
+          "e908fa76c0aea5c4aa8f31e426a1e152d092fa38eb464cd7d0f19cdc2d89d920"
+        ]
+      }
+    ],
+    "similarities": [
+      {
+        "item_id": "sim-1",
+        "text": "Both papers measured the same synthetic outcome under treatment X.",
+        "citation_chunk_ids": [
+          "197dd6e17c18af1a673084210bf029f58cb8cd64081fbbdb4e753dbd21970c37",
+          "e908fa76c0aea5c4aa8f31e426a1e152d092fa38eb464cd7d0f19cdc2d89d920"
+        ]
+      }
+    ],
+    "differences": [
+      {
+        "item_id": "diff-1",
+        "text": "Paper A reports a lower outcome rate under treatment X, whereas paper B reports a higher one.",
+        "citation_chunk_ids": [
+          "197dd6e17c18af1a673084210bf029f58cb8cd64081fbbdb4e753dbd21970c37",
+          "e908fa76c0aea5c4aa8f31e426a1e152d092fa38eb464cd7d0f19cdc2d89d920"
+        ]
+      }
+    ]
+  }
+}

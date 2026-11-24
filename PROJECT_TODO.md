@@ -167,7 +167,30 @@ terminal evidence was not retained. See
 [`EVIDENCE.md`](EVIDENCE.md#feature-007--public-retrieval-facade-t007) and
 [`specs/007-phase-b-retrieval-core/tasks.md`](specs/007-phase-b-retrieval-core/tasks.md).
 
+Feature 012 / P4-09 is IN PROGRESS on branch
+`feature/p4-09-backend-retrieval-integration`. T001–T005 are COMPLETE and
+ACCEPTED through `caf3c578ceaf99ffbcf1923c9d396e0510a3b442`; T006–T008 remain
+PENDING. The P4-09 checkbox above remains unchecked. The accepted fake-only
+`/api/v1/questions` contract remains exact; separately versioned `/api/v2/questions`
+is an accepted injected offline boundary, not production retrieval activation.
+D012-01 records v1 dense as the leading candidate, not a final application
+selection. The Person 2/Person 4 technical delegation is owner-reported, not
+automatic T006 approval. Database authorization, mode activation, and final
+feature acceptance remain gated. No PostgreSQL, live provider, or production
+deployment claim is made here. See
+[`specs/012-shared-retrieval-integration/tasks.md`](specs/012-shared-retrieval-integration/tasks.md)
+and [`docs/person3/P4_09_TEST_LOG.md`](docs/person3/P4_09_TEST_LOG.md).
+
 ## Phase 5 — Frontend (Person 4)
+
+Feature 012 (`012-frontend-explorer`) has approved specification, plan, and
+eight-task list in [`specs/012-frontend-explorer`](specs/012-frontend-explorer).
+Implementation is authorized through T007; T001 through T006 are
+automated-validated. T007's implementation and four automated checks pass;
+the Explorer walkthrough was accepted by Milena (Person 4) on 2026-11-22. T008 is authorized after the documented pre-task fixes. Task order is
+T001–T006 for the Explorer foundation and User Stories 1–2, T007 for the
+accepted Explorer demo-ready gate, and T008 for User Story 3 previews. P5 items
+remain unchecked pending final feature-owner manual verification.
 
 - [ ] **P5-01** | Owner: Person 4 | Deliverable: React and TypeScript application setup | Phase: 5 | Depends on: P0-05
 - [ ] **P5-02** | Owner: Person 4 | Deliverable: shared research interface layout | Phase: 5 | Depends on: P5-01

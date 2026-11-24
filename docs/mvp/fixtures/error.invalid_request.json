@@ -1,0 +1,9 @@
+{
+  "api_version": "v2",
+  "request_id": "fixture-err-002",
+  "error": {
+    "code": "invalid_request",
+    "message": "The request does not meet this API version's validation rules.",
+    "retryable": false
+  }
+}
