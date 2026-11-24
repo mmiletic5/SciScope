@@ -6,8 +6,7 @@ exercised so far (live smoke, see `EVIDENCE.md`). Questions are copied verbatim 
 `evals/golden_questions.v0.json`.
 
 Before you start: header badge shows **Live** (both retrieval and answer provider are real).
-A live answer takes roughly 2-8 s in the smoke run; the UI allows up to a minute and has a Cancel button.
-
+A live answer takes roughly 2-11 s in the smoke runs (up to about 12 s with agentic retrieval); the UI allows up to a minute and has a Cancel button.
 ## Plan
 
 | # | Time | Screen (workflow) | Question id |
