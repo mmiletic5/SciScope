@@ -43,8 +43,9 @@ local `data/delivery/pilot/` and they match):
 | `embedding_manifest.json` | `99185d5db2f57726ea2224dfb66b67c413252ad6abb120e58e4c01498561ca60` |
 
 **The zip is not in git** (`data/delivery/` is gitignored; archive bytes are not
-deterministic, so the hash identifies one specific file). A second person must receive that
-file from the team and compare its hash before extracting:
+deterministic, so the hash identifies one specific file). The delivery package
+`pilot-delivery.zip` (SHA256 as above) is attached to the GitHub release
+`capstone-submission`; it is not stored in git. Compare its hash before extracting:
 
 ```powershell
 Get-FileHash pilot-delivery.zip -Algorithm SHA256
@@ -102,7 +103,7 @@ Expected: one line per question, `http=200`, `citations_in_evidence=True`,
 `insufficient_evidence` (section 4).
 
 **Offline checks** (no network, no paid calls): `uv run --locked ruff check .` and
-`uv run --locked pytest`. Last recorded result in [EVIDENCE.md](../../EVIDENCE.md): `ruff`
+`$env:PYTHONPATH = "src"; uv run --locked python -m pytest -q`. Last recorded result in [EVIDENCE.md](../../EVIDENCE.md): `ruff`
 passed; `pytest` 3399 passed, 3 skipped, 36 errors, where the 36 errors are DB-gated
 fixtures that need `SCISCOPE_TEST_DATABASE_URL` (see section 7).
 
@@ -121,11 +122,10 @@ local, gitignored `scratch/imp01_full_smoke.log` (read, not rerun); the committe
 | `gq-gap-001` | `research_gap` | 200 / answered | 10 / 4 | yes | 8.5 s |
 | `gq-ins-001` | `research_question` | 200 / insufficient_evidence | 5 / 0 | yes | 1.7 s |
 
-Latency range in this run: 1.7-10.3 s. [DEMO_SCRIPT.md](DEMO_SCRIPT.md) quotes "roughly 2-8 s"
-from the earlier owner smoke run, and `gq-cmp-001` repeated five times took 5.7-8.1 s
-(EVAL_RESULTS.md), so single-run latency varies. `ids_in_text=false` and real/real
+Latency range in this run: 1.7-10.3 s. `gq-cmp-001` repeated five times took 5.7-8.1 s (EVAL_RESULTS.md), so single-run latency
+varies; [DEMO_SCRIPT.md](DEMO_SCRIPT.md) now quotes roughly 2-11 s. `ids_in_text=false` and real/real
 metadata on all five. The `gq-ins-001` outcome is the expected one (the corpus has nothing on
-glyphosate and gut microbiota). Answer content was read by the agent; two answers (EV-01 and
+glyphosate and gut microbiota). Answer content was read by the AI assistant (Claude Code); two answers (EV-01 and
 EV-04) were compared with the source papers by one human reader (EVAL_RESULTS.md, last section).
 
 ## 5. Behaviour without support
@@ -151,7 +151,7 @@ a continuation field is rejected with 422.
 
 ## 6. Key negative checks (EV-11 to EV-16)
 
-Offline, no paid call; 79 test items, 79 passed. Run with `uv run --locked pytest <ids> -q`.
+Offline, no paid call; 79 test items, 79 passed. Run with `$env:PYTHONPATH = "src"; uv run --locked python -m pytest <ids> -q`.
 Full node ids are listed in [EVAL_RESULTS.md](EVAL_RESULTS.md) (section "Pytest node ids for EV-11 .. EV-16");
 the files below hold them. "Simulated" means the real provider/route code driven by a scripted
 transport, not a real failing provider.
@@ -174,10 +174,8 @@ weakest live case; it does not show the defence holds against other wording or m
 - Only five development questions were exercised live; they were also used throughout
   development, so they are not independent test data.
 - The corpus is the 17-paper pilot (728 chunks). The tool says nothing about wider literature.
-- No held-out evaluation, no ground-truth answers, no blind review, no statistical claim.
-  Each live case ran once; model output is not deterministic. Retrieval quality is not
-  verified (Golden v0 pending).
-- Live answer content was read by the agent only, except EV-01 and EV-04, checked against the
+- Retrieval was compared only on the same five development questions ([RETRIEVAL_V2_RESULTS.md](../person2/RETRIEVAL_V2_RESULTS.md)); there is no held-out retrieval result.
+- Live answer content was read by the AI assistant (Claude Code) only, except EV-01 and EV-04, checked against the
   papers by one human reader.
 - Agentic retrieval is opt-in (`SCISCOPE_AGENTIC_RETRIEVAL=1`), affects `evidence_comparison`
   only, and shows **no measured quality gain** (`gq-cmp-001`: three runs, about +3 s;
@@ -189,8 +187,6 @@ weakest live case; it does not show the defence holds against other wording or m
 - EV-12, EV-13, EV-15 and EV-16 are simulated failures; no real OpenAI rate limit or timeout
   was observed.
 - Not done: security/privacy review, formal acceptance, human verification of tasks.
-- The README intro (first paragraph) still describes the bootstrap state; the MVP quickstart
-  section below it is the current one.
 
 ## 8. Evidence map
 
